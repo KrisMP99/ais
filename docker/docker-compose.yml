@@ -1,0 +1,30 @@
+version: '2'
+volumes:
+  postgres11-postgis2.5:
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgressDB
+    image: postgres_db
+    container_name: postgres_db
+    volumes:
+      - postgres_db:/srv/data/db/postgresql/data
+      - ./backups:/srv/data/db/postgresql/backups
+    networks:
+      - postgres_conn
+    ports:
+      - '5432:5432'
+    env_file: .env
+  python:
+    build:
+      dockerfile: Dockerfile.pythonProject
+    image: python_project
+    container_name: python_project
+    ports:
+      - "8000:5000"
+
+
+networks:
+  postgres_conn:
+    driver: bridge

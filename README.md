@@ -8,7 +8,9 @@ To access the docker container for postgres:
 ```sudo docker exec -ti AIS-database psql -U postgres aisdb```
 
 ## Running Docker locally
-Build the python image with ```docker build -< docker/python.DockerFile --tag ais_python_project```
+Build the python image with ```docker build -f docker/Dockerfile.pythonProject --tag ais_python_project```
+
+To run the container, ```docker run -t ais_python_project```
 
 Creating the docker container for postgreSQL and postgis:
 ```sudo docker run --name AIS-database -e POSTGRES_PASSWORD=A401 -d postgis/postgis```

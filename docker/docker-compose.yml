@@ -1,6 +1,6 @@
 version: '2'
 volumes:
-  postgres11-postgis2.5:
+  postgres_db:
 services:
   postgres:
     build:
@@ -18,6 +18,7 @@ services:
     env_file: ../.env
   python:
     build:
+      context: .
       dockerfile: Dockerfile.pythonProject
     image: python_project
     container_name: python_project

@@ -28,7 +28,6 @@ psql -c "CREATE DATABASE aisdb;"
 # add extensions to databases
 psql gis -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 psql gis -c "CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;"
-psql gis -c "CREATE EXTENSION IF NOT EXISTS addressing_dictionary;"
 
 # restore database if dump file exists
 if [ -f /srv/data/db/postgresql/backups/restore.dump ]; then

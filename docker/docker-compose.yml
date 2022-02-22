@@ -4,7 +4,6 @@ services:
     build:
       context: ../
       image: postgis/postgis
-    image_name: postgres_db  
     container_name: postgres_db
     volumes:
       - /srv/data/db/postgresql/data:/var/lib/postgresql/data

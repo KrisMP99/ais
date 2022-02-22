@@ -15,7 +15,7 @@ services:
     build:
       context: ../
       dockerfile: ./docker/Dockerfile.pythonProject
-      image: python_project
+    image: python_project
     container_name: python_project
     ports:
       - "8000:5000"

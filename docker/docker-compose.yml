@@ -1,6 +1,4 @@
 version: '2'
-volumes:
-  postgres_db:
 services:
   postgres:
     build:
@@ -9,8 +7,8 @@ services:
     image: postgres_db
     container_name: postgres_db
     volumes:
-      - postgres_db:/srv/data/db/postgresql/data
-      - ./backups:/srv/data/db/postgresql/backups
+      - /srv/data/db/postgresql/data:/var/lib/postgresql/data
+      - /srv/data/db/postgresql/data
     networks:
       - postgres_conn
     ports:

@@ -7,7 +7,7 @@ RUN pip3 install -r requirements.txt
 RUN pip3 install python-dotenv
 
 COPY . .
-ENV FLASK_APP=app.py
+ENV FLASK_APP=app/app.py
 
 
 #For if we want to run the app right away

@@ -4,9 +4,10 @@ WORKDIR /app
 
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
+RUN pip3 install python-dotenv
 
 COPY . .
-ENV FLASK_APP=App.py
+ENV FLASK_APP=app.py
 
 
 #For if we want to run the app right away

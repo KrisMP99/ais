@@ -9,6 +9,7 @@ services:
     volumes:
       - /srv/data/db/postgresql/data:/var/lib/postgresql/data
       - /srv/data/db/postgresql/backups
+      - /srv/data/db/csv
     networks:
       - postgres_conn
     ports:

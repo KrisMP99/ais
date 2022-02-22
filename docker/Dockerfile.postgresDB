@@ -7,4 +7,4 @@ RUN chmod +x /srv/data/db/postgresql/backups/db_backup.sh
 
 # Init script, for when we have some data
 RUN mkdir -p /srv/data/db/postgresql/docker-entrypoint-initdb.d
-COPY /db_setup/initdb-postgis.sh ../../../srv/data/db/postgresql/docker-entrypoint-initdb.d/postgis.sh
+COPY /db_setup/initdb-postgis.sh /srv/data/db/postgresql/docker-entrypoint-initdb.d/postgis.sh

@@ -20,10 +20,10 @@ min_wal_size = 4GB
 max_wal_size = 16GB
 
 # add postgrereader user
-psql -c "CREATE USER aisuser WITH PASSWORD 'a401';"
+psql -U postgres "CREATE USER aisuser WITH PASSWORD 'a401';"
 
 # create databases
-psql -c "CREATE DATABASE aisdb;"
+psql -U postgres "CREATE DATABASE aisdb;"
 
 # add extensions to databases
 psql gis -c "CREATE EXTENSION IF NOT EXISTS postgis;"

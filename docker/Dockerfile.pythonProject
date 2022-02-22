@@ -10,4 +10,4 @@ COPY . .
 
 
 #For if we want to run the app right away
-#CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]

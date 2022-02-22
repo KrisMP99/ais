@@ -1,9 +1,7 @@
 version: '2'
 services:
   postgres:
-    build:
-      context: ../
-      image: postgis/postgis
+    image: postgis/postgis
     container_name: postgres_db
     volumes:
       - /srv/data/db/postgresql/data:/var/lib/postgresql/data

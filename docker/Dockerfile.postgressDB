@@ -1,38 +1,13 @@
-FROM postgres:14.2
-
-ENV POSTGIS_VERSION 3.0.0
-ENV TZ Europe/Copenhagen
-
-# add addressing dictionary
-RUN mkdir -p /opt/apps
-COPY ./pgsql-address-dictionary.zip /opt/apps/pgsql-address-dictionary.zip
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  postgresql-$PG_MAJOR-postgis-$POSTGISV \
-  postgresql-$PG_MAJOR-postgis-$POSTGISV-scripts \
-  postgresql-$PG_MAJOR-pgrouting \
-  postgresql-$PG_MAJOR-pgrouting-scripts \
-  postgresql-server-dev-$PG_MAJOR \
-  unzip \
-  make \
-  && cd /opt/apps \
-  && unzip pgsql-address-dictionary.zip \
-  && cd pgsql-addressing-dictionary-master \
-  && make install \
-  && apt-get purge -y --auto-remove postgresql-server-dev-$PG_MAJOR make unzip
-
-# set time zone
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+FROM postgis/postgis
 
 # add backup job
-RUN mkdir -p /opt/backups
-COPY ./pgbackup.sh /opt/db_backup.sh
-RUN chmod +x /opt/db_backup.sh
+RUN mkdir -p /srv/data/db/postgresql/backups/backups
+COPY /db_setup/db_backup.sh /srv/data/db/postgresql/backups/db_backup.sh
+RUN chmod +x /srv/data/db/postgresql/backups/db_backup.sh
 
 # Init script, for when we have some data
-RUN mkdir -p /docker-entrypoint-initdb.d
-#COPY .db_setup/initdb-postgis.sh /docker-entrypoint-initdb.d/postgis.sh
+RUN mkdir -p /srv/data/db/postgresql/docker-entrypoint-initdb.d
+COPY /db_setup/initdb-postgis.sh /srv/data/db/postgresql/docker-entrypoint-initdb.d/postgis.sh
 
 # create volume for backups
 VOLUME ["/srv/data/db/postgresql/backups"]

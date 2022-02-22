@@ -3,12 +3,12 @@ services:
   postgres:
     build:
       context: ../
-      dockerfile: ./docker/Dockerfile.postgressDB
+      dockerfile: ./docker/Dockerfile.postgresDB
     image: postgres_db
     container_name: postgres_db
     volumes:
-      - ../../../srv/data/db/postgresql/data:/var/lib/postgresql/data
-      - ../../../srv/data/db/postgresql/backups
+      - /srv/data/db/postgresql/data:/var/lib/postgresql/data
+      - /srv/data/db/postgresql/backups
     networks:
       - postgres_conn
     ports:

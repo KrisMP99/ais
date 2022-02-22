@@ -19,9 +19,6 @@ services:
     container_name: python_project
     ports:
       - "8000:5000"
-    depends_on:
-      - postgres
-
 
 networks:
   postgres_conn:

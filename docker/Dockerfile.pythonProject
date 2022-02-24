@@ -6,7 +6,7 @@ COPY backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install python-dotenv
 
-#COPY . .
+COPY . .
 ENV FLASK_APP=backend/app/app.py
 
 

@@ -17,6 +17,8 @@ services:
       dockerfile: ./docker/Dockerfile.pythonProject
     image: python_project
     container_name: python_project
+    volumes:
+      -/srv/data/ais
     ports:
       - "8000:5000"
 

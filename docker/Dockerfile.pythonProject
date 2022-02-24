@@ -1,13 +1,15 @@
 # syntax=docker/dockerfile:1
 FROM python:latest
-WORKDIR /app
+WORKDIR /backend/app
 
-COPY requirements.txt requirements.txt
+COPY backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install python-dotenv
 
-COPY . .
-ENV FLASK_APP=app/app.py
+VOLUME [ "/" ]
+#COPY . .
+ENV FLASK_APP=backend/app/app.py
+
 
 
 #For if we want to run the app right away

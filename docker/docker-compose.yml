@@ -15,8 +15,13 @@ services:
     build:
       context: ../
       dockerfile: ./docker/Dockerfile.pythonProject
-    image: python_project
-    container_name: python_project
+    image: ais_project
+    container_name: ais_project
+    volumes:
+      - type: bind
+        source: ../
+        target: /srv/data/ais
+
     ports:
       - "8000:5000"
 

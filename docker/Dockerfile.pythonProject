@@ -1,15 +1,12 @@
 # syntax=docker/dockerfile:1
 FROM python:latest
-WORKDIR /
+WORKDIR /srv/data/ais/backend/app
 
 COPY backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install python-dotenv
 
-COPY . .
 ENV FLASK_APP=./backend/app/app.py
-
-
 
 #For if we want to run the app right away
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]

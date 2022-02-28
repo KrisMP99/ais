@@ -11,20 +11,23 @@ services:
     ports:
       - '5432:5432'
     env_file: ../.env
+    restart: unless-stopped
   python:
     build:
       context: ../
-      dockerfile: ./docker/Dockerfile.pythonProject
+      dockerfile: ./docker/Dockerfile.aisProject
     image: ais_project
     container_name: ais_project
     volumes:
       - type: bind
         source: ../
         target: /srv/data/ais
-
+    restart: unless-stopped
     ports:
       - "8000:5000"
-
+    networks:
+      - postgres_conn
+    
 networks:
   postgres_conn:
     driver: bridge

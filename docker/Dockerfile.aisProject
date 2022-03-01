@@ -1,12 +1,16 @@
 # syntax=docker/dockerfile:1
 FROM python:latest
-WORKDIR /srv/data/ais/backend/app
+WORKDIR /srv/data/ais/backend
+
+RUN python -m venv /opt/venv
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install python-dotenv
 
-ENV FLASK_APP=./backend/app/app.py
+#ENV FLASK_APP=./app/app.py
 
 #For if we want to run the app right away
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+CMD [ "uvicorn", "app.main:app" , "--reload"]

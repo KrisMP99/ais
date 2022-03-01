@@ -8,7 +8,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 COPY backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
-RUN pip3 install python-dotenv
 
 #For if we want to run the app right away
 CMD [ "uvicorn", "app.main:app" , "--reload"]

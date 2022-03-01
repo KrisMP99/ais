@@ -5,11 +5,11 @@ services:
     container_name: postgres_db
     volumes:
       - type: bind
-      - source: /srv/data/db/postgresql/data
-      - target: /var/lib/postgresql/data
+        source: /srv/data/db/postgresql/data
+        target: /var/lib/postgresql/data
       - type: bind
-      - source: /srv/data/db/csv
-      - target: /srv/data/db/csv
+        source: /srv/data/db/csv
+        target: /srv/data/db/csv
     networks:
       - postgres_conn
     ports:

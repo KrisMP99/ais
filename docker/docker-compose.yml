@@ -4,8 +4,12 @@ services:
     image: postgis/postgis
     container_name: postgres_db
     volumes:
-      - /srv/data/db/postgresql/data:/var/lib/postgresql/data
-      - /srv/data/db/csv
+      - type: bind
+      - source: /srv/data/db/postgresql/data
+      - target: /var/lib/postgresql/data
+      - type: bind
+      - source: /srv/data/db/csv
+      - target: /srv/data/db/csv
     networks:
       - postgres_conn
     ports:

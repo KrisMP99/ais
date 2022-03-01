@@ -7,9 +7,6 @@ services:
       - type: bind
         source: /srv/data/db/postgresql/data
         target: /var/lib/postgresql/data
-      - type: bind
-        source: /srv/data/csv
-        target: /srv/data/csv
     networks:
       - postgres_conn
     ports:
@@ -26,6 +23,9 @@ services:
       - type: bind
         source: ../
         target: /srv/data/ais
+      - type: bind
+        source: /srv/data/csv
+        target: /srv/data/csv
     restart: always
     ports:
       - "8000:5000"

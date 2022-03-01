@@ -95,7 +95,7 @@ def insert_into_db(path_csv, name, flog, elog):
     print("Inserting csv file into raw db...")
 
     try:
-        conn = psycopg2.connect(database="ais", user=USER, password=PASS, host="localhost", port="5432")
+        conn = psycopg2.connect(database="ais", user=USER, password=PASS, host="postgres://db", port="5432")
         conn.autocommit = True
         cursor = conn.cursor()
     except Exception as err:

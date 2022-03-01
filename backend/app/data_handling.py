@@ -76,8 +76,6 @@ def download_files(dest_dir, log_file_name, error_log_file_name):
             print("File has been extraced, deleting .zip file...")
             os.remove(path_zip)
 
-            #flog.write(results[entry] + "\n")
-
             print(".zip file deleted.")
 
         except Exception as err:
@@ -129,6 +127,8 @@ def insert_into_db(path_csv, name, flog, elog):
         quit()
 
     flog.write(name + "\n")
+    flog.close()
+    elog.close()
 
     print("Insertion completed succesfully!")
 

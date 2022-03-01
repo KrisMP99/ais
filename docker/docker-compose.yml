@@ -1,19 +1,17 @@
-version: '3.3'
+version: '3.9'
 services:
-  postgres:
+  db:
     image: postgis/postgis
     container_name: postgres_db
     volumes:
       - type: bind
         source: /srv/data/db/postgresql/data
         target: /var/lib/postgresql/data
-    networks:
-      - postgres_conn
     ports:
       - '5432:5432'
     env_file: ../.env
     restart: always
-  python:
+  project:
     build:
       context: ../
       dockerfile: ./docker/Dockerfile.aisProject
@@ -29,9 +27,3 @@ services:
     restart: always
     ports:
       - "8000:5000"
-    networks:
-      - postgres_conn
-    
-networks:
-  postgres_conn:
-    driver: bridge

@@ -8,8 +8,8 @@ services:
         source: /srv/data/db/postgresql/data
         target: /var/lib/postgresql/data
       - type: bind
-        source: /srv/data/db/csv
-        target: /srv/data/db/csv
+        source: /srv/data/csv
+        target: /srv/data/csv
     networks:
       - postgres_conn
     ports:

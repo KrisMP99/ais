@@ -150,7 +150,7 @@ def insert_into_db(path_csv, name):
 
     logger.info("Adding new file to log file")
     try:
-        with open(LOG_FILE_PATH) as log_file:
+        with open(LOG_FILE_PATH, 'w') as log_file:
             log_file.writelines(name)
             logger.info("Successfully added new file to log!")
     except IOError as e:

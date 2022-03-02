@@ -15,7 +15,7 @@ load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
-ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE')
+ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 DIR_PATH = os.getenv('DIR_PATH')
 
 # Logging for file

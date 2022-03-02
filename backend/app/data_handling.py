@@ -20,21 +20,15 @@ DIR_PATH = os.getenv('DIR_PATH')
 
 # Logging for file
 Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-logging.basicConfig(filename=ERROR_LOG_FILE_PATH,
-                    filemode="w",
-                    format = Log_Format,
-                    encoding = 'utf-8',
+logging.basicConfig(format = Log_Format,
+                    force = True,
+                    handlers = [
+                        logging.FileHandler(ERROR_LOG_FILE_PATH),
+                        logging.StreamHandler()
+                    ],
                     level = logging.INFO)
-                
-# Logging for output in console
-log_console = logging.StreamHandler(sys.stdout)
-log_console.setLevel(logging.INFO)
-log_console.setFormatter(Log_Format)
 
-# Add console logger to our file logger
 logger = logging.getLogger()
-logger.addHandler(log_console)
-
 
 # Establish connection to ais data
 try:
@@ -150,12 +144,16 @@ def insert_into_db(path_csv, name):
 
     logger.info("Adding new file to log file")
     try:
-        with open(LOG_FILE_PATH, 'w') as log_file:
-            log_file.writelines(name)
+        with open(LOG_FILE_PATH, 'a+') as log_file:
+            log_file.seek(0)
+            data = log_file.read(100)
+            if len(data) > 0:
+                log_file.write("\n")
+            log_file.write(name)
             logger.info("Successfully added new file to log!")
     except IOError as e:
         logger.critical(f"IO error when accessing log file at {LOG_FILE_PATH}, error: {e}")
-    else:
+    except Exception as e:
         logger.critical(f"Something went wrong when accessing log file at {LOG_FILE_PATH}, error: {e}, error type: {type(e)}")
 
 start()

@@ -24,12 +24,12 @@ logging.basicConfig(filename=ERROR_LOG_FILE_PATH,
                     filemode="w",
                     format = Log_Format,
                     encoding = 'utf-8',
-                    level = logging.DEBUG)
+                    level = logging.INFO)
 logger = logging.getLogger()
 
 # Logging for output in console
 log_console = logging.StreamHandler(sys.stdout)
-log_console.setLevel(logging.DEBUG)
+log_console.setLevel(logging.INFO)
 log_console.setFormatter(Log_Format)
 
 # Add console logger to our file logger

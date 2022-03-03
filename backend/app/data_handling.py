@@ -156,4 +156,20 @@ def insert_into_db(path_csv, name):
     except Exception as e:
         logger.critical(f"Something went wrong when accessing log file at {LOG_FILE_PATH}, error: {e}, error type: {type(e)}")
 
-start()
+def test():
+    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="db", port="5432")
+    conn.autocommit = True
+    cursor = conn.cursor()
+
+    file = open("/srv/data/csv/aisdk-2022-01-01.csv", 'r')
+
+    sql = "COPY raw_data(timestamp, mobile_type, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, cargo_Type, width, length, type_of_position_fixing_device, draught, destination, eta, data_source_type, a, b, c, d) FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
+    
+    cursor.copy_expert(sql, file)
+    file.close()
+    conn.commit()
+    conn.close()
+
+test()
+
+#start()

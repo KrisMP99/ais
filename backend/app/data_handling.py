@@ -163,13 +163,22 @@ def test():
 
     file = open("/srv/data/csv/aisdk-2022-01-01.csv", 'r')
 
-    sql = "COPY raw_data(timestamp, mobile_type, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, cargo_Type, width, length, type_of_position_fixing_device, draught, destination, eta, data_source_type, a, b, c, d) FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
+    cursor.execute("CREATE TEMPORARY TABLE raw_temp LIKE raw_data")
+    cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR, ALTER COLUMN timestamp TYPE VARCHAR, ALTER COLUMN eta TYPE varchar")
     
+    sql = "COPY raw_temp FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
+
     cursor.copy_expert(sql, file)
     file.close()
+
+    cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN 'NULL' END) SET imo = (CASE WHEN imo = 'Unknown' THEN 'NULL' END WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
+    cursor.execute("INSERT INTO raw_data SELECT * FROM raw_temp")
+    
     conn.commit()
     conn.close()
 
 test()
 
 #start()
+
+# (timestamp, mobile_type, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, cargo_Type, width, length, type_of_position_fixing_device, draught, destination, eta, data_source_type, a, b, c, d)

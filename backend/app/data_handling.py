@@ -118,7 +118,7 @@ def insert_into_db(path_csv, name):
         logger.critical(f"Could not connect to the database: {err} error type: {type(err)}. Qutting program....")
         quit()
 
-    sql = "COPY raw_data FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
+    sql = "COPY raw_data(timestamp, mobile_type, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, cargo_Type, width, length, type_of_position_fixing_device, draught, destination, eta, data_source_type, a, b, c, d) FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
 
     logger.info("Connection successful, opening CSV-file for copying")
     try:

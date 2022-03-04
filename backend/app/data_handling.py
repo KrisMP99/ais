@@ -207,7 +207,7 @@ def insert_csv_to_db_manually(path_csv):
     try:
         cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN 'NULL' END), imo = (CASE WHEN imo = 'Unknown' THEN 'NULL' END) WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
         #cursor.execute("SELECT (mmsi, imo) CAST (mmsi AS INTEGER), CAST (imo AS INTEGER)")
-        cursor.execute("INSERT INTO raw_data SELECT * (CASE WHEN mmsi~E'^\\d+$' THEN CAST(mmsi AS INTEGER)), (CASE WHEN imo~E'^\\d+$' THEN CAST(imo AS INTEGER)) FROM raw_temp")
+        cursor.execute("INSERT INTO raw_data SELECT * CASE WHEN mmsi~E'^\\d+$' THEN CAST(mmsi AS INTEGER) END, CASE WHEN imo~E'^\\d+$' THEN CAST(imo AS INTEGER) END FROM raw_temp")
     except Exception as err:
         logger.critical(f"Could not update/insert into raw_data {err}")
         quit()

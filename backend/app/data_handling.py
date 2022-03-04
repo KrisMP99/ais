@@ -206,7 +206,7 @@ def insert_csv_to_db_manually(path_csv):
     logger.info("Removing 'Unknown' from mmsi and imo and inserting into raw_data")
     try:
         cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN 'NULL' END), imo = (CASE WHEN imo = 'Unknown' THEN 'NULL' END) WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
-        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE INTEGER, ALTER COLUMN imo TYPE INTEGER")
+        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE INTEGER USING (mmsi::integer), ALTER COLUMN imo TYPE INTEGER USING (imo::integer")
         #cursor.execute("SELECT (mmsi, imo) CAST (mmsi AS INTEGER), CAST (imo AS INTEGER)")
         cursor.execute("INSERT INTO raw_data SELECT  * FROM raw_temp")
     except Exception as err:

@@ -1,4 +1,3 @@
-from cmath import log
 from urllib.error import HTTPError, URLError
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
@@ -6,10 +5,9 @@ import requests
 import zipfile
 import os
 import psycopg2
-from datetime import datetime
 from dotenv import load_dotenv
 import logging
-import sys
+import glob
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -218,8 +216,21 @@ def insert_csv_to_db_manually(path_csv):
 
     logger.info("Done!")
 
-insert_csv_to_db_manually("/srv/data/csv/aisdk-2022-01-01.csv")
+# Grabs all the .csv files from a folder and inserts them into the database
+def insert_csv_from_folder(folder_path):
+    logger = get_logger()
+
+    logger.info(f"Retrieving .csv files from {folder_path}")
+
+    try:
+        files = glob.glob(folder_path + "*.csv")
+    except Exception as err:
+        logger.critical(f"Error when retrieving .csv files {err}")
+        quit()
+
+    for file in files:
+        insert_csv_to_db_manually(file)
+
+insert_csv_from_folder(DIR_PATH)
 
 #start()
-
-# (timestamp, mobile_type, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, cargo_Type, width, length, type_of_position_fixing_device, draught, destination, eta, data_source_type, a, b, c, d)

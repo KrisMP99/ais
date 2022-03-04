@@ -172,7 +172,7 @@ def insert_csv_to_db_manually(path_csv):
         logger.critical(f"Could not connect to the database: {err} error type: {type(err)}. Qutting program....")
         quit()
 
-    logger.info("Connection successful, opening CSV-file for copying")
+    logger.info(f"Connection successful, opening {path_csv.split('/')[-1]} for copying")
     try:
         file = open(path_csv, 'r')
     except FileNotFoundError:

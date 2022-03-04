@@ -187,7 +187,7 @@ def insert_csv_to_db_manually(path_csv):
     logger.info("Creating temp table...")
     try:
         cursor.execute("CREATE TEMPORARY TABLE raw_temp (LIKE raw_data)")
-        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR, ALTER COLUMN timestamp TYPE VARCHAR, ALTER COLUMN eta TYPE varchar")
+        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR")
     except Exception as err:
         logger.critical(f"Could not create/alter temp. table: {err}")
         quit()

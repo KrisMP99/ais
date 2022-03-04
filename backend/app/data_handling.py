@@ -196,6 +196,7 @@ def insert_csv_to_db_manually(path_csv):
 
     logger.info("Copying data into temp_table")
     try:
+        cursor.execute("SET datestyle = DMY")
         cursor.copy_expert(sql, file)
         file.close()
     except Exception as err:

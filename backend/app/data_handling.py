@@ -200,6 +200,7 @@ def insert_csv_to_db_manually(path_csv):
         file.close()
     except Exception as err:
         logger.critical(f"Could not copy data to temp. table: {err}")
+        quit()
 
     logger.info("Removing 'Unknown' from mmsi and imo and inserting into raw_data")
     try:
@@ -207,6 +208,7 @@ def insert_csv_to_db_manually(path_csv):
         cursor.execute("INSERT INTO raw_data SELECT * FROM raw_temp")
     except Exception as err:
         logger.critical(f"Could not update/insert into raw_data {err}")
+        quit()
 
     conn.commit()
     conn.close()

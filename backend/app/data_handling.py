@@ -19,40 +19,47 @@ ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 DIR_PATH = os.getenv('DIR_PATH')
 
 # Logging for file
-Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-logging.basicConfig(format = Log_Format,
-                    force = True,
-                    handlers = [
-                        logging.FileHandler(ERROR_LOG_FILE_PATH),
-                        logging.StreamHandler()
-                    ],
-                    level = logging.INFO)
+def get_logger():
+    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
+    logging.basicConfig(format = Log_Format,
+                        force = True,
+                        handlers = [
+                            logging.FileHandler(ERROR_LOG_FILE_PATH),
+                            logging.StreamHandler()
+                        ],
+                        level = logging.INFO)
 
-logger = logging.getLogger()
+    logger = logging.getLogger()
+    return logger
 
 # Establish connection to ais data
-try:
-    html = urlopen("https://web.ais.dk/aisdata/")
-except HTTPError as e:
-    logger.error(f"HTTP error: {e.code}. Site may be down, quitting program")
-    quit()
-except URLError as e:
-    logger.error(f"Url-error: {e.reason}")
-else:
-    logger.info("Succesfully connected to website")
+def connect_to_to_ais_web_server_and_get_data(logger):
+    try:
+        html = urlopen("https://web.ais.dk/aisdata/")
+    except HTTPError as e:
+        logger.error(f"HTTP error: {e.code}. Site may be down, quitting program")
+        quit()
+    except URLError as e:
+        logger.error(f"Url-error: {e.reason}")
+    else:
+        logger.info("Succesfully connected to website")
 
 
-soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
 
-results = []
-dates = []
+    results = []
+    dates = []
 
-for link in soup.find_all('a', href = True):
-    if "aisdk" in link.string:
-        results.append(link.string)
-        dates.append(link.string.split("aisdk-")[1].split(".zip")[0])
+    for link in soup.find_all('a', href = True):
+        if "aisdk" in link.string:
+            results.append(link.string)
+            dates.append(link.string.split("aisdk-")[1].split(".zip")[0])
+    return results
 
 def start():
+    logger = get_logger()
+    results = connect_to_to_ais_web_server_and_get_data(logger)
+
     try:
         flog = open(LOG_FILE_PATH,'a+')
         flog.seek(0)
@@ -105,10 +112,10 @@ def start():
             logger.critical(f"Something went wrong when downloading/extracting the latest data: {err}, type: {type(err)}. Qutting program")
             quit()
         
-        insert_into_db(DIR_PATH + results[entry].replace('.zip','.csv'), results[entry])
+        insert_into_db(DIR_PATH + results[entry].replace('.zip','.csv'), results[entry], logger)
 
 
-def insert_into_db(path_csv, name):
+def insert_into_db(path_csv, name, logger):
     logger.info("Connecting to database")
     try:
         conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="db", port="5432")
@@ -156,28 +163,57 @@ def insert_into_db(path_csv, name):
     except Exception as e:
         logger.critical(f"Something went wrong when accessing log file at {LOG_FILE_PATH}, error: {e}, error type: {type(e)}")
 
-def test():
-    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="db", port="5432")
-    conn.autocommit = True
-    cursor = conn.cursor()
+def insert_csv_to_db_manually(path_csv):
+    logger = get_logger()
+    logger.info("Connecting to database...")
+    try:
+        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="db", port="5432")
+        conn.autocommit = True
+        cursor = conn.cursor()
+    except Exception as err:
+        logger.critical(f"Could not connect to the database: {err} error type: {type(err)}. Qutting program....")
+        quit()
 
-    file = open("/srv/data/csv/aisdk-2022-01-01.csv", 'r')
+    logger.info("Connection successful, opening CSV-file for copying")
+    try:
+        file = open(path_csv, 'r')
+    except FileNotFoundError:
+        logger.critical(f"CSV-file not found at path: {path_csv}. Qutting")
+        quit()
+    except Exception as err:
+        logger.critical(f"Something went wrong when opening the csv file at: {path_csv}. Error: {err} Error type: {type(err)} Qutting")
+        quit()
 
-    cursor.execute("CREATE TEMPORARY TABLE raw_temp LIKE raw_data")
-    cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR, ALTER COLUMN timestamp TYPE VARCHAR, ALTER COLUMN eta TYPE varchar")
-    
+    logger.info("Creating temp table...")
+    try:
+        cursor.execute("CREATE TEMPORARY TABLE raw_temp (LIKE raw_data)")
+        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR, ALTER COLUMN timestamp TYPE VARCHAR, ALTER COLUMN eta TYPE varchar")
+    except Exception as err:
+        logger.critical(f"Could not create/alter temp. table: {err}")
+        quit()
+
     sql = "COPY raw_temp FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
 
-    cursor.copy_expert(sql, file)
-    file.close()
+    logger.info("Copying data into temp_table")
+    try:
+        cursor.copy_expert(sql, file)
+        file.close()
+    except Exception as err:
+        logger.critical(f"Could not copy data to temp. table: {err}")
 
-    cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN 'NULL' END) SET imo = (CASE WHEN imo = 'Unknown' THEN 'NULL' END WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
-    cursor.execute("INSERT INTO raw_data SELECT * FROM raw_temp")
-    
+    logger.info("Removing 'Unknown' from mmsi and imo and inserting into raw_data")
+    try:
+        cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN 'NULL' END), imo = (CASE WHEN imo = 'Unknown' THEN 'NULL' END) WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
+        cursor.execute("INSERT INTO raw_data SELECT * FROM raw_temp")
+    except Exception as err:
+        logger.critical(f"Could not update/insert into raw_data {err}")
+
     conn.commit()
     conn.close()
 
-test()
+    logger.info("Done!")
+
+insert_csv_to_db_manually("/srv/data/csv/aisdk-2022-01-01.csv")
 
 #start()
 

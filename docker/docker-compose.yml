@@ -1,0 +1,29 @@
+version: '3.3'
+services:
+  db:
+    image: postgis/postgis
+    container_name: postgres_db
+    volumes:
+      - type: bind
+        source: /srv/data/db/postgresql/data
+        target: /var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    env_file: ../.env
+    restart: always
+  project:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.aisProject
+    image: ais_project
+    container_name: ais_project
+    volumes:
+      - type: bind
+        source: ../
+        target: /srv/data/ais
+      - type: bind
+        source: /srv/data/csv
+        target: /srv/data/csv
+    restart: always
+    ports:
+      - "8000:5000"

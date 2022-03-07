@@ -1,0 +1,18 @@
+version: '3.3'
+services:
+  db:
+    image: postgis/postgis
+    container_name: postgres_db
+    ports:
+      - '5432:5432'
+    env_file: ../.env
+    restart: always
+  project:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.aisProject
+    image: ais_project
+    container_name: ais_project
+    restart: always
+    ports:
+      - "8000:5000"

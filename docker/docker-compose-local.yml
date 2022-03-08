@@ -13,10 +13,11 @@ services:
       dockerfile: ./docker/Dockerfile.aisProject
     image: ais_project
     container_name: ais_project
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
     volumes:
       - type: bind
         source: ../
         target: /srv/data/ais
     restart: always
     ports:
-      - "8000:5000"
+      - 8008:8000

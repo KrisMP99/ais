@@ -4,7 +4,7 @@ services:
     image: postgis/postgis
     container_name: postgres_db
     ports:
-      - '5432:5432'
+      - '5431:5431'
     env_file: ../.env
     restart: always
   project:
@@ -13,6 +13,10 @@ services:
       dockerfile: ./docker/Dockerfile.aisProject
     image: ais_project
     container_name: ais_project
+    volumes:
+      - type: bind
+        source: ../
+        target: /srv/data/ais
     restart: always
     ports:
       - "8000:5000"

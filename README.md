@@ -19,6 +19,9 @@ Build both images and containers with ```sudo docker-compose -f ./docker/docker-
 Access python client with: 
 ```sudo docker exec -ti ais_project bash```
 
+To access the docker container for postgres:
+```sudo docker exec -ti postgres_db psql -U ais aisdb```
+
 To exit the container, ```exit```
 
 If you wish to install requirements packages and test the python program before running docker, create a virtual enviroment inside the backend folder
@@ -27,3 +30,11 @@ If you wish to install requirements packages and test the python program before 
 Run the virtual environment on Mac with 
 ```source env/bin/activate```
 On windows with ```venv\Scripts\activate```
+
+## Database setup map-bounds
+1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,4267));```
+1. Insert data into table 
+```INSERT INTO map_bounds(geom) VALUES('POLYGON((58.35 3.24, 54.32 3.24, 58.35 16.49, 54.32 16.49, 58.35 3.24))');```
+1. Analayze the table ```ANALYSE map_bounds;```
+1. Write this fucked up query 
+```SELECT hexes.geom FROM ST_HexagonGrid(500, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, hexes.geom) GROUP BY hexes.geom;```

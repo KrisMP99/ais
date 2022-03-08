@@ -16,15 +16,21 @@ idna==3.3
 itsdangerous==2.1.0
 Jinja2==3.0.3
 MarkupSafe==2.1.0
+numpy==1.22.3
 orjson==3.6.7
 packaging==21.3
+pandas==1.4.1
+psycopg2==2.9.3
 psycopg2-binary==2.9.3
 pydantic==1.9.0
 pyparsing==3.0.7
+python-dateutil==2.8.2
 python-dotenv==0.19.2
 python-multipart==0.0.5
+pytz==2021.3
 PyYAML==5.4.1
 requests==2.27.1
+Shapely==1.8.1.post1
 six==1.16.0
 sniffio==1.2.0
 soupsieve==2.3.1
@@ -37,4 +43,3 @@ uvicorn==0.15.0
 uvloop==0.16.0
 watchgod==0.7
 websockets==10.2
-psycopg2==2.9.3

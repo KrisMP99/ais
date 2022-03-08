@@ -1,24 +1,19 @@
-from array import array
-import json
+import imp
+import os
 from fastapi import FastAPI
 from sqlalchemy import create_engine
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
-from geoalchemy2 import Geometry
-import importlib
+from sqlalchemy.orm import sessionmaker
+import pandas as pd
+import pandas.io.sql as psql
 
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 
-Base = automap_base()
-
 SQLALCHEMY_DATABASE_URL = "postgresql://{USER}:{PASS}@db/aisdb"
 engine = create_engine( SQLALCHEMY_DATABASE_URL, convert_unicode=True )
 
-Base.prepare(engine, reflrect=True)
-
-GeoJson = Base.classes.spatial_ref_sys
-session = Session(engine)
+Session = sessionmaker(bind=engine)
+session = Session() 
 
 app = FastAPI()
 
@@ -27,5 +22,18 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-u1 = session.query(GeoJson).first()
-print(u1.spatial_ref_sys_collection)
+
+@app.get("/map_bounds")
+async def get_mapBounds(GeoJson):
+    query = "SELECT hexes.geom \
+                FROM ST_HexagonGrid(\
+                    500,\
+                    ST_SetSRID(\
+                        ST_EstimatedExtent('map_bounds','geom'), 3857\
+                    )\
+                ) AS hexes INNER JOIN\
+                    map_bounds AS mb ON ST_Intersects(mb.geom, hexes.geom) \
+            GROUP BY hexes.geom;"
+    sql = psql.read_sql_query(sql=query, con=engine)
+    df = pd.DataFrame(sql)
+    print(df)

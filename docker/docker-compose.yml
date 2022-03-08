@@ -25,5 +25,6 @@ services:
         source: /srv/data/csv
         target: /srv/data/csv
     restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
     ports:
-      - "8000:5000"
+      - 8008:8000

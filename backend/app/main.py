@@ -5,6 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import pandas.io.sql as psql
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
@@ -24,10 +26,10 @@ async def root():
 
 
 @app.get("/map_bounds")
-async def get_mapBounds(GeoJson):
-    query = "SELECT hexes.geom \
+async def get_mapBounds():
+    query = "SELECT ST_AsGeoJson(hexes.geom) \
                 FROM ST_HexagonGrid(\
-                    500,\
+                    0.5,\
                     ST_SetSRID(\
                         ST_EstimatedExtent('map_bounds','geom'), 3857\
                     )\
@@ -36,4 +38,4 @@ async def get_mapBounds(GeoJson):
             GROUP BY hexes.geom;"
     sql = psql.read_sql_query(sql=query, con=engine)
     df = pd.DataFrame(sql)
-    print(df)
+    return df

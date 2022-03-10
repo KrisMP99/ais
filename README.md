@@ -40,4 +40,3 @@ On windows with ```venv\Scripts\activate```
 1. Analayze the table ```ANALYZE map_bounds;```
 1. Write this fucked up query 
 ```WITH geometry_hexagons AS (SELECT hexes.geom  FROM ST_SquareGrid(0.5, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326)) GROUP BY hexes.geom) SELECT ST_AsGeoJson(gh.geom::Geography) FROM geometry_hexagons AS gh;```
-

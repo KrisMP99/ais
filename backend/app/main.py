@@ -7,7 +7,9 @@ import pandas as pd
 import pandas.io.sql as psql
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from dotenv import load_dotenv
 
+load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 

@@ -20,6 +20,9 @@ interface DKMapStates {
 
 const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
 const MAP_BOUNDS: LatLngBoundsExpression = [[58.5, 3.2], [53.5, 16.5]];
+const response = window.fetch('http://127.0.0.1:8008/map_bounds');
+
+console.log(response);
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     

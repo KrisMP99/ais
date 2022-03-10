@@ -11,7 +11,7 @@ from fastapi.encoders import jsonable_encoder
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 
-SQLALCHEMY_DATABASE_URL = "postgresql://{USER}:{PASS}@db/aisdb"
+SQLALCHEMY_DATABASE_URL = "postgresql://ais:a401@db/aisdb"
 engine = create_engine( SQLALCHEMY_DATABASE_URL, convert_unicode=True )
 
 Session = sessionmaker(bind=engine)
@@ -27,7 +27,7 @@ async def root():
 
 @app.get("/map_bounds")
 async def get_mapBounds():
-    query = "SELECT ST_AsGeoJson(hexes.geom) \
+    query = "SELECT ST_AsGeoJson(hexes.geom)::geographi \
                 FROM ST_HexagonGrid(\
                     0.5,\
                     ST_SetSRID(\

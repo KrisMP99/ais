@@ -34,9 +34,10 @@ Run the virtual environment on Mac with
 On windows with ```venv\Scripts\activate```
 
 ## Database setup map-bounds
-1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,3857));```
+1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,4326));```
 1. Insert data into table 
 ```INSERT INTO map_bounds(geom) VALUES('POLYGON((58.35 3.24, 54.32 3.24, 58.35 16.49, 54.32 16.49, 58.35 3.24))');```
 1. Analayze the table ```ANALYZE map_bounds;```
 1. Write this fucked up query 
-```SELECT hexes.geom FROM ST_HexagonGrid(500, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, hexes.geom) GROUP BY hexes.geom;```
+```WITH geometry_hexagons AS (SELECT hexes.geom  FROM ST_SquareGrid(0.5, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326)) GROUP BY hexes.geom) SELECT ST_AsGeoJson(gh.geom::Geography) FROM geometry_hexagons AS gh;```
+

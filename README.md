@@ -31,12 +31,12 @@ If you wish to install requirements packages and test the python program before 
 
 Run the virtual environment on Mac with 
 ```source env/bin/activate```
-On windows with ```venv\Scripts\activate```
+On windows with ```.\backend\env\Scripts\activate```
 
 ## Database setup map-bounds
 1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,4326));```
 1. Insert data into table 
-```INSERT INTO map_bounds(geom) VALUES('POLYGON((58.35 3.24, 54.32 3.24, 58.35 16.49, 54.32 16.49, 58.35 3.24))');```
+```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
 1. Analayze the table ```ANALYZE map_bounds;```
 1. Write this fucked up query 
 ```WITH geometry_hexagons AS (SELECT hexes.geom  FROM ST_SquareGrid(0.5, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326)) GROUP BY hexes.geom) SELECT ST_AsGeoJson(gh.geom::Geography) FROM geometry_hexagons AS gh;```

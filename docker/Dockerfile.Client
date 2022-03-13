@@ -1,0 +1,6 @@
+FROM node:latest
+WORKDIR /srv/data/ais/frontend
+ENV PATH="frontend/node_modules/.bin:$PATH"
+COPY frontend/package.json ./
+COPY frontend/package-lock.json ./
+RUN npm install

@@ -4,7 +4,7 @@
 Docker is already installed on the server
 If it is not running, run: ```sudo systemctl start docker```
 
-If we need in re-instantiate the docker containers, run 
+If we need to re-instantiate the docker containers, run 
 ```sudo docker-compose -f ./docker/docker-compose.yml up -d```
 
 To access the docker container for postgres:
@@ -38,7 +38,7 @@ On windows with ```.\backend\env\Scripts\activate```
 1. Insert data into table 
 ```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
 1. Analayze the table ```ANALYZE map_bounds;```
-1. Create this table too ```create table feature_json_collection(json_collection json))````
-1. Then write this dumb query: ```WITH geometry_hexagons AS (SELECT mb.gid, hexes.geom FROM ST_HexagonGrid (0.01, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326 ) GROUP BY (hexes.geom, mb.gid)) INSERT INTO feature_json_collection SELECT ('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM geometry_hexagons AS t(id, geom);```
-1. Write this fucked up query 
+1. Create this table too ```create table feature_json_collection(json_collection json))```
+1. Then execute this query: ```WITH geometry_hexagons AS (SELECT mb.gid, hexes.geom FROM ST_HexagonGrid (0.01, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326 ) GROUP BY (hexes.geom, mb.gid)) INSERT INTO feature_json_collection SELECT ('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM geometry_hexagons AS t(id, geom);```
+1. Then write this last query
 ```WITH geometry_hexagons AS (SELECT hexes.geom  FROM ST_SquareGrid(0.5, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326)) GROUP BY hexes.geom) SELECT ST_AsGeoJson(gh.geom::Geography) FROM geometry_hexagons AS gh;```

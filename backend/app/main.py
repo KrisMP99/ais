@@ -48,16 +48,16 @@ async def get_mapBounds():
     #             AS hexes INNER JOIN map_bounds AS mb \
     #             ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326)) \
     #         GROUP BY (hexes.geom, mb.gid))\
-    #     INSERT INTO geo_json_collection SELECT json_build_object(\
+    #     INSERT INTO feature_json_collection SELECT json_build_object(\
     #         'type', 'FeatureCollection',\
     #         'features', json_agg(ST_AsGeoJSON(t.*)::json))\
     #     FROM geometry_hexagons AS t(id, geom);"
 
-    query = "SELECT * FROM geo_json_collection"
+    query = "SELECT * FROM feature_json_collection"
 
     feature_collection = pd.read_sql(query, engine)
-    #feature_collection_dict = feature_collection.iloc[0]
-    df = pd.DataFrame(feature_collection, columns=['geojson'])
+    feature_collection_dict = feature_collection.iloc[0]['json_collection']
+    #df = pd.DataFrame(feature_collection)
 
     
-    return jsonable_encoder(df['geojson'])
+    return jsonable_encoder(feature_collection_dict)

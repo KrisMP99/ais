@@ -5,9 +5,7 @@ import pandas as pd
 import pandas.io.sql as psql
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-from math import cos, asin, sqrt, pi
-import datetime
-import math
+from math import cos, asin, sqrt
 
 COLUMNS = ['timestamp', 'mobile_type', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'cargo_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'eta', 'data_source_type']
 
@@ -24,6 +22,20 @@ CHUNK_SIZE = 1000000
 MAX_SPEED_IN_HARBOR = 8
 MAX_POINTS_IN_HARBOR = 10
 MAX_DIST_IN_HARBOR = 1.08
+
+# Logging for file
+def get_logger():
+    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
+    logging.basicConfig(format = Log_Format,
+                        force = True,
+                        handlers = [
+                            logging.FileHandler(ERROR_LOG_FILE_PATH),
+                            logging.StreamHandler()
+                        ],
+                        level = logging.INFO)
+
+    logger = logging.getLogger()
+    return logger
 
 class Ship:
     def __init__(self, mmsi):
@@ -86,25 +98,11 @@ class Point:
         return int((12742 * asin(sqrt(a))) * km_to_nm)
     
     def sog_time_distance(self, p):
-        #print(f"Point1: {self.latitude}, {self.longitude} - {self.sog} - {self.timestamp}")
-        #print(f"Point2: {p.latitude}, {p.longitude} - {p.sog} - {p.timestamp}")
         time_elapsed = p.timestamp - self.timestamp
         nautical_miles_sailed = float(self.sog * ((time_elapsed.total_seconds() / 60) / 60))
         return int(nautical_miles_sailed)
 
-# Logging for file
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
 
-    logger = logging.getLogger()
-    return logger
 
 # establish connection to database
 logger = get_logger()
@@ -137,30 +135,36 @@ df = pd.DataFrame(sql, columns=COLUMNS)
 #   4. If the point is reachable, keep the point, and set 'next_point' to the 'current_point' and repeat the process, for all points, and all mmsi's. 
 #   5. If the point is unreacable, delete the point, and then take the next point.
 
-trip_list = []
+trip_list = {}
 new_trips_list = []
 
-n = 0
+i = 0
 
-print(f"Number of routes before new routes: {len(trip_list)}")
-for mmsi_outer in df.mmsi.drop_duplicates():
-    trip = Trip(mmsi_outer)
-    n+=1
+for mmsi in df.mmsi.drop_duplicates():
+    trip = Trip(mmsi)
+    trip_list[mmsi] = trip
     
-    for mmsi_inner, latitude, longitude, sog, timestamp in zip(df.mmsi, df.latitude, df.longitude, df.sog, df.timestamp):
-        if mmsi_outer == mmsi_inner:
-            trip.add_point_to_ship_route(Point(longitude,latitude,sog,mmsi_inner,timestamp))
+for mmsi, latitude, longitude, sog, timestamp in zip(df.mmsi, df.latitude, df.longitude, df.sog, df.timestamp):
+    i+=1
+    if(i % 100000 == 0):
+        print(f"Added {i} points so far...")
+    try:
+        trip = trip_list.get(mmsi)
+        trip.add_point_to_trip(Point(longitude,latitude,sog,mmsi,timestamp))
+    except Exception as e:
+        logger.critical(f"Could not access index/mmsi {mmsi} in trip_list array.")
+        print(f"Length of triplist: {len(trip_list)}")
+        quit()
 
-
-    trip_list.append(trip)
-    print(f"Added trip no. {n} to mmsi {mmsi_outer}")
+print(f"Number of trips before splitting: {len(trip_list)}")
 
 # Compare distances between each point in each route
-for trip in trip_list:
-    points_in_trip = trip.get_points_in_route_list()
+for trip_key in trip_list:
+    trip = trip_list[trip_key]
+    points_in_trip = trip.get_points_in_trip()
 
     if(len(points_in_trip) < 100):
-        trip.remove_all_points_from_trip()
+        trip_list.pop(trip)
         logger.info(f"Removed trip from {trip.get_mmsi()} as it only has {len(points_in_trip)} points.")
         continue
 
@@ -178,7 +182,7 @@ for trip in trip_list:
         lat_long = curr_point.lat_long_distance(point)
         time_sog = curr_point.sog_time_distance(point)
         dist_diff = abs(lat_long - time_sog)
-        time_diff = abs((curr_point.get_timestamp().total_seconds() - point.get_timestamp().total_seconds() / 60))
+        time_diff = abs((curr_point.get_timestamp() - point.get_timestamp()).total_seconds())
 
         # Add points in which they have a speed below the maximum allowed speed in danish harbors
         # We want 10 points in sequence to be below the threshold, before we consider it 'stopped'
@@ -187,6 +191,7 @@ for trip in trip_list:
             distance_travelled += lat_long
             time_elapsed += time_diff
             index += 1
+            cut_trip = False
         else:
             points_below_threshold = []
             istance_travelled = 0
@@ -198,6 +203,7 @@ for trip in trip_list:
                 new_trip = True
         
         if(new_trip and cut_trip):
+            print(f"Cut trip with mmsi {trip.get_mmsi()}")
             cut_trip = False
             new_trip = False
             split_points.append(point)

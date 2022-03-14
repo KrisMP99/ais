@@ -54,5 +54,7 @@ On windows with ```.\backend\env\Scripts\activate```
 1. Insert data into table 
 ```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
 1. Analayze the table ```ANALYZE map_bounds;```
-1. Create this table too ```CREATE TABLE feature_json_collection(json_collection json));```
-1. Then write this dumb query: ```WITH geometry_hexagons AS (SELECT mb.gid, hexes.geom FROM ST_HexagonGrid (0.05, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326))  GROUP BY (hexes.geom, mb.gid)) INSERT INTO feature_json_collection SELECT json_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM geometry_hexagons AS t(id, geom);```
+1. Create a table for geometry
+```CREATE TABLE hexagrid (hid serial PRIMARY KEY, geom geometry);```
+1. Run this query
+```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.02, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```

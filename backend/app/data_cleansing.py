@@ -21,35 +21,64 @@ ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 # chunk size to load in (we do not have enough memory to load in everything at once)
 CHUNK_SIZE = 1000000
 
-class Route:
+MAX_SPEED_IN_HARBOR = 8
+MAX_POINTS_IN_HARBOR = 10
+MAX_DIST_IN_HARBOR = 1.08
+
+class Ship:
+    def __init__(self, mmsi):
+        self.mmsi = mmsi
+        self.trip_list = []
+    
+    def get_trips(self):
+        return self.trip_list
+
+    def add_trip(self, trip):
+        self.trip_list.append(trip)
+    
+    def remove_trip(self, trip):
+        self.trip_list.remove(trip)
+
+class Trip:
     def __init__(self, mmsi):
         self.mmsi = mmsi
         self.point_list = []
     
-    def add_point_to_ship_route(self, point):
+    def add_point_to_trip(self, point):
         self.point_list.append(point)
     
-    def get_points_in_route_list(self):
+    def get_points_in_trip(self):
         return self.point_list
     
-    def remove_point_from_route(self, point):
+    def remove_point_from_trip(self, point):
         self.point_list.remove(point)
+    
+    def remove_all_points_from_trip(self):
+        self.point_list = []
     
     def get_mmsi(self):
         return self.mmsi
     
 
 class Point:
-    def __init__(self, longitude, latitude, sog, timestamp):
+    def __init__(self, longitude, latitude, sog, mmsi, timestamp):
         self.longitude = longitude
         self.latitude = latitude
         self.sog = sog
+        self.mmsi = mmsi
         self.timestamp = timestamp
     
+    def get_mmsi(self):
+        return self.mmsi
+
     def get_timestamp(self):
         return self.timestamp
     
+    def get_sog(self):
+        return self.sog
+    
     # https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+    # Returns the distance in nautical miles (NM)
     def lat_long_distance(self, p):
         km_to_nm = 0.53
         p_rad = 0.017        # pi / 180
@@ -91,9 +120,7 @@ sql_query = "SELECT " \
                 "(mobile_type = 'Class A') AND "\
                 "(latitude >= 53.5 AND latitude <= 58.5) AND "\
                 "(longitude >= 3.2 AND longitude <= 16.5) AND "\
-                "(heading >= 0 AND heading <= 359) AND "\
-                "((rot >=0 AND rot <= 720) or rot is null) AND" \
-                "((sog >= 0 AND sog <= 102) or sog is null) AND" \
+                "(sog >= 0 AND sog <= 102) AND " \
                 "(mmsi IS NOT NULL) " \
                 "ORDER BY timestamp ASC "
 
@@ -110,45 +137,92 @@ df = pd.DataFrame(sql, columns=COLUMNS)
 #   4. If the point is reachable, keep the point, and set 'next_point' to the 'current_point' and repeat the process, for all points, and all mmsi's. 
 #   5. If the point is unreacable, delete the point, and then take the next point.
 
-route_list = []
+trip_list = []
+new_trips_list = []
 
 n = 0
+
+print(f"Number of routes before new routes: {len(trip_list)}")
 for mmsi_outer in df.mmsi.drop_duplicates():
-    should_add_route = True
-    route = Route(mmsi_outer)
+    trip = Trip(mmsi_outer)
     n+=1
     
     for mmsi_inner, latitude, longitude, sog, timestamp in zip(df.mmsi, df.latitude, df.longitude, df.sog, df.timestamp):
         if mmsi_outer == mmsi_inner:
-            if math.isnan(latitude) or math.isnan(longitude) or math.isnan(sog) or not isinstance(timestamp, datetime.datetime):
-                should_add_route = False
-                n -= 1
-                break
-            route.add_point_to_ship_route(Point(longitude,latitude,sog,timestamp))
+            trip.add_point_to_ship_route(Point(longitude,latitude,sog,mmsi_inner,timestamp))
 
-    if(should_add_route):
-        print(f"Created route {n}")     
-        route_list.append(route)
+
+    trip_list.append(trip)
+    print(f"Added trip no. {n} to mmsi {mmsi_outer}")
 
 # Compare distances between each point in each route
-for route in route_list:
-    points_in_route = route.get_points_in_route_list()    
-    curr_point = points_in_route[0]
+for trip in trip_list:
+    points_in_trip = trip.get_points_in_route_list()
 
-    for point in points_in_route[1:]:
+    if(len(points_in_trip) < 100):
+        trip.remove_all_points_from_trip()
+        logger.info(f"Removed trip from {trip.get_mmsi()} as it only has {len(points_in_trip)} points.")
+        continue
+
+    curr_point = points_in_trip[0]
+
+    time_elapsed = 0
+    distance_travelled = 0
+    index = 0
+    new_trip = False
+    cut_trip = False
+
+    split_points = []
+
+    for point in points_in_trip[1:]:
         lat_long = curr_point.lat_long_distance(point)
         time_sog = curr_point.sog_time_distance(point)
-        diff = abs(lat_long - time_sog)
+        dist_diff = abs(lat_long - time_sog)
+        time_diff = abs((curr_point.get_timestamp().total_seconds() - point.get_timestamp().total_seconds() / 60))
 
-        if(diff > 50):
-            logger.info(f"Removed point from route, diff is: {diff}")
-            logger.info(f"curr_point: lat: {curr_point.latitude} long: {curr_point.longitude} time: {curr_point.timestamp} point2: lat: {point.latitude} long: {point.longitude} time: {point.timestamp}")
-            logger.info(f"Removed a point from vessel with mmsi: {route.get_mmsi()} point timestamp {point.get_timestamp()}")
-            route.remove_point_from_route(point)
+        # Add points in which they have a speed below the maximum allowed speed in danish harbors
+        # We want 10 points in sequence to be below the threshold, before we consider it 'stopped'
+        if (point.get_sog() < MAX_SPEED_IN_HARBOR):
+            points_below_threshold.append(point)
+            distance_travelled += lat_long
+            time_elapsed += time_diff
+            index += 1
         else:
-            curr_point = point
+            points_below_threshold = []
+            istance_travelled = 0
+            index = 0
+            cut_trip = True
+        
+        if(index == MAX_POINTS_IN_HARBOR):
+            if(distance_travelled <= MAX_DIST_IN_HARBOR):
+                new_trip = True
+        
+        if(new_trip and cut_trip):
+            cut_trip = False
+            new_trip = False
+            split_points.append(point)
 
-print(f"Number of routes: {len(route_list)}")
+        curr_point = point
+
+        # if(dist_diff > 10):
+        #     logger.info(f"Removed point from route, diff is: {dist_diff}")
+        #     logger.info(f"curr_point: lat: {curr_point.latitude} long: {curr_point.longitude} time: {curr_point.timestamp} point2: lat: {point.latitude} long: {point.longitude} time: {point.timestamp}")
+        #     logger.info(f"Removed a point from vessel with mmsi: {trip.get_mmsi()} point timestamp {point.get_timestamp()}")
+        #     trip.remove_point_from_trip(point)
+        # else:
+        #     curr_point = point
+    
+    for point in split_points:
+        new_trip = Trip(point.get_mmsi())
+        index_p = points_in_trip.index(point)
+
+        for inner_point in points_in_trip[:index_p]:
+            new_trip.add_point_to_trip(inner_point)
+        
+        new_trips_list.append(new_trip)
+        
+
+print(f"Number of routes after new routes: {len(new_trips_list)}")
 
 
 

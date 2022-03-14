@@ -123,7 +123,7 @@ def insert_into_db(path_csv, name, logger):
         logger.critical(f"Could not connect to the database: {err} error type: {type(err)}. Qutting program....")
         quit()
 
-    sql = "COPY raw_data(timestamp, mobile_type, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, cargo_Type, width, length, type_of_position_fixing_device, draught, destination, eta, data_source_type, a, b, c, d) FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
+    sql = "COPY raw_temp FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
 
     logger.info("Connection successful, opening CSV-file for copying")
     try:
@@ -135,15 +135,34 @@ def insert_into_db(path_csv, name, logger):
         logger.critical(f"Something went wrong when opening the csv file at: {path_csv}. Error: {err} Error type: {type(err)} Qutting")
         quit()
 
-    logger.info(f"Inserting csv file '{name}' into raw_ais db...")
+    logger.info("Creating temp table...")
     try:
+        cursor.execute("CREATE TEMPORARY TABLE raw_temp (LIKE raw_data)")
+        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR")
+    except Exception as err:
+        logger.critical(f"Could not create/alter temp. table: {err}")
+        quit()
+    
+    logger.info("Copying data into temp_table")
+    try:
+        cursor.execute("SET datestyle = DMY")
         cursor.copy_expert(sql, file)
         file.close()
-        conn.commit()
-        conn.close()
     except Exception as err:
-        logger.critical(f"Something went wrong when inserting into the database: {err} error type: {type(err)}. Qutting")
+        logger.critical(f"Could not copy data to temp. Error: {err}")
         quit()
+    
+    logger.info("Removing 'Unknown' from mmsi and imo and inserting into raw_data")
+    try:
+        cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN NULL END), imo = (CASE WHEN imo = 'Unknown' THEN NULL END) WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
+        cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE INTEGER USING (mmsi::integer), ALTER COLUMN imo TYPE INTEGER USING (imo::integer)")
+        cursor.execute("INSERT INTO raw_data SELECT  * FROM raw_temp")
+    except Exception as err:
+        logger.critical(f"Could not update/insert into raw_data {err}")
+        quit()
+
+    conn.commit()
+    conn.close()
 
     logger.info("Insertion completed succesfully!")
 
@@ -205,7 +224,6 @@ def insert_csv_to_db_manually(path_csv):
     try:
         cursor.execute("UPDATE raw_temp SET mmsi = (CASE WHEN mmsi = 'Unknown' THEN NULL END), imo = (CASE WHEN imo = 'Unknown' THEN NULL END) WHERE mmsi IN ('Unknown') OR imo in ('Unknown')")
         cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE INTEGER USING (mmsi::integer), ALTER COLUMN imo TYPE INTEGER USING (imo::integer)")
-        #cursor.execute("SELECT (mmsi, imo) CAST (mmsi AS INTEGER), CAST (imo AS INTEGER)")
         cursor.execute("INSERT INTO raw_data SELECT  * FROM raw_temp")
     except Exception as err:
         logger.critical(f"Could not update/insert into raw_data {err}")

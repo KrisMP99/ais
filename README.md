@@ -4,7 +4,7 @@
 Docker is already installed on the server
 If it is not running, run: ```sudo systemctl start docker```
 
-If we need in re-instantiate the docker containers, run 
+If we need to re-instantiate the docker containers, run 
 ```sudo docker-compose -f ./docker/docker-compose.yml up -d```
 
 To access the docker container for postgres:

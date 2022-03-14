@@ -1,3 +1,4 @@
+import asyncio
 import imp
 import os
 import json
@@ -41,23 +42,12 @@ async def root():
 
 @app.get("/map_bounds")
 async def get_mapBounds():
-    # query = "WITH geometry_hexagons \
-    #     AS (SELECT mb.gid, hexes.geom  \
-    #         FROM ST_HexagonGrid\
-    #             (0.01, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 4326))\
-    #             AS hexes INNER JOIN map_bounds AS mb \
-    #             ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 4326)) \
-    #         GROUP BY (hexes.geom, mb.gid))\
-    #     INSERT INTO feature_json_collection SELECT json_build_object(\
-    #         'type', 'FeatureCollection',\
-    #         'features', json_agg(ST_AsGeoJSON(t.*)::json))\
-    #     FROM geometry_hexagons AS t(id, geom);"
+    query = "SELECT jsonb_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM hexagrid AS t(hid, geom);"
 
-    query = "SELECT * FROM feature_json_collection"
-
-    feature_collection = pd.read_sql(query, engine)
-    feature_collection_dict = feature_collection.iloc[0]['json_collection']
-    #df = pd.DataFrame(feature_collection)
-
+    #feature_collection = pd.read_sql(query, engine)
+    # df = pd.DataFrame(feature_collection)
+    loop = asyncio.get_event_loop()
+    feature_collection = await loop.run_in_executor(None, pd.read_sql, query, engine)
+    feature_collection_dict = feature_collection.iloc[0]['jsonb_build_object']
     
     return jsonable_encoder(feature_collection_dict)

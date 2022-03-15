@@ -30,7 +30,7 @@ export default function LeafletMap() {
         );
         map.setMaxBounds(maxBounds);
 
-        let s = await fetch('http://127.0.0.1:8008/map_bounds',{mode:'no-cors'})
+        let s = await fetch('http://127.0.0.1:8008/map_bounds')
         .then(res => res.json());
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:12, minZoom:7}).addTo(map);

@@ -16,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
+TESTSERVER = os.getenv('TEST_SERVER')
+PRODSERVER = os.getenv('PRODUCTION_SERVER')
 
 SQLALCHEMY_DATABASE_URL = f"postgresql://{USER}:{PASS}@db/aisdb"
 engine = create_engine( SQLALCHEMY_DATABASE_URL, convert_unicode=True )
@@ -26,7 +28,9 @@ session = Session()
 app = FastAPI()
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    {TESTSERVER},
+    {PRODSERVER}
 ]
 app.add_middleware(
     CORSMiddleware,

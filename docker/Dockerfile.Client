@@ -4,3 +4,4 @@ ENV PATH="frontend/node_modules/.bin:$PATH"
 COPY frontend/package.json ./
 COPY frontend/package-lock.json ./
 RUN npm install
+RUN npm install react-scripts

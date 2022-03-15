@@ -4,7 +4,7 @@
 Docker is already installed on the server
 If it is not running, run: ```sudo systemctl start docker```
 
-If we need in re-instantiate the docker containers, run 
+If we need to re-instantiate the docker containers, run 
 ```sudo docker-compose -f ./docker/docker-compose.yml up -d```
 
 To access the docker container for postgres:
@@ -57,4 +57,4 @@ On windows with ```.\backend\env\Scripts\activate```
 1. Create a table for geometry
 ```CREATE TABLE hexagrid (hid serial PRIMARY KEY, geom geometry);```
 1. Run this query
-```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.02, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom ORDER BY(hexes.geom)) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```
+```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.02, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```

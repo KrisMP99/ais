@@ -6,6 +6,7 @@ import pandas.io.sql as psql
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from math import cos, asin, sqrt
+import csv
 
 COLUMNS = ['timestamp', 'mobile_type', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'cargo_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'eta', 'data_source_type']
 
@@ -15,13 +16,17 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
+CSV_PATH = os.getenv('CSV_PATH')
 
 # chunk size to load in (we do not have enough memory to load in everything at once)
 CHUNK_SIZE = 1000000
 
 MAX_SPEED_IN_HARBOR = 8
-MAX_POINTS_IN_HARBOR = 10
+MAX_POINTS_IN_HARBOR = 20
 MAX_DIST_IN_HARBOR = 1.08
+MINIMUM_POINTS_IN_TRIP = 500
+MAX_DIST = 2
+MIN_TIME = 10
 
 # Logging for file
 def get_logger():
@@ -36,21 +41,7 @@ def get_logger():
 
     logger = logging.getLogger()
     return logger
-
-class Ship:
-    def __init__(self, mmsi):
-        self.mmsi = mmsi
-        self.trip_list = []
     
-    def get_trips(self):
-        return self.trip_list
-
-    def add_trip(self, trip):
-        self.trip_list.append(trip)
-    
-    def remove_trip(self, trip):
-        self.trip_list.remove(trip)
-
 class Trip:
     def __init__(self, mmsi):
         self.mmsi = mmsi
@@ -58,6 +49,9 @@ class Trip:
     
     def add_point_to_trip(self, point):
         self.point_list.append(point)
+    
+    def insert_point_list(self, point_list):
+        self.point_list = point_list
     
     def get_points_in_trip(self):
         return self.point_list
@@ -126,17 +120,8 @@ sql_query = "SELECT " \
 sql = psql.read_sql_query(sql=sql_query, con=engine)
 df = pd.DataFrame(sql, columns=COLUMNS)
 
-# For each unqiue mmsi:
-#   1. Check the other rows, to see if the unique mmsi is equal to the current mmsi
-#   2. If yes, take the lat, long, sog and timestamp from the found point and create an instance of a point class, and set this to current_point
-#   3. Find the next point beloning to the same mmsi, and set this to next_point. 
-#      -> Calculate the distance between the two points, and calulcate using the sog and timestamp, 
-#      -> to see if said point is realistically reachable within that time frame
-#   4. If the point is reachable, keep the point, and set 'next_point' to the 'current_point' and repeat the process, for all points, and all mmsi's. 
-#   5. If the point is unreacable, delete the point, and then take the next point.
-
 trip_list = {}
-new_trips_list = []
+new_points_trip_list= []
 
 i = 0
 
@@ -158,78 +143,134 @@ for mmsi, latitude, longitude, sog, timestamp in zip(df.mmsi, df.latitude, df.lo
 
 print(f"Number of trips before splitting: {len(trip_list)}")
 
+trips_to_remove = []
+total_trips_cleansed = []
+
+trips_removed = 0
+
 # Compare distances between each point in each route
-for trip_key in trip_list:
+for trip_key in trip_list.copy():
     trip = trip_list[trip_key]
     points_in_trip = trip.get_points_in_trip()
 
-    if(len(points_in_trip) < 100):
-        trip_list.pop(trip)
+    if(len(points_in_trip) < MINIMUM_POINTS_IN_TRIP):
+        trip_list.pop(trip_key)
         logger.info(f"Removed trip from {trip.get_mmsi()} as it only has {len(points_in_trip)} points.")
+        trips_removed += 1
         continue
 
     curr_point = points_in_trip[0]
-
+    cut_point = points_in_trip[0]
+    
     time_elapsed = 0
     distance_travelled = 0
     index = 0
-    new_trip = False
-    cut_trip = False
+    is_new_trip = False
+    dist_to_new_trip = 0
+    route_has_been_cut = False
 
-    split_points = []
+    points_below_threshold = []
 
     for point in points_in_trip[1:]:
-        lat_long = curr_point.lat_long_distance(point)
-        time_sog = curr_point.sog_time_distance(point)
-        dist_diff = abs(lat_long - time_sog)
-        time_diff = abs((curr_point.get_timestamp() - point.get_timestamp()).total_seconds())
+        #lat_long = curr_point.lat_long_distance(point)
+        #time_sog = curr_point.sog_time_distance(point)
+        #dist_diff = abs(lat_long - time_sog)
+        #time_diff = abs((curr_point.get_timestamp() - point.get_timestamp()).total_seconds())
 
         # Add points in which they have a speed below the maximum allowed speed in danish harbors
         # We want 10 points in sequence to be below the threshold, before we consider it 'stopped'
         if (point.get_sog() < MAX_SPEED_IN_HARBOR):
             points_below_threshold.append(point)
-            distance_travelled += lat_long
-            time_elapsed += time_diff
             index += 1
-            cut_trip = False
         else:
             points_below_threshold = []
-            istance_travelled = 0
             index = 0
-            cut_trip = True
         
         if(index == MAX_POINTS_IN_HARBOR):
-            if(distance_travelled <= MAX_DIST_IN_HARBOR):
-                new_trip = True
+            dist_p1_p20 = points_below_threshold[0].lat_long_distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1])
+            time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
+
+            if(dist_p1_p20 <= MAX_DIST and time_diff >= MIN_TIME):
+                is_new_trip = True
+            else:
+                is_new_trip = False
+                points_below_threshold = []
+                index = 0
         
-        if(new_trip and cut_trip):
-            print(f"Cut trip with mmsi {trip.get_mmsi()}")
-            cut_trip = False
-            new_trip = False
-            split_points.append(point)
+
+        if(is_new_trip):
+            dist_to_new_trip += curr_point.lat_long_distance(point)
+    
+        if(dist_to_new_trip >= MAX_DIST_IN_HARBOR):
+            #new_points_trip_list.append(curr_point)
+            new_trip = Trip(curr_point.get_mmsi())
+            index_cut = points_in_trip.index(cut_point)
+            index_curr = points_in_trip.index(curr_point)
+            new_trip.insert_point_list(points_in_trip[index_cut:index_curr])
+            cut_point = curr_point
+            total_trips_cleansed.append(new_trip)
+           
+            dist_to_new_trip = 0
+            is_new_trip = False
+            route_has_been_cut = True
+
 
         curr_point = point
 
-        # if(dist_diff > 10):
-        #     logger.info(f"Removed point from route, diff is: {dist_diff}")
-        #     logger.info(f"curr_point: lat: {curr_point.latitude} long: {curr_point.longitude} time: {curr_point.timestamp} point2: lat: {point.latitude} long: {point.longitude} time: {point.timestamp}")
-        #     logger.info(f"Removed a point from vessel with mmsi: {trip.get_mmsi()} point timestamp {point.get_timestamp()}")
-        #     trip.remove_point_from_trip(point)
-        # else:
-        #     curr_point = point
-    
-    for point in split_points:
-        new_trip = Trip(point.get_mmsi())
-        index_p = points_in_trip.index(point)
+    # If we haven't split a route into several routes, we append it to our cleansed routes and then pop it
+    # Else, just pop (saves memory)
+    if(not route_has_been_cut):
+        total_trips_cleansed.append(trip)
 
-        for inner_point in points_in_trip[:index_p]:
-            new_trip.add_point_to_trip(inner_point)
-        
-        new_trips_list.append(new_trip)
-        
-
-print(f"Number of routes after new routes: {len(new_trips_list)}")
+    trip_list.pop(trip_key)
 
 
+print(f"Total trips removed from not having enough points: {trips_removed}")
+print(f"Number of routes after new routes: {len(total_trips_cleansed)}")
 
-logger.info("Done!")
+print(f"Removing unrealistic MMSIs")
+
+for trip in total_trips_cleansed:
+    points_in_trip = trip.get_points_in_trip()
+    curr_point = points_in_trip[0]
+
+    if(len(points_in_trip) < MINIMUM_POINTS_IN_TRIP):
+        total_trips_cleansed.remove(trip)
+        continue
+
+    for point in points_in_trip[1:]:
+        lat_long = curr_point.lat_long_distance(point)
+        time_sog = curr_point.sog_time_distance(point)
+        diff = abs(lat_long - time_sog)
+
+        if(diff > 10):
+            trip.remove_point_from_trip(point)
+        else:
+            curr_point = point
+
+trips_removed_2 = 0
+for trip in total_trips_cleansed:
+    if(len(trip.get_points_in_trip()) < MINIMUM_POINTS_IN_TRIP):
+        trips_removed_2 +=1
+        total_trips_cleansed.remove(trip)
+
+logger.info(f"Removed {trips_removed_2} after second cleansing")
+
+logger.info(f"After ALL cleansing, we have {len(total_trips_cleansed)} trips.")
+
+logger.info("Exporting trips to csv..")
+
+
+header = ['mmsi','latitude','longitude','timestamp']
+
+with open(CSV_PATH + 'routes.csv', 'w', encoding='UTF-8', newline='') as f:
+    writer = csv.writer(f)
+
+    #Write header:
+    writer.writerow(header)
+
+    #Write data:
+    for trip in total_trips_cleansed:
+        for point in trip.get_points_in_trip():
+            row = [point.get_mmsi(), point.latitude, point.longitude, point.get_timestamp()]
+            writer.writerow(row)

@@ -50,11 +50,11 @@ Run the virtual environment on Mac with
 On windows with ```.\backend\env\Scripts\activate```
 
 ## Database setup map-bounds
-1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,4326));```
+1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,3857));```
 1. Insert data into table 
 ```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
 1. Analayze the table ```ANALYZE map_bounds;```
 1. Create a table for geometry
 ```CREATE TABLE hexagrid (hid serial PRIMARY KEY, geom geometry);```
 1. Run this query
-```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.02, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```
+```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.02, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom ORDER BY(hexes.geom)) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```

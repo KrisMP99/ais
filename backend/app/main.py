@@ -42,12 +42,12 @@ async def root():
 
 @app.get("/map_bounds")
 async def get_mapBounds():
-    query = "SELECT jsonb_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM hexagrid AS t(hid, geom);"
-
+    query = "SELECT ST_AsGeoJSON(geom) FROM hexagrid ORDER BY(geom);"
+    # SELECT jsonb_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM hexagrid AS t(hid, geom);
     #feature_collection = pd.read_sql(query, engine)
     # df = pd.DataFrame(feature_collection)
     loop = asyncio.get_event_loop()
     feature_collection = await loop.run_in_executor(None, pd.read_sql, query, engine)
-    feature_collection_dict = feature_collection.iloc[0]['jsonb_build_object']
+    #feature_collection_dict = feature_collection.iloc[0]['jsonb_build_object']
     
-    return jsonable_encoder(feature_collection_dict)
+    return jsonable_encoder(feature_collection)

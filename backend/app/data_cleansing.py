@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import pandas as pd
 import pandas.io.sql as psql
 from sqlalchemy import create_engine
-from dotenv import load_dotenv
 from math import cos, asin, sqrt
 import csv
 
@@ -17,9 +16,6 @@ HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_PATH = os.getenv('CSV_PATH')
-
-# chunk size to load in (we do not have enough memory to load in everything at once)
-CHUNK_SIZE = 1000000
 
 MAX_SPEED_IN_HARBOR = 8
 MAX_POINTS_IN_HARBOR = 20
@@ -121,7 +117,6 @@ sql = psql.read_sql_query(sql=sql_query, con=engine)
 df = pd.DataFrame(sql, columns=COLUMNS)
 
 trip_list = {}
-new_points_trip_list= []
 
 i = 0
 
@@ -141,14 +136,13 @@ for mmsi, latitude, longitude, sog, timestamp in zip(df.mmsi, df.latitude, df.lo
         print(f"Length of triplist: {len(trip_list)}")
         quit()
 
-print(f"Number of trips before splitting: {len(trip_list)}")
+num_of_trips_beginning = len(trip_list)
 
-trips_to_remove = []
 total_trips_cleansed = []
 
 trips_removed = 0
 
-# Compare distances between each point in each route
+# Compare distances between each point in each trip
 for trip_key in trip_list.copy():
     trip = trip_list[trip_key]
     points_in_trip = trip.get_points_in_trip()
@@ -159,26 +153,33 @@ for trip_key in trip_list.copy():
         trips_removed += 1
         continue
 
+    # Cutting points used when splitting trips into multiple trips
     curr_point = points_in_trip[0]
     cut_point = points_in_trip[0]
     
-    time_elapsed = 0
-    distance_travelled = 0
+
+    # Used for counting number of points below the threshold
     index = 0
+
+    # Used to define if we are going to split into a new trip
     is_new_trip = False
+    
+    # Used to keep track of how far a ship has travelled when a new trip is being made
+    # Basically, if a ship is at a still-stand (e.g., in harbor or at anker) we wait untill the ship has sailed
+    # at least MAX_DIST_IN_HARBOR before we consider it a new trip (so we don't get multiple trips while the ship is still at port/standstill)
     dist_to_new_trip = 0
+
+    # In case a trip hasn't been split, we still need to include the original trip
+    # in our final list of trips (total_trips_cleansed)
     route_has_been_cut = False
 
+    # Temp list to hold points that is below a given threshold
     points_below_threshold = []
 
+    # Skip the first iteration, as that is assigned to curr_point
     for point in points_in_trip[1:]:
-        #lat_long = curr_point.lat_long_distance(point)
-        #time_sog = curr_point.sog_time_distance(point)
-        #dist_diff = abs(lat_long - time_sog)
-        #time_diff = abs((curr_point.get_timestamp() - point.get_timestamp()).total_seconds())
-
         # Add points in which they have a speed below the maximum allowed speed in danish harbors
-        # We want 10 points in sequence to be below the threshold, before we consider it 'stopped'
+        # We want MAX_SPEED_IN_HARBOR points in sequence to be below the threshold, before we consider a ship 'stopped'
         if (point.get_sog() < MAX_SPEED_IN_HARBOR):
             points_below_threshold.append(point)
             index += 1
@@ -186,6 +187,9 @@ for trip_key in trip_list.copy():
             points_below_threshold = []
             index = 0
         
+        # If we achieve the amount of points in our cut off, we calculate the distance between the first and last point
+        # And the time difference between them. If more than MIN_TIME minutes has passed, and it has sailed less MAX_DIST
+        # We define it as a new trip
         if(index == MAX_POINTS_IN_HARBOR):
             dist_p1_p20 = points_below_threshold[0].lat_long_distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1])
             time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
@@ -197,24 +201,29 @@ for trip_key in trip_list.copy():
                 points_below_threshold = []
                 index = 0
         
-
         if(is_new_trip):
             dist_to_new_trip += curr_point.lat_long_distance(point)
     
+        # If the ship has exceeded our distance cut-off for when a new trip begin
+        # we make the trip, and add the points to it by using the cut_point and curr_point.
         if(dist_to_new_trip >= MAX_DIST_IN_HARBOR):
-            #new_points_trip_list.append(curr_point)
             new_trip = Trip(curr_point.get_mmsi())
+
             index_cut = points_in_trip.index(cut_point)
             index_curr = points_in_trip.index(curr_point)
+
             new_trip.insert_point_list(points_in_trip[index_cut:index_curr])
+
+            # Update our cut points for a (potential) new trip later
             cut_point = curr_point
             total_trips_cleansed.append(new_trip)
            
+            # Reset our distance and new trip variables (as there can be several trips)
             dist_to_new_trip = 0
             is_new_trip = False
             route_has_been_cut = True
 
-
+        # Update our current point
         curr_point = point
 
     # If we haven't split a route into several routes, we append it to our cleansed routes and then pop it
@@ -224,11 +233,9 @@ for trip_key in trip_list.copy():
 
     trip_list.pop(trip_key)
 
+num_trips_new = len(total_trips_cleansed)
 
-print(f"Total trips removed from not having enough points: {trips_removed}")
-print(f"Number of routes after new routes: {len(total_trips_cleansed)}")
-
-print(f"Removing unrealistic MMSIs")
+logger.info(f"Removing unrealistic points for all trips")
 
 for trip in total_trips_cleansed:
     points_in_trip = trip.get_points_in_trip()
@@ -254,12 +261,20 @@ for trip in total_trips_cleansed:
         trips_removed_2 +=1
         total_trips_cleansed.remove(trip)
 
-logger.info(f"Removed {trips_removed_2} after second cleansing")
 
-logger.info(f"After ALL cleansing, we have {len(total_trips_cleansed)} trips.")
+num_trips_final = len(total_trips_cleansed)
+
+
+logger.info(f"Total trips removed from not having enough points: {trips_removed}")
+
+logger.info(f"Number of trips before trip partitioning {num_of_trips_beginning}")
+logger.info(f"Number of trips after trip partitioning: {num_trips_new}")
+
+logger.info(f"Removed {trips_removed_2} unrealistic points from trips")
+
+logger.info(f"After ALL cleansing, we have {num_trips_final} trips.")
 
 logger.info("Exporting trips to csv..")
-
 
 header = ['mmsi','latitude','longitude','timestamp']
 

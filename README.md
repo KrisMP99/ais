@@ -50,7 +50,7 @@ Run the virtual environment on Mac with
 On windows with ```.\backend\env\Scripts\activate```
 
 ## Database setup map-bounds
-1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,4326));```
+1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,3857));```
 1. Insert data into table 
 ```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
 1. Analayze the table ```ANALYZE map_bounds;```

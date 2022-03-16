@@ -22,20 +22,6 @@ MINIMUM_POINTS_IN_TRIP = 500
 MAX_DIST = 2
 MIN_TIME = 10
 
-# Logging for file
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
-
-    logger = logging.getLogger()
-    return logger
-    
 class Trip:
     def __init__(self, mmsi):
         self.mmsi = mmsi
@@ -90,6 +76,19 @@ class Point:
         nautical_miles_sailed = float(self.sog * ((time_elapsed.total_seconds() / 60) / 60))
         return int(nautical_miles_sailed)
 
+# Logging for file
+def get_logger():
+    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
+    logging.basicConfig(format = Log_Format,
+                        force = True,
+                        handlers = [
+                            logging.FileHandler(ERROR_LOG_FILE_PATH),
+                            logging.StreamHandler()
+                        ],
+                        level = logging.INFO)
+
+    logger = logging.getLogger()
+    return logger
 
 def get_data_from_query(sql_query):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
@@ -121,7 +120,7 @@ def get_trips(df):
 
     return trip_list
 
-def partition_trips(trip_list):
+def get_partitioned_trips(trip_list):
     total_trips_cleansed = []
     trips_removed = 0
 
@@ -277,10 +276,12 @@ logger = get_logger()
 df = get_data_from_query(sql_query)
 
 trip_list = get_trips(df)
+print(f"Len of trips b4 partiton: {len(trip_list)}")
 
-trip_list = partition_trips(trip_list)
+trip_list = get_partitioned_trips(trip_list)
+print(f"Len of trips after partiton: {len(trip_list)}")
 
-trip_list = remove_outliers(trip_list)
+remove_outliers(trip_list)
 
 logger.info(f"After ALL cleansing, we have {len(trip_list)} trips.")
 

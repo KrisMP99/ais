@@ -45,7 +45,6 @@ class Trip:
     def get_mmsi(self):
         return self.mmsi
     
-
 class Point:
     def __init__(self, longitude, latitude, sog, mmsi, timestamp):
         self.longitude = longitude
@@ -63,18 +62,18 @@ class Point:
     def get_sog(self):
         return self.sog
     
-    # https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
-    # Returns the distance in nautical miles (NM)
-    def lat_long_distance(self, p):
-        km_to_nm = 0.53
-        p_rad = 0.017        # pi / 180
-        a = 0.5 - cos((p.latitude - self.latitude)*p_rad) / 2 + cos(self.latitude * p_rad) * cos(p.latitude * p_rad) * (1-cos((p.longitude - self.longitude)*p_rad))/2
-        return int((12742 * asin(sqrt(a))) * km_to_nm)
-    
-    def sog_time_distance(self, p):
-        time_elapsed = p.timestamp - self.timestamp
-        nautical_miles_sailed = float(self.sog * ((time_elapsed.total_seconds() / 60) / 60))
-        return int(nautical_miles_sailed)
+# https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+# Returns the distance in nautical miles (NM)
+def lat_long_distance(p1, p2):
+    km_to_nm = 0.53
+    p_rad = 0.017        # pi / 180
+    a = 0.5 - cos((p2.latitude - p1.latitude)*p_rad) / 2 + cos(p1.latitude * p_rad) * cos(p2.latitude * p_rad) * (1-cos((p2.longitude - p1.longitude)*p_rad))/2
+    return int((12742 * asin(sqrt(a))) * km_to_nm)
+
+def sog_time_distance(p1, p2):
+    time_elapsed = p2.timestamp - p1.timestamp
+    nautical_miles_sailed = float(p1.sog * ((time_elapsed.total_seconds() / 60) / 60))
+    return int(nautical_miles_sailed)
 
 # Logging for file
 def get_logger():
@@ -120,7 +119,8 @@ def get_trips(df):
 
     return trip_list
 
-def get_partitioned_trips(trip_list):
+def partition_trips(trip_list):
+    print(f"BEfore partiton: {len(trip_list)}")
     total_trips_cleansed = []
     trips_removed = 0
 
@@ -173,7 +173,7 @@ def get_partitioned_trips(trip_list):
             # And the time difference between them. If more than MIN_TIME minutes has passed, and it has sailed less MAX_DIST
             # We define it as a new trip
             if(index == MAX_POINTS_IN_HARBOR):
-                dist_p1_p20 = points_below_threshold[0].lat_long_distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1])
+                dist_p1_p20 = lat_long_distance(points_below_threshold[0], points_below_threshold[MAX_POINTS_IN_HARBOR - 1])
                 time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
 
                 if(dist_p1_p20 <= MAX_DIST and time_diff >= MIN_TIME):
@@ -184,7 +184,7 @@ def get_partitioned_trips(trip_list):
                     index = 0
             
             if(is_new_trip):
-                dist_to_new_trip += curr_point.lat_long_distance(point)
+                dist_to_new_trip += lat_long_distance(curr_point, point)
         
             # If the ship has exceeded our distance cut-off for when a new trip begin
             # we make the trip, and add the points to it by using the cut_point and curr_point.
@@ -215,21 +215,26 @@ def get_partitioned_trips(trip_list):
 
         trip_list.pop(trip_key)
     
-    return total_trips_cleansed
+    trip_list = total_trips_cleansed
 
-def remove_outliers(trip_list_partitioned):
+    print(f"After partiton: {len(trip_list)}")
+    
+    return trip_list
+
+def remove_outliers(trip_list):
     logger.info(f"Removing unrealistic points for all trips")
-    for trip in trip_list_partitioned:
+    print(f"len of trip_list: {len(trip_list)}")
+    for trip in trip_list:
         points_in_trip = trip.get_points_in_trip()
         curr_point = points_in_trip[0]
 
         if(len(points_in_trip) < MINIMUM_POINTS_IN_TRIP):
-            trip_list_partitioned.remove(trip)
+            trip_list.remove(trip)
             continue
 
         for point in points_in_trip[1:]:
-            lat_long = curr_point.lat_long_distance(point)
-            time_sog = curr_point.sog_time_distance(point)
+            lat_long = lat_long_distance(curr_point, point)
+            time_sog = sog_time_distance(curr_point, point)
             diff = abs(lat_long - time_sog)
 
             if(diff > 10):
@@ -237,13 +242,11 @@ def remove_outliers(trip_list_partitioned):
             else:
                 curr_point = point
 
-    trips_removed_2 = 0
-    for trip in trip_list_partitioned:
+    for trip in trip_list:
         if(len(trip.get_points_in_trip()) < MINIMUM_POINTS_IN_TRIP):
-            trips_removed_2 +=1
-            trip_list_partitioned.remove(trip)
+            trip_list.remove(trip)
             
-    return trip_list_partitioned
+    return trip_list
 
 def export_trips_csv(trip_list, CSV_PATH = CSV_PATH):
     logger.info("Exporting trips to csv..")
@@ -273,16 +276,16 @@ sql_query = "SELECT * " \
 
 logger = get_logger()
 
-df = get_data_from_query(sql_query)
+# df = get_data_from_query(sql_query)
 
-trip_list = get_trips(df)
-print(f"Len of trips b4 partiton: {len(trip_list)}")
+# trip_list = get_trips(df)
+# print(f"Len of trips b4 partiton: {len(trip_list)}")
 
-trip_list = get_partitioned_trips(trip_list)
-print(f"Len of trips after partiton: {len(trip_list)}")
+# trip_list = get_partitioned_trips(trip_list)
+# print(f"Len of trips after partiton: {len(trip_list)}")
 
-remove_outliers(trip_list)
+# remove_outliers(trip_list)
 
-logger.info(f"After ALL cleansing, we have {len(trip_list)} trips.")
+#logger.info(f"After ALL cleansing, we have {len(trip_list)} trips.")
 
-export_trips_csv(trip_list)
+# export_trips_csv(trip_list)

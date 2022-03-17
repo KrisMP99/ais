@@ -18,7 +18,7 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 TESTSERVER = os.getenv('TEST_SERVER')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
 API_KEY = os.getenv('API_KEY')
-API_KEY_NAME = os.getenv('access_token')
+API_KEY_NAME = os.getenv('API_KEY_NAME')
 
 api_key_query = APIKeyQuery(name=API_KEY_NAME, auto_error=False)
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
@@ -32,18 +32,18 @@ session = Session()
 
 app = FastAPI()
 origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    f"http://{TESTSERVER}",
-    f"http://{PRODSERVER}"
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    f'http://{TESTSERVER}',
+    f'http://{PRODSERVER}'
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
 
 async def get_api_key(
@@ -83,7 +83,7 @@ async def get_mapBounds(response: Response, api_key: APIKey = Depends(get_api_ke
     loop = asyncio.get_event_loop()
     feature_collection = await loop.run_in_executor(None, pd.read_sql, query, engine)
     #feature_collection_dict = feature_collection.iloc[0]['jsonb_build_object']
-    
+
     response.set_cookie(
         API_KEY_NAME,
         value=api_key,

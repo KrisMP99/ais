@@ -31,7 +31,6 @@ export default function LeafletMap() {
 
         let s = await fetch('http://127.0.0.1:8008/map_bounds?access_token='+ process.env.REACT_APP_API_KEY)
         .then(res => res.json());
-        console.log(process.env.REACT_APP_API_KEY + 'hej')
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:12, minZoom:7}).addTo(map);
         L.geoJSON(s, {style: styling}).addTo(map);

@@ -60,7 +60,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     componentDidMount() {
         // this.map = L.map('map').setView(MAP_CENTER, 7);
         this.retrieveGridJson();
-        console.log(process.env.REACT_APP_API_KEY)
     }
 
     render() {

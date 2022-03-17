@@ -184,7 +184,7 @@ def insert_csv_to_db_manually(path_csv):
     logger = get_logger()
     logger.info("Connecting to database...")
     try:
-        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="db", port="5432")
+        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
         conn.autocommit = True
         cursor = conn.cursor()
     except Exception as err:

@@ -8,6 +8,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import * as testsss from "../test.json";
 import Helmet from 'react-helmet';
+import vizualizeData from "./newCSVFile.json"
 
 
 interface DKMapProps {
@@ -74,7 +75,18 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     bounds={MAP_BOUNDS}
                 />
-                <Hexagon center={MAP_CENTER} rad={600} />
+
+                {vizualizeData.map(data => (
+                    <Marker
+                    key={data.FIELD1}
+                    position={[data.latitude, data.longitude]}>
+                    </Marker>
+                ))
+
+                }
+
+
+                {/* <Hexagon center={MAP_CENTER} rad={600} /> */}
                 {/* {() => {
                     if (this.state.markers) {
                         this.state.markers.map((pos, idx) =>

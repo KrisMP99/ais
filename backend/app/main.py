@@ -65,7 +65,7 @@ async def get_api_key(
 @app.get("/")
 async def root(response: Response, api_key: APIKey = Depends(get_api_key)):
     response.set_cookie(
-        API_KEY_NAME,
+        f'{API_KEY_NAME}',
         value=api_key,
         httponly=True,
         max_age=1800,
@@ -83,9 +83,9 @@ async def get_mapBounds(response: Response, api_key: APIKey = Depends(get_api_ke
     loop = asyncio.get_event_loop()
     feature_collection = await loop.run_in_executor(None, pd.read_sql, query, engine)
     #feature_collection_dict = feature_collection.iloc[0]['jsonb_build_object']
-    
+
     response.set_cookie(
-        API_KEY_NAME,
+        f'{API_KEY_NAME}',
         value=api_key,
         httponly=True,
         max_age=1800,

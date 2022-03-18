@@ -7,7 +7,8 @@ import './Leaflet.css';
 function App() {
   return (
     <div className="main-container">
-        <LeafletMap />
+        {/* <LeafletMap /> */}
+        <DKMap />
     </div>
   );
 }

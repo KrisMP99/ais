@@ -6,9 +6,11 @@ import './Leaflet.css';
 
 function App() {
   return (
-    <div className="main-container">
-        {/* <LeafletMap /> */}
-        <DKMap />
+    <div className='main'>
+      <div className="main-container">
+          {/* <LeafletMap /> */}
+          <DKMap />
+      </div>
     </div>
   );
 }

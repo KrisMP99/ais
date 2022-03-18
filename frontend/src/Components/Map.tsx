@@ -30,14 +30,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         }
     }
 
-    protected async retrieveGridJson() {
-        this.gridJSON = await fetch('http://127.0.0.1:8008/map_bounds?access_token=' + process.env.REACT_APP_API_KEY).then(res => res.json());
-    }
-
-    componentDidMount() {
-        this.retrieveGridJson();
-    }
-
     render() {
         // Sets the icon of the markers
         let DefaultIcon = L.icon({
@@ -46,8 +38,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         });
         L.Marker.prototype.options.icon = DefaultIcon;
 
-        
-        
         return (
             <MapContainer
                 id='map'

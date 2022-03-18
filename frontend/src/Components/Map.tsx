@@ -1,16 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './Map.css';
-import Hexagon from './Hexagon'
-import { MapContainer, TileLayer, Marker, Polygon, Polyline, MapConsumer, useMapEvents, useMap } from 'react-leaflet';    
+import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';    
 import '../Leaflet.css';
-import L, { LatLngBoundsExpression, LatLngExpression, LatLng, Icon, LeafletMouseEvent, marker } from 'leaflet';
+import L, { LatLngBoundsExpression, LatLngExpression, LatLng, LeafletMouseEvent } from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import * as testsss from "../test.json";
-import Helmet from 'react-helmet';
-import { GeoJSON, GeoJsonObject} from 'geojson'
-import { useMapElement } from 'react-leaflet/types/MapContainer';
-import { AnyMxRecord } from 'dns';
 
 interface DKMapProps {
 

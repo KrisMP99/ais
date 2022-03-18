@@ -166,7 +166,7 @@ def partition_trips(trip_list):
                 points_below_threshold.append(point)
                 index += 1
             else:
-                points_below_threshold = []
+                points_below_threshold.clear()
                 index = 0
             
             # If we achieve the amount of points in our cut off, we calculate the distance between the first and last point
@@ -223,7 +223,6 @@ def partition_trips(trip_list):
 
 def remove_outliers(trip_list):
     logger.info(f"Removing unrealistic points for all trips")
-    print(f"len of trip_list: {len(trip_list)}")
     for trip in trip_list:
         points_in_trip = trip.get_points_in_trip()
         curr_point = points_in_trip[0]
@@ -246,6 +245,7 @@ def remove_outliers(trip_list):
         if(len(trip.get_points_in_trip()) < MINIMUM_POINTS_IN_TRIP):
             trip_list.remove(trip)
             
+    print(f"len of trip_list: {len(trip_list)}")
     return trip_list
 
 def export_trips_csv(trip_list, CSV_PATH = CSV_PATH):

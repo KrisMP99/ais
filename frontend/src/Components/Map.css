@@ -5,3 +5,7 @@
     width: 100%;
     margin: 20px 50px;
 }
+.marker {
+    width: 20px;
+    height: 20px;
+}

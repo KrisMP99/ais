@@ -2,9 +2,8 @@ import React from 'react';
 import './Map.css';
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';    
 import '../Leaflet.css';
-import L, { LatLngBoundsExpression, LatLngExpression, LatLng, LeafletMouseEvent } from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import L, { LatLngBoundsExpression, LatLngExpression, LatLng, LeafletMouseEvent, icon } from 'leaflet';
+import iconUrl from '../Images/GreenCircle.png';
 
 interface DKMapProps {
 
@@ -21,33 +20,23 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
     protected gridJSON: any;
     protected markerLayer: L.LayerGroup;
+    protected markerIcon: L.DivIcon;
 
     constructor(props: DKMapProps) {
         super(props);
         this.markerLayer = L.layerGroup();
+        this.markerIcon = L.icon({
+            className: 'marker',
+            iconUrl: iconUrl,
+            iconSize: [20,20],
+            iconAnchor: [12,20]
+        });
         this.state = {
             points: []
         }
     }
 
-    protected async retrieveGridJson() {
-        this.gridJSON = await fetch('http://127.0.0.1:8008/map_bounds?access_token=' + process.env.REACT_APP_API_KEY).then(res => res.json());
-    }
-
-    componentDidMount() {
-        this.retrieveGridJson();
-    }
-
     render() {
-        // Sets the icon of the markers
-        let DefaultIcon = L.icon({
-            iconUrl: icon,
-            shadowUrl: iconShadow
-        });
-        L.Marker.prototype.options.icon = DefaultIcon;
-
-        
-        
         return (
             <MapContainer
                 id='map'
@@ -65,6 +54,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 />
                 <ClickMap 
                     layerGroup={this.markerLayer}
+                    markerIcon={this.markerIcon}
                     points={this.state.points}
                     addPoint={(point) => {
                             if(this.state.points) {
@@ -96,7 +86,7 @@ interface ClickMapProps {
     layerGroup: L.LayerGroup;
     addPoint: (pos: LatLngExpression) => void;
     clearPoints: () => void;
-
+    markerIcon: L.DivIcon;
 }
 
 
@@ -118,7 +108,7 @@ function ClickMap(props: ClickMapProps) {
 
     function addMarker(e: LeafletMouseEvent) {
         let position: LatLngExpression = [e.latlng.lat, e.latlng.lng];
-        props.layerGroup.addLayer(L.marker(position));
+        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position[0] + " Lng: " + position[1]));
         props.addPoint(position);
     }
 
@@ -129,3 +119,19 @@ function ClickMap(props: ClickMapProps) {
     }
     return null;
 }
+
+
+
+
+
+
+
+
+
+    // protected async retrieveGridJson() {
+    //     this.gridJSON = await fetch('http://127.0.0.1:8008/map_bounds?access_token=' + process.env.REACT_APP_API_KEY).then(res => res.json());
+    // }
+
+    // componentDidMount() {
+    //     this.retrieveGridJson();
+    // }

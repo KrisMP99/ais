@@ -46,7 +46,7 @@ class Trip:
         return self.mmsi
     
 class Point:
-    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_device, draught, destination):
+    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination):
         self.timestamp = timestamp 
         self.type_of_mobile = type_of_mobile 
         self.mmsi = mmsi 
@@ -63,7 +63,7 @@ class Point:
         self.ship_type = ship_type
         self.width = width
         self.length = length
-        self.type_of_position_device = type_of_position_device
+        self.type_of_position_fixing_device = type_of_position_fixing_device
         self.draught = draught
         self.destination = destination
 
@@ -119,12 +119,12 @@ def get_trips(df):
         trip = Trip(mmsi)
         trip_list[mmsi] = trip
         
-    for timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length,type_of_position_fixing_device, draught, destination in zip(df.timestamp, df.type_of_mobile, df.mmsi, df.latitude, df.longitude, df.navigational_status, df.rot, df.sog, df.cog, df.heading, df.imo, df.callsign, df.name, df.ship_type, df.width, df.length, df.type_of_position_fixing_device, df.draught, df.destination):
+    for timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination in zip(df.timestamp, df.type_of_mobile, df.mmsi, df.latitude, df.longitude, df.navigational_status, df.rot, df.sog, df.cog, df.heading, df.imo, df.callsign, df.name, df.ship_type, df.width, df.length, df.type_of_position_fixing_device, df.draught, df.destination):
         if(i % 100000 == 0):
             print(f"Added {i} points so far...")
         try:
             trip = trip_list.get(mmsi)
-            trip.add_point_to_trip(Point(timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length,type_of_position_fixing_device, draught, destination))
+            trip.add_point_to_trip(Point(timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination))
             i += 1
         except Exception as e:
             logger.critical(f"Could not access index/mmsi {mmsi} in trip_list array. Error: {e}")

@@ -4,9 +4,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 import data_cleansing as dc
 
-if __name__ == '__main__':
-
-    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_device', 'draught', 'destination', 'trip']
+def create_line_strings():
+    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip']
 
     # Loading of the point data from the csv file
     trip_list = dc.get_cleansed_data()
@@ -18,7 +17,6 @@ if __name__ == '__main__':
     for trip in trip_list: 
         point_list = trip.get_points_in_trip()
         trip_point = []
-        new_trip = []
         for p in point_list:
             trip_point.append([p.latitude, p.longitude])
         
@@ -28,34 +26,29 @@ if __name__ == '__main__':
 
         line = LineString(coordinates)
 
-        tolerance = 0.0015
+        tolerance = 0.00015
 
         simplified_line = line.simplify(tolerance, preserve_topology=False)
 
         mmsi_line.append([trip.get_mmsi(), simplified_line])
 
         x_y_coords = simplified_line.xy
-
-        points_in_trip = trip.get_points_in_trip()
-        timestamp = 0
         
         # Make trip in database
         # trip_sql = f"INSERT INTO trips(mmsi) VALUES ({trip.get_mmsi()}) RETURNING trip_id"
         # cursor.execute(trip_sql)
         # trip_id = cursor.fetchone()[0]
-
         
         for x, y in zip(x_y_coords[0], x_y_coords[1]):
-            for p in points_in_trip:
+            for p in point_list:
                 if x == p.latitude and y == p.longitude:
-                    new_trip.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_device, p.draught, p.destination, trip_index])
+                    all_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, trip_index])
+                    break
         
-        if(len(new_trip) > 10):
-            all_points.append(new_trip[0])
-            trip_index += 1    
+        trip_index += 1
 
     df = pd.DataFrame(all_points, columns=COLUMNS)
-    print(df.to_string())
+    return df
     
         #sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
 

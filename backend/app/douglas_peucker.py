@@ -7,10 +7,8 @@ from time import time
 import data_cleansing as dc
 import psycopg2
 import os
-from sqlalchemy import create_engine
-from geoalchemy2 import Geometry
 
-
+load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
@@ -19,21 +17,7 @@ DB_NAME = os.getenv('DB_NAME')
 if __name__ == '__main__':
     # Loading of the point data from the csv file
     # df = pd.read_csv('C:/Users/alexf/PycharmProjects/pythonProject/routes.csv')
-    df = dc.get_data_from_query("SELECT * " \
-            "FROM raw_data " \
-            "WHERE "\
-                "(mobile_type = 'Class A') AND "\
-                "(latitude >= 53.5 AND latitude <= 58.5) AND "\
-                "(longitude >= 3.2 AND longitude <= 16.5) AND "\
-                "(sog >= 0 AND sog <= 102) AND " \
-                "(mmsi IS NOT NULL) " \
-                "ORDER BY timestamp ASC ")
-
-    trip_list = dc.get_trips(df)
-
-    trip_list = dc.partition_trips(trip_list)
-
-    trip_list = dc.remove_outliers(trip_list)
+    trip_list = dc.get_cleansed_data()
 
     mmsi_line = []
 
@@ -69,19 +53,20 @@ if __name__ == '__main__':
         points_in_trip = trip.get_points_in_trip()
         timestamp = 0
 
-        # Make trip in database
-        trip_sql = f"INSERT INTO trips(mmsi) VALUES ({trip.get_mmsi()}) RETURNING trip_id"
-        cursor.execute(trip_sql)
-        trip_id = cursor.fetchone()[0]
 
-        for x, y in zip(x_y_coords[0], x_y_coords[1]):
-            for point in points_in_trip:
-                if x == point.latitude and y == point.longitude:
-                    timestamp = point.timestamp
-                    break
+        # Make trip in database
+        # trip_sql = f"INSERT INTO trips(mmsi) VALUES ({trip.get_mmsi()}) RETURNING trip_id"
+        # cursor.execute(trip_sql)
+        # trip_id = cursor.fetchone()[0]
+
+        # for x, y in zip(x_y_coords[0], x_y_coords[1]):
+        #     for point in points_in_trip:
+        #         if x == point.latitude and y == point.longitude:
+        #             timestamp = point.timestamp
+        #             break
             
-            sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
-            cursor.execute(sql)
+        #     sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
+        #     cursor.execute(sql)
         
             
         

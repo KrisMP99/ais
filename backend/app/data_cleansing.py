@@ -1,5 +1,6 @@
 import os
 import logging
+from pkgutil import get_data
 from dotenv import load_dotenv
 import pandas as pd
 import pandas.io.sql as psql
@@ -138,7 +139,6 @@ def partition_trips(trip_list):
         # Cutting points used when splitting trips into multiple trips
         curr_point = points_in_trip[0]
         cut_point = points_in_trip[0]
-        
 
         # Used for counting number of points below the threshold
         index = 0
@@ -264,28 +264,21 @@ def export_trips_csv(trip_list, CSV_PATH = CSV_PATH):
                 row = [point.get_mmsi(), point.latitude, point.longitude, point.get_timestamp()]
                 writer.writerow(row)
 
-sql_query = "SELECT * " \
-            "FROM raw_data " \
-            "WHERE "\
-                "(mobile_type = 'Class A') AND "\
-                "(latitude >= 53.5 AND latitude <= 58.5) AND "\
-                "(longitude >= 3.2 AND longitude <= 16.5) AND "\
-                "(sog >= 0 AND sog <= 102) AND " \
-                "(mmsi IS NOT NULL) " \
-                "ORDER BY timestamp ASC "
 
 logger = get_logger()
 
-# df = get_data_from_query(sql_query)
+def get_cleansed_data():
+    sql_query = "SELECT * " \
+                "FROM raw_data " \
+                "WHERE "\
+                    "(mobile_type = 'Class A') AND "\
+                    "(latitude >= 53.5 AND latitude <= 58.5) AND "\
+                    "(longitude >= 3.2 AND longitude <= 16.5) AND "\
+                    "(sog >= 0 AND sog <= 102) AND " \
+                    "(mmsi IS NOT NULL) " \
+                    "ORDER BY timestamp ASC "
+    df = get_data_from_query(sql_query)
+    trip_list = partition_trips(df)
+    trip_list = remove_outliers(trip_list)
 
-# trip_list = get_trips(df)
-# print(f"Len of trips b4 partiton: {len(trip_list)}")
-
-# trip_list = get_partitioned_trips(trip_list)
-# print(f"Len of trips after partiton: {len(trip_list)}")
-
-# remove_outliers(trip_list)
-
-#logger.info(f"After ALL cleansing, we have {len(trip_list)} trips.")
-
-# export_trips_csv(trip_list)
+    return trip_list

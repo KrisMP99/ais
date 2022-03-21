@@ -1,6 +1,5 @@
 import os
 import logging
-from pkgutil import get_data
 from dotenv import load_dotenv
 import pandas as pd
 import pandas.io.sql as psql
@@ -47,13 +46,27 @@ class Trip:
         return self.mmsi
     
 class Point:
-    def __init__(self, longitude, latitude, sog, mmsi, timestamp):
-        self.longitude = longitude
+    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_device, draught, destination):
+        self.timestamp = timestamp 
+        self.type_of_mobile = type_of_mobile 
+        self.mmsi = mmsi 
         self.latitude = latitude
+        self.longitude = longitude
+        self.navigational_status = navigational_status
+        self.rot = rot
         self.sog = sog
-        self.mmsi = mmsi
-        self.timestamp = timestamp
-    
+        self.cog = cog
+        self.heading = heading
+        self.imo = imo
+        self.callsign = callsign
+        self.name = name
+        self.ship_type = ship_type
+        self.width = width
+        self.length = length
+        self.type_of_position_device = type_of_position_device
+        self.draught = draught
+        self.destination = destination
+
     def get_mmsi(self):
         return self.mmsi
 
@@ -106,15 +119,15 @@ def get_trips(df):
         trip = Trip(mmsi)
         trip_list[mmsi] = trip
         
-    for mmsi, latitude, longitude, sog, timestamp in zip(df.mmsi, df.latitude, df.longitude, df.sog, df.timestamp):
-        i+=1
+    for timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length,type_of_position_fixing_device, draught, destination in zip(df.timestamp, df.type_of_mobile, df.mmsi, df.latitude, df.longitude, df.navigational_status, df.rot, df.sog, df.cog, df.heading, df.imo, df.callsign, df.name, df.ship_type, df.width, df.length, df.type_of_position_fixing_device, df.draught, df.destination):
         if(i % 100000 == 0):
             print(f"Added {i} points so far...")
         try:
             trip = trip_list.get(mmsi)
-            trip.add_point_to_trip(Point(longitude,latitude,sog,mmsi,timestamp))
+            trip.add_point_to_trip(Point(timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length,type_of_position_fixing_device, draught, destination))
+            i += 1
         except Exception as e:
-            logger.critical(f"Could not access index/mmsi {mmsi} in trip_list array.")
+            logger.critical(f"Could not access index/mmsi {mmsi} in trip_list array. Error: {e}")
             print(f"Length of triplist: {len(trip_list)}")
             quit()
 
@@ -271,14 +284,15 @@ def get_cleansed_data():
     sql_query = "SELECT * " \
                 "FROM raw_data " \
                 "WHERE "\
-                    "(mobile_type = 'Class A') AND "\
+                    "(type_of_mobile = 'Class A') AND "\
                     "(latitude >= 53.5 AND latitude <= 58.5) AND "\
                     "(longitude >= 3.2 AND longitude <= 16.5) AND "\
                     "(sog >= 0 AND sog <= 102) AND " \
                     "(mmsi IS NOT NULL) " \
                     "ORDER BY timestamp ASC "
     df = get_data_from_query(sql_query)
-    trip_list = partition_trips(df)
+    trip_list = get_trips(df)
+    trip_list = partition_trips(trip_list)
     trip_list = remove_outliers(trip_list)
 
     return trip_list

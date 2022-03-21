@@ -2,41 +2,27 @@ from venv import create
 import pandas as pd, numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
-from dotenv import load_dotenv
-from time import time
 import data_cleansing as dc
-import psycopg2
-import os
-
-load_dotenv()
-USER = os.getenv('POSTGRES_USER')
-PASS = os.getenv('POSTGRES_PASSWORD')
-HOST_DB = os.getenv('HOST_DB')
-DB_NAME = os.getenv('DB_NAME')
 
 if __name__ == '__main__':
-    # Loading of the point data from the csv file
-    # df = pd.read_csv('C:/Users/alexf/PycharmProjects/pythonProject/routes.csv')
-    trip_list = dc.get_cleansed_data()
 
+    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_device', 'draught', 'destination', 'trip']
+
+    # Loading of the point data from the csv file
+    trip_list = dc.get_cleansed_data()
     mmsi_line = []
 
-    conn = None
-    cursor = None
-
-    try:
-        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
-        cursor = conn.cursor()
-    except(Exception, psycopg2.DatabaseError) as err:
-        print(err)
+    all_points = []
+    trip_index = 0
 
     for trip in trip_list: 
-        pointList = trip.get_points_in_trip()
-        data = []
-        for point in pointList:
-            data.append([point.latitude, point.longitude])
+        point_list = trip.get_points_in_trip()
+        trip_point = []
+        new_trip = []
+        for p in point_list:
+            trip_point.append([p.latitude, p.longitude])
         
-        df = pd.DataFrame(data, columns=['latitude','longitude'])
+        df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
         
         coordinates = df[["latitude", "longitude"]].values
 
@@ -52,29 +38,28 @@ if __name__ == '__main__':
 
         points_in_trip = trip.get_points_in_trip()
         timestamp = 0
-
-
+        
         # Make trip in database
         # trip_sql = f"INSERT INTO trips(mmsi) VALUES ({trip.get_mmsi()}) RETURNING trip_id"
         # cursor.execute(trip_sql)
         # trip_id = cursor.fetchone()[0]
 
-        # for x, y in zip(x_y_coords[0], x_y_coords[1]):
-        #     for point in points_in_trip:
-        #         if x == point.latitude and y == point.longitude:
-        #             timestamp = point.timestamp
-        #             break
-            
-        #     sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
-        #     cursor.execute(sql)
         
-            
+        for x, y in zip(x_y_coords[0], x_y_coords[1]):
+            for p in points_in_trip:
+                if x == p.latitude and y == p.longitude:
+                    new_trip.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_device, p.draught, p.destination, trip_index])
         
+        if(len(new_trip) > 10):
+            all_points.append(new_trip[0])
+            trip_index += 1    
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+    df = pd.DataFrame(all_points, columns=COLUMNS)
+    print(df.to_string())
+    
+        #sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
 
+        
         # print(line.length, 'line length')
         # print(simplified_line.length, 'simplified line length')
         # print(len(line.coords), 'coordinate pairs in full data set')

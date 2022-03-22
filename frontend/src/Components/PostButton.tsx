@@ -2,7 +2,7 @@ import { LatLng } from 'leaflet';
 import React from 'react'
 
 async function postCoordinates(coordinates: LatLng[]){
-    if(coordinates.length != 2) {
+    if(coordinates.length !== 2) {
         return;
     }
     const requestOptions = {

@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from app.routers import trips
 
 load_dotenv()

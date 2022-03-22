@@ -115,24 +115,7 @@ function ClickMap(props: ClickMapProps) {
 
     function clearMarkers() {
         props.layerGroup.clearLayers();
-        console.log("Cleared your points!");
         props.clearPoints();
     }
     return null;
 }
-
-
-
-
-
-
-
-
-
-    // protected async retrieveGridJson() {
-    //     this.gridJSON = await fetch('http://127.0.0.1:8008/map_bounds?access_token=' + process.env.REACT_APP_API_KEY).then(res => res.json());
-    // }
-
-    // componentDidMount() {
-    //     this.retrieveGridJson();
-    // }

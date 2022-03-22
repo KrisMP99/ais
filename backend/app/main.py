@@ -7,11 +7,15 @@ from app.routers import trips
 load_dotenv()
 TESTSERVER = os.getenv('TEST_SERVER')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
+ORIG = os.getenv('ORIGIN_ONE')
+ORIG2 = os.getenv('ORIGIN_TWO')
 
 app = FastAPI()
 origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    f'http://{ORIG}',
+    f'http://{ORIG2}',
     f'http://{TESTSERVER}',
     f'http://{PRODSERVER}'
 ]

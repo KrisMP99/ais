@@ -3,17 +3,15 @@ import pandas as pd, numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 import data_cleansing as dc
+import data_insertion as di
 
 def create_line_strings():
-    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip']
+    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'line_string', 'line_string_simplified']
 
     # Loading of the point data from the csv file
     trip_list = dc.get_cleansed_data()
+    total_trip_points = []
     mmsi_line = []
-
-    all_points = []
-    trip_index = 0
-
     for trip in trip_list: 
         point_list = trip.get_points_in_trip()
         trip_point = []
@@ -21,12 +19,13 @@ def create_line_strings():
             trip_point.append([p.latitude, p.longitude])
         
         df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
+        trip_point.clear()
         
         coordinates = df[["latitude", "longitude"]].values
 
         line = LineString(coordinates)
 
-        tolerance = 0.00015
+        tolerance = 0.02
 
         simplified_line = line.simplify(tolerance, preserve_topology=False)
 
@@ -39,15 +38,21 @@ def create_line_strings():
         # cursor.execute(trip_sql)
         # trip_id = cursor.fetchone()[0]
         
-        for x, y in zip(x_y_coords[0], x_y_coords[1]):
+        for index, (x, y) in enumerate(zip(x_y_coords[0], x_y_coords[1])):
             for p in point_list:
                 if x == p.latitude and y == p.longitude:
-                    all_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, trip_index])
+                    p.line_string_simplified = index
+                    total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.line_string, p.line_string_simplified])
                     break
-        
-        trip_index += 1
 
-    df = pd.DataFrame(all_points, columns=COLUMNS)
+        for p in point_list:
+            if p.line_string_simplified is None:
+                total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.line_string, None])
+
+
+        df = pd.DataFrame(total_trip_points, columns=COLUMNS)
+        di.insert_cleansed_data(df)
+        total_trip_points.clear()
     return df
     
         #sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
@@ -67,7 +72,7 @@ def create_line_strings():
         # si.to_csv('newCSVFile')
         # print(si)
     
-
+create_line_strings()
 
 
 # https://geoffboeing.com/2014/08/reducing-spatial-data-set-size-with-douglas-peucker/

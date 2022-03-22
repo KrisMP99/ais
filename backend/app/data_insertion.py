@@ -9,7 +9,6 @@ import os
 import pygrametl
 from pygrametl.datasources import SQLSource
 from pygrametl.tables import Dimension, FactTable
-import douglas_peucker as dp
 from sqlalchemy import create_engine
 
 
@@ -30,8 +29,8 @@ def insert_cleansed_data(df):
 def convert_timestamp_to_time_and_date(timestamp):
     print(timestamp)
 
-df = dp.create_line_strings()
-insert_cleansed_data(df)
+# df = dp.create_line_strings()
+# insert_cleansed_data(df)
 
 
 

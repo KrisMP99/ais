@@ -1,6 +1,7 @@
 import os
 import logging
 from dotenv import load_dotenv
+from numpy import NaN
 import pandas as pd
 import pandas.io.sql as psql
 from sqlalchemy import create_engine
@@ -23,9 +24,10 @@ MAX_DIST = 2
 MIN_TIME = 10
 
 class Trip:
-    def __init__(self, mmsi):
+    def __init__(self, mmsi, line_string = None):
         self.mmsi = mmsi
         self.point_list = []
+        self.line_string = line_string
     
     def add_point_to_trip(self, point):
         self.point_list.append(point)
@@ -46,7 +48,7 @@ class Trip:
         return self.mmsi
     
 class Point:
-    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination):
+    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination, line_string=None, line_string_simplified=None):
         self.timestamp = timestamp 
         self.type_of_mobile = type_of_mobile 
         self.mmsi = mmsi 
@@ -66,6 +68,8 @@ class Point:
         self.type_of_position_fixing_device = type_of_position_fixing_device
         self.draught = draught
         self.destination = destination
+        self.line_string = line_string
+        self.line_string_simplified = line_string_simplified
 
     def get_mmsi(self):
         return self.mmsi
@@ -134,7 +138,7 @@ def get_trips(df):
     return trip_list
 
 def partition_trips(trip_list):
-    print(f"BEfore partiton: {len(trip_list)}")
+    print(f"Before partiton: {len(trip_list)}")
     total_trips_cleansed = []
     trips_removed = 0
 
@@ -229,6 +233,11 @@ def partition_trips(trip_list):
         trip_list.pop(trip_key)
     
     trip_list = total_trips_cleansed
+
+    for index, trip in enumerate(trip_list):
+        trip.line_string = index
+        for point in trip.get_points_in_trip():
+            point.line_string = trip.line_string
 
     print(f"After partiton: {len(trip_list)}")
     

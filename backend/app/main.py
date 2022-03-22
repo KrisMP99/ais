@@ -14,18 +14,18 @@ app = FastAPI()
 origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    f'http://{ORIG}',
-    f'http://{ORIG2}',
     f'http://{TESTSERVER}',
     f'http://{PRODSERVER}'
 ]
+
+print(f'http://{TESTSERVER}')
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
+    allow_methods=["POST", "GET"],
+	allow_headers=["*"],
 )
 
 app.include_router(trips.router)

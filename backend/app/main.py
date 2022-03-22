@@ -1,8 +1,8 @@
 import os
+from venv import create
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from fastapi.middleware import Middleware
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from app.routers import trips
 
 load_dotenv()
@@ -16,14 +16,16 @@ origins = [
     f'http://{PRODSERVER}'
 ]
 
-app = FastAPI()
+def create_app() -> CORSMiddleware:
+    """Create app wrapper to overcome middleware issues."""
+    fastapi_app = FastAPI()
+    app.include_router(trips.router)
+    return CORSMiddleware(
+        fastapi_app,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=['*'],
+        allow_headers=['*'],
+    )
 
-app.include_router(trips.router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*']
-)
+app = create_app()

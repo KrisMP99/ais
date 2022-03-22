@@ -1,21 +1,16 @@
 import React from 'react';
 import './Map.css';
-import Hexagon from './Hexagon'
-import { MapContainer, TileLayer, Marker, Polygon, Polyline } from 'react-leaflet';    
+import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';    
 import '../Leaflet.css';
-import L, { LatLngBoundsExpression, LatLngExpression, LatLng, Icon } from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import * as testsss from "../test.json";
-import Helmet from 'react-helmet';
-import { GeoJSON, GeoJsonObject} from 'geojson'
+import L, { LatLngBoundsExpression, LatLngExpression, LatLng, LeafletMouseEvent, icon } from 'leaflet';
+import iconUrl from '../Images/GreenCircle.png';
 
 interface DKMapProps {
-
+    retCoords: (coords: LatLng[]) => void;
 }
 
 interface DKMapStates {
-    markers: LatLngExpression[] | null;
+    points: LatLng[];
 }
 
 const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
@@ -23,84 +18,28 @@ const MAP_BOUNDS: LatLngBoundsExpression = [[58.5, 3.2], [53.5, 16.5]];
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
-    protected hexagonGrid: Hexagon[] | null | undefined;
-    protected gridJSON: GeoJsonObject | undefined;
-    protected map: L.Map;
-    
+    protected gridJSON: any;
+    protected markerLayer: L.LayerGroup;
+    protected markerIcon: L.DivIcon;
+
     constructor(props: DKMapProps) {
         super(props);
-        this.hexagonGrid = null;
-        this.map = L.map('map').setView(MAP_CENTER, 7);
+        this.markerLayer = L.layerGroup();
+        this.markerIcon = L.icon({
+            className: 'marker',
+            iconUrl: iconUrl,
+            iconSize: [20,20],
+            iconAnchor: [12,20]
+        });
         this.state = {
-            markers: null
+            points: []
         }
     }
 
-    protected async retrieveGridJson() {
-        this.gridJSON = await fetch('http://127.0.0.1:8008/map_bounds?access_token=' + process.env.REACT_APP_API_KEY).then(res => res.json());
-    }
-
-    protected async load_shapefile() {
-    //   let url = 'http://127.0.0.1:8008/map_bounds';
-    //   let shapeobject;
-    //   let response = await fetch(url).then((res) => {
-    //     if (!res.ok) {
-    //         throw new Error("HTTP error " + res.status)
-    //     }
-    //     else {
-    //         shapeobject= res.json
-    //     }
-    // });
-    // // return shapeobject;
-    // return fetch('http://127.0.0.1:8008/map_bounds')
-    //     .then(res => res.json());
-    //     console.log(s);
-    }
-
-    componentDidMount() {
-        // this.map = L.map('map').setView(MAP_CENTER, 7);
-        this.retrieveGridJson();
-    }
-
     render() {
-        // let map = L.map('map').setView(MAP_CENTER, 7);
-        
-        
-        
-        // .then(response => {
-        //         return response.text();
-        //     })
-        //     .then(data => {
-        //         s = data;
-        //     });
-        //     console.log(tem);
-        // L.geoJSON(this.gridJSON).addTo('map');
-        let DefaultIcon = L.icon({
-            iconUrl: icon,
-            shadowUrl: iconShadow
-        });
-        L.Marker.prototype.options.icon = DefaultIcon;
-        // L.geoJSON(this.gridJSON).addTo(this.map);
-        // L.control.scale().addTo(L.map)
-        // let grid = this.addGrid();
-        // let test = () => {
-        //     testsss.features.map(park => (
-        //         <Marker
-        //           key={park.properties.PARK_ID}
-        //           position={[
-        //             park.geometry.coordinates[1],
-        //             park.geometry.coordinates[0]
-        //           ]}
-        //         />
-        //       ))
-        // }
-
-        
-
         return (
             <MapContainer
                 id='map'
-                ref={this.map}
                 className="map-container"
                 center={MAP_CENTER}
                 bounds={MAP_BOUNDS}
@@ -113,34 +52,70 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     bounds={MAP_BOUNDS}
                 />
-                {/* <Hexagon center={MAP_CENTER} rad={600} /> */}
-                {/* {() => {
-                    if (this.state.markers) {
-                        this.state.markers.map((pos, idx) =>
-                            <Marker key={`marker-${idx}`} position={pos}></Marker>
-                        )
-                    }
-                }
-                } */}
-                {/* {test} */}
+                <ClickMap 
+                    layerGroup={this.markerLayer}
+                    markerIcon={this.markerIcon}
+                    points={this.state.points}
+                    addPoint={(point) => {
+                            if(this.state.points) {
+                                this.state.points.push(point);
+                                this.props.retCoords(this.state.points);
+                                this.setState({points: this.state.points});
+                            }
+                            else {
+                                let temp: LatLng[] = [];
+                                temp.push(point);
+                                this.setState({points: temp})
+                            }
+                        }}
+                    clearPoints={() => {
+                        this.state.points.pop();
+                        this.state.points.pop();
+                        this.setState({points: this.state.points});
+                    }}
+                />
             </MapContainer>
         );
-    }
-
-    // protected addGrid() {
-    //     this.hexagonGrid?.push(<Hexagon center={MAP_CENTER} radius={}/>)
-    // }
-
-    protected addSingleMarker(e: any) {
-        let temp = this.state.markers;
-        if (!temp) {
-            temp = [e.latlng];
-        }
-        else {
-            temp.push(e.latlng);
-        }
-        this.setState({ markers: temp })
     }
 }
 
 export default DKMap;
+
+
+interface ClickMapProps {
+    points: LatLng[];
+    layerGroup: L.LayerGroup;
+    addPoint: (pos: LatLng) => void;
+    clearPoints: () => void;
+    markerIcon: L.DivIcon;
+}
+
+
+function ClickMap(props: ClickMapProps) {
+    const map = useMapEvents({
+        click: (event) => {
+            if (props.points.length < 2) {
+                addMarker(event);
+            }
+            else {
+                clearMarkers();
+            }
+        }
+    });
+
+    if(!map.hasLayer(props.layerGroup)) {
+        map.addLayer(props.layerGroup);
+    }
+
+    function addMarker(e: LeafletMouseEvent) {
+        let position: LatLng = new LatLng(e.latlng.lat, e.latlng.lng);
+        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat + " Lng: " + position.lng));
+        props.addPoint(position);
+    }
+
+    function clearMarkers() {
+        props.layerGroup.clearLayers();
+        props.clearPoints();
+    }
+    return null;
+}

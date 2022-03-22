@@ -1,8 +1,11 @@
 .map-container {
-    margin-top: 5vh;
-    margin-right: 20px;
-    margin-left: auto;
-    margin-bottom: 5vh;
-    height: 90vh;
-    width: 50vw;
+    flex-shrink: 0;
+    flex-grow: 1;
+    height: 100%;
+    width: 100%;
+    margin: 20px 50px;
+}
+.marker {
+    width: 20px;
+    height: 20px;
 }

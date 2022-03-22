@@ -11,6 +11,9 @@ ORIG = os.getenv('ORIGIN_ONE')
 ORIG2 = os.getenv('ORIGIN_TWO')
 
 app = FastAPI()
+
+app.include_router(trips.router)
+
 origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -25,5 +28,3 @@ app.add_middleware(
     allow_methods=["POST", "GET"],
 	allow_headers=["*"],
 )
-
-app.include_router(trips.router)

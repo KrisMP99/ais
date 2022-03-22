@@ -10,8 +10,8 @@ TESTSERVER = os.getenv('TEST_SERVER')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
 
 origins = [
-    'http://localhost',
-    'http://127.0.0.1',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
     f'http://{TESTSERVER}',
     f'http://{PRODSERVER}'
 ]

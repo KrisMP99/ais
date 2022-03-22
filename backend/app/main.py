@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware import Middleware
 from app.routers import trips
 
 load_dotenv()
@@ -21,8 +22,8 @@ origins = [
     f'http://{PRODSERVER}:3000'
 ]
 
-app.add_middleware(
-    CORSMiddleware,
+app = CORSMiddleware(
+    app=app,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["POST", "GET"],

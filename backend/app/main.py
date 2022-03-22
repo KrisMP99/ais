@@ -10,16 +10,16 @@ TESTSERVER = os.getenv('TEST_SERVER')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
 
 origins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    f'http://{TESTSERVER}:3000/',
-    f'http://{PRODSERVER}:3000/'
+    'http://localhost',
+    'http://127.0.0.1',
+    f'http://{TESTSERVER}',
+    f'http://{PRODSERVER}'
 ]
 
 middleware = [
     Middleware(
         CORSMiddleware,
-        allow_origins='*',
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*']

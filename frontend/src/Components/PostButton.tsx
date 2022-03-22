@@ -5,7 +5,7 @@ async function postCoordinates(){
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json', 
-            'X-Token': 'skpwLYRR5tVtGv4F7ctPRyf2'
+            'X-Token':  process.env.REACT_APP_TOKEN!
         },
         body: 
             JSON.stringify({

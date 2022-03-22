@@ -1,6 +1,10 @@
+import { LatLng } from 'leaflet';
 import React from 'react'
 
-async function postCoordinates(){
+async function postCoordinates(coordinates: LatLng[]){
+    if(coordinates.length != 2) {
+        return;
+    }
     const requestOptions = {
         method: 'POST',
         headers: { 
@@ -10,12 +14,12 @@ async function postCoordinates(){
         body: 
             JSON.stringify({
                 "p1": {
-                    "lat": 3.7,
-                    "long": 56.79394598
+                    "long": coordinates[0].lng,
+                    "lat": coordinates[0].lat
                 },
                 "p2":{
-                    "lat": 3.25,
-                    "long": 57.521407319
+                    "long": coordinates[1].lng,
+                    "lat": coordinates[1].lat
                 }
             })
     };
@@ -24,10 +28,10 @@ async function postCoordinates(){
     .then(data => console.log(data))
   };
 
-export default function PostButton(){
+export default function PostButton(props: any){
     return (
         <div>
-            <button onClick={postCoordinates}>Find route</button>
+            <button onClick={(e) => postCoordinates(props.coords)}>Find route</button>
         </div>
     )
 }

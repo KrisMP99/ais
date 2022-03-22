@@ -6,11 +6,11 @@ import L, { LatLngBoundsExpression, LatLngExpression, LatLng, LeafletMouseEvent,
 import iconUrl from '../Images/GreenCircle.png';
 
 interface DKMapProps {
-
+    retCoords: (coords: LatLng[]) => void;
 }
 
 interface DKMapStates {
-    points: LatLngExpression[];
+    points: LatLng[];
 }
 
 const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
@@ -59,10 +59,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     addPoint={(point) => {
                             if(this.state.points) {
                                 this.state.points.push(point);
+                                this.props.retCoords(this.state.points);
                                 this.setState({points: this.state.points});
                             }
                             else {
-                                let temp: LatLngExpression[] = [];
+                                let temp: LatLng[] = [];
                                 temp.push(point);
                                 this.setState({points: temp})
                             }
@@ -82,9 +83,9 @@ export default DKMap;
 
 
 interface ClickMapProps {
-    points: LatLngExpression[];
+    points: LatLng[];
     layerGroup: L.LayerGroup;
-    addPoint: (pos: LatLngExpression) => void;
+    addPoint: (pos: LatLng) => void;
     clearPoints: () => void;
     markerIcon: L.DivIcon;
 }
@@ -107,8 +108,8 @@ function ClickMap(props: ClickMapProps) {
     }
 
     function addMarker(e: LeafletMouseEvent) {
-        let position: LatLngExpression = [e.latlng.lat, e.latlng.lng];
-        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position[0] + " Lng: " + position[1]));
+        let position: LatLng = new LatLng(e.latlng.lat, e.latlng.lng);
+        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat + " Lng: " + position.lng));
         props.addPoint(position);
     }
 

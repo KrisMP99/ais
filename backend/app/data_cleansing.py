@@ -24,10 +24,10 @@ MAX_DIST = 2
 MIN_TIME = 10
 
 class Trip:
-    def __init__(self, mmsi, line_string = None):
+    def __init__(self, mmsi, trip_key = None):
         self.mmsi = mmsi
         self.point_list = []
-        self.line_string = line_string
+        self.trip_key = trip_key
     
     def add_point_to_trip(self, point):
         self.point_list.append(point)
@@ -48,7 +48,7 @@ class Trip:
         return self.mmsi
     
 class Point:
-    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination, line_string=None, line_string_simplified=None):
+    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination, trip_key=None, trip_simplified_key=None):
         self.timestamp = timestamp 
         self.type_of_mobile = type_of_mobile 
         self.mmsi = mmsi 
@@ -68,8 +68,8 @@ class Point:
         self.type_of_position_fixing_device = type_of_position_fixing_device
         self.draught = draught
         self.destination = destination
-        self.line_string = line_string
-        self.line_string_simplified = line_string_simplified
+        self.trip_key = trip_key
+        self.trip_simplified_key = trip_simplified_key
 
     def get_mmsi(self):
         return self.mmsi
@@ -234,10 +234,20 @@ def partition_trips(trip_list):
     
     trip_list = total_trips_cleansed
 
-    for index, trip in enumerate(trip_list):
-        trip.line_string = index
+
+    # Add the trip_id index for each trip
+    sql = "SELECT MAX(trip_id) FROM trip_dim"
+    df = get_data_from_query(sql)
+    trip_PK_key = df.iat[0,0]
+
+    if trip_PK_key is None:
+        trip_PK_key = -1
+
+    for trip in trip_list:
+        trip_PK_key += 1
+        trip.trip_key = trip_PK_key
         for point in trip.get_points_in_trip():
-            point.line_string = trip.line_string
+            point.trip_key = trip.trip_key
 
     print(f"After partiton: {len(trip_list)}")
     

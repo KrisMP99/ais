@@ -23,7 +23,7 @@ async function postCoordinates(coordinates: LatLng[]){
                 }
             })
     };
-    fetch('http://127.0.0.1:8008/trips/trip', requestOptions)
+    fetch('http://localhost:8008/trips/trip', requestOptions)
     .then(response => response.json())
     // .then(data => console.log(data))
   };

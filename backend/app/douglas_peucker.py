@@ -6,7 +6,7 @@ import data_cleansing as dc
 import data_insertion as di
 
 def create_line_strings():
-    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_key', 'trip_key_simplified']
+    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 
     # Loading of the point data from the csv file
     trip_list = dc.get_cleansed_data()
@@ -38,21 +38,30 @@ def create_line_strings():
         # cursor.execute(trip_sql)
         # trip_id = cursor.fetchone()[0]
         
-        for index, (x, y) in enumerate(zip(x_y_coords[0], x_y_coords[1])):
+        for x, y in zip(x_y_coords[0], x_y_coords[1]):
             for p in point_list:
                 if x == p.latitude and y == p.longitude:
-                    p.trip_simplified_key = index
-                    total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_key, p.trip_simplified_key])
+                    p.simplified_trip_id = trip.simplified_trip_id
+                    # total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, trip.simplified_trip_id])
                     break
 
-        for p in point_list:
-            if p.trip_simplified_key is None:
-                total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_key, None])
+        # for p in point_list:
+        #     if p.simplified_trip_id is None:
+        #         total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, None])
 
+        
+    # df['line_string'] = np.nan
+    index = 0
+    for trip in trip_list:
+        print(f"Currently adding trip {index} in douglas...")
+        index +=1
+        for p in trip.get_points_in_trip():
+            total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
+        trip_list.remove(trip)
 
-        df = pd.DataFrame(total_trip_points, columns=COLUMNS)
-        di.insert_into_star(df)
-        total_trip_points.clear()
+    df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
+    di.insert_into_star(df_all_points)
+        # total_trip_points.clear()
         #sql = f"INSERT INTO points(trip_id, mmsi, timestamp, point) VALUES({trip_id}, {trip.get_mmsi()}, '{timestamp}', ST_SetSRID(ST_MakePoint({x}, {y}), 3857))"
 
         

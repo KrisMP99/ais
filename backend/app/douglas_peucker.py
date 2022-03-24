@@ -55,9 +55,9 @@ def create_line_strings():
     for trip in trip_list:
         print(f"Currently adding trip {index} in douglas...")
         index +=1
-        for p in trip.get_points_in_trip():
+        for p in point_list:
             total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
-        trip_list.remove(trip)
+        # trip_list.remove(trip)
 
     df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
     di.insert_into_star(df_all_points)

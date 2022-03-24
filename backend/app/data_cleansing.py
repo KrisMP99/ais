@@ -24,10 +24,10 @@ MAX_DIST = 2
 MIN_TIME = 10
 
 class Trip:
-    def __init__(self, mmsi, trip_key = None, simplified_trip_id = None):
+    def __init__(self, mmsi, trip_id = None, simplified_trip_id = None):
         self.mmsi = mmsi
         self.point_list = []
-        self.trip_key = trip_key
+        self.trip_id = trip_id
         self.simplified_trip_id = simplified_trip_id
     
     def add_point_to_trip(self, point):
@@ -236,28 +236,6 @@ def partition_trips(trip_list):
     
     trip_list = total_trips_cleansed
 
-
-    # Add the trip_id index for each trip
-    sql = "SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim"
-    df = get_data_from_query(sql)
-    trip_PK_key = df.iat[0,0]
-    simplified_trip_PK_key = df.iat[0,1]
-
-    if trip_PK_key is None:
-        trip_PK_key = -1
-    if simplified_trip_PK_key is None:
-        simplified_trip_PK_key = -1
-
-    for trip in trip_list:
-        trip_PK_key += 1
-        simplified_trip_PK_key += 1
-        trip.trip_id = trip_PK_key
-        trip.simplified_trip_id = simplified_trip_PK_key
-        print(f"Adding trip no. {trip.trip_id} (in data cleansing)")
-
-        for point in trip.get_points_in_trip():
-            point.trip_id = trip.trip_id
-
     print(f"After partiton: {len(trip_list)}")
     
     return trip_list
@@ -285,8 +263,30 @@ def remove_outliers(trip_list):
     for trip in trip_list:
         if(len(trip.get_points_in_trip()) < MINIMUM_POINTS_IN_TRIP):
             trip_list.remove(trip)
-            
+
     print(f"len of trip_list: {len(trip_list)}")
+
+    # Add the trip_id index for each trip
+    sql = "SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim"
+    df = get_data_from_query(sql)
+    trip_PK_key = df.iat[0,0]
+    simplified_trip_PK_key = df.iat[0,1]
+
+    if trip_PK_key is None:
+        trip_PK_key = -1
+    if simplified_trip_PK_key is None:
+        simplified_trip_PK_key = -1
+
+    for trip in trip_list:
+        trip_PK_key += 1
+        simplified_trip_PK_key += 1
+        trip.trip_id = trip_PK_key
+        trip.simplified_trip_id = simplified_trip_PK_key
+        print(f"Adding trip no. {trip.trip_id} (in data cleansing)")
+
+        for point in trip.get_points_in_trip():
+            point.trip_id = trip.trip_id
+        
     return trip_list
 
 def export_trips_csv(trip_list, CSV_PATH = CSV_PATH):

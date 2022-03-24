@@ -1,19 +1,13 @@
 from multiprocessing import connection
 from venv import create
-import pandas as pd, numpy as np
-import matplotlib.pyplot as plt
-from pytest import Cache
-from shapely.geometry import LineString
+import numpy as np
 from dotenv import load_dotenv
-import data_cleansing as dc
 import psycopg2
 import os
 import pygrametl
-from pygrametl.datasources import PandasSource, SQLSource
+from pygrametl.datasources import SQLSource
 from pygrametl.tables import CachedDimension, FactTable
 from sqlalchemy import create_engine
-import pandas.io.sql as psql
-
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -30,8 +24,7 @@ def insert_cleansed_data(df):
     
     engine = create_engine(db_string)
     with engine.connect() as conn:
-        df.to_sql('cleansed', conn, if_exists='append', index=False)
-
+        df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
 
 def convert_timestamp_to_date(row):
     timestamp = str(row['timestamp'])
@@ -63,9 +56,6 @@ def insert_into_star(df):
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
-    #df['line_string'] = np.nan
-
-    #print(df.head(5))
     print("Getting cleansed data from db")
     sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
     ais_source = SQLSource(connection=conn, query=sql_query)
@@ -114,14 +104,21 @@ def insert_into_star(df):
     )
 
     print("Inserting rows...")
+    index = 0
     for row in ais_source:
         convert_timestamp_to_time_and_date(row)
+        row['line_string'] = None
         row['date_id'] = date_dim.ensure(row)
         row['time_id'] = time_dim.ensure(row)
         row['nav_id'] = nav_dim.ensure(row)
         row['ship_id'] = ship_dim.ensure(row)
         row['ship_type_id'] = ship_type_dim.ensure(row)
         row['trip_id'] = trip_dim.ensure(row)
+
+        if(index % 100000 == 0):
+            print(row)
+        
+        index += 1
 
         fact_table.insert(row)
     print("Done inserting!")

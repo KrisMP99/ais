@@ -12,7 +12,7 @@ async function postCoordinates(coordinates: LatLng[]){
             'Content-Type': 'application/json',
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Credentials": "true",
-            'X-Token':  process.env.REACT_APP_TOKEN!,
+            'x-token':  process.env.REACT_APP_TOKEN!,
         },
         body: 
             JSON.stringify(

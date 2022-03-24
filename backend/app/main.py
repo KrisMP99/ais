@@ -2,8 +2,8 @@ import os
 from venv import create
 from fastapi import FastAPI
 from dotenv import load_dotenv
-from starlette.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware import Middleware
+from fastapi.middleware.cors import CORSMiddleware
 from app.routers import trips
 
 load_dotenv()
@@ -18,7 +18,14 @@ origins = [
 ]
 
 middleware = [
-    Middleware(CORSMiddleware, allow_origins=['*'])
+    Middleware(
+        CORSMiddleware, 
+        allow_origins=['*'],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
 ]
 
 app = FastAPI(middleware=middleware)
+app.include_router(trips.router)

@@ -24,10 +24,11 @@ MAX_DIST = 2
 MIN_TIME = 10
 
 class Trip:
-    def __init__(self, mmsi, trip_key = None):
+    def __init__(self, mmsi, trip_key = None, simplified_trip_id = None):
         self.mmsi = mmsi
         self.point_list = []
         self.trip_key = trip_key
+        self.simplified_trip_id = simplified_trip_id
     
     def add_point_to_trip(self, point):
         self.point_list.append(point)
@@ -48,7 +49,7 @@ class Trip:
         return self.mmsi
     
 class Point:
-    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination, trip_key=None, trip_simplified_key=None):
+    def __init__(self, timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination, trip_id=None, simplified_trip_id=None):
         self.timestamp = timestamp 
         self.type_of_mobile = type_of_mobile 
         self.mmsi = mmsi 
@@ -68,8 +69,8 @@ class Point:
         self.type_of_position_fixing_device = type_of_position_fixing_device
         self.draught = draught
         self.destination = destination
-        self.trip_key = trip_key
-        self.trip_simplified_key = trip_simplified_key
+        self.trip_id = trip_id
+        self.simplified_trip_id = simplified_trip_id
 
     def get_mmsi(self):
         return self.mmsi
@@ -111,8 +112,9 @@ def get_data_from_query(sql_query):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     engine = create_engine(db_string)
 
-    sql = psql.read_sql_query(sql=sql_query, con=engine)
-    dataframe = pd.DataFrame(sql)
+    with engine.connect() as conn:
+        sql = psql.read_sql_query(sql=sql_query, con=conn)
+        dataframe = pd.DataFrame(sql)
 
     return dataframe
 
@@ -236,18 +238,25 @@ def partition_trips(trip_list):
 
 
     # Add the trip_id index for each trip
-    sql = "SELECT MAX(trip_id) FROM trip_dim"
+    sql = "SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim"
     df = get_data_from_query(sql)
     trip_PK_key = df.iat[0,0]
+    simplified_trip_PK_key = df.iat[0,1]
 
     if trip_PK_key is None:
         trip_PK_key = -1
+    if simplified_trip_PK_key is None:
+        simplified_trip_PK_key = -1
 
     for trip in trip_list:
         trip_PK_key += 1
-        trip.trip_key = trip_PK_key
+        simplified_trip_PK_key += 1
+        trip.trip_id = trip_PK_key
+        trip.simplified_trip_id = simplified_trip_PK_key
+        print(f"Adding trip no. {trip.trip_id} (in data cleansing)")
+
         for point in trip.get_points_in_trip():
-            point.trip_key = trip.trip_key
+            point.trip_id = trip.trip_id
 
     print(f"After partiton: {len(trip_list)}")
     

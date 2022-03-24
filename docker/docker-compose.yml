@@ -28,7 +28,7 @@ services:
         target: /srv/data/csv
     restart: always
     ports:
-      - 8008:8000
+      - 8000:8000
     
   client:
     build:

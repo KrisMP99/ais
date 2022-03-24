@@ -20,7 +20,7 @@ services:
         target: /srv/data/ais
     restart: always
     ports:
-      - 8008:8000
+      - 8000:8000
       
   client:
     build:

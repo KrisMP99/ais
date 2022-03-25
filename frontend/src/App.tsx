@@ -1,25 +1,23 @@
-import { render } from '@testing-library/react';
-import { LatLng } from 'leaflet';
-import React, { useState } from 'react';
+import { LatLng, LatLngBoundsExpression } from 'leaflet';
+import React from 'react';
 import './App.css';
 import DKMap from './Components/Map';
 import PostButton from './Components/PostButton';
 import './Leaflet.css';
 
-interface AppProps {
-
-}
 interface AppStates {
   pointCoords: LatLng[];
 }
 
+export class App extends React.Component<any, AppStates> {
 
-export class App extends React.Component<AppProps, AppStates> {
-  // const [pointCoords, setPointCoords] = useState([])
-  // var pointCoords: LatLngExpression[];
-  constructor(props: AppProps) {
+  protected mapCenter: LatLng;
+  protected mapBoundaries: LatLngBoundsExpression;
+
+  constructor(props: any) {
     super(props);
-
+    this.mapCenter = new LatLng(55.8581, 9.8476);
+    this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
     this.state = {
       pointCoords: []
     }
@@ -31,6 +29,8 @@ export class App extends React.Component<AppProps, AppStates> {
       <div className='main'>
         <div className="main-container">
           <DKMap
+            mapCenter={this.mapCenter}
+            mapBounds={this.mapBoundaries}
             retCoords={(points: LatLng[]) => {
               this.setState({pointCoords: points});
             }}

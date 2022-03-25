@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from app.dependencies import get_token_header
 from app.models.coordinate import Coordinate
 from app.db.database import engine, Session
-from geojson import Feature, Point, FeatureCollection
+from geojson import Feature, MultiPolygon, Point, FeatureCollection
 import asyncio
 import pandas as pd
 
@@ -28,7 +28,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     query = f"WITH gp1 AS (\
         SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom),\
         gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{gp2}')) As geom)\
-        SELECT ST_AsGeoJSON(h.geom)\
+        SELECT ST_AsGeoJSON(h.geom)::json\
         FROM hexagrid as h, gp1, gp2\
         WHERE ST_Intersects(h.geom, ST_SetSRID(gp1.geom, 3857))\
         OR ST_Intersects(h.geom, ST_SetSRID(gp2.geom, 3857));"
@@ -36,7 +36,12 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql, query, engine)
 
-    return jsonable_encoder(result)
+    hexagons = []
+    for json in result['st_asgeojson']:
+        hexagons.append(json['coordinates'])
+    multiPolygon = MultiPolygon((hexagons[0], hexagons[1]))
+
+    return jsonable_encoder(multiPolygon)
 
 @router.get("/hexa_grid")
 async def get_map_bounds():

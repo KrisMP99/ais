@@ -1,17 +1,19 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
 import '../../Leaflet.css';
+import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
-import ClickMap from './PlacePoint';
+import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
 
 interface DKMapProps {
-    retCoords: (coords: LatLng[]) => void;
     mapBounds: LatLngBoundsExpression;
     mapCenter: LatLng;
+
+    retCoords: (coords: LatLng[]) => void;
+    retMousePos: (pos: string[]) => void;
 }
 
 interface DKMapStates {
@@ -60,7 +62,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    // bounds={this.props.mapBounds}
                 />
                 <MapConsumer>
                     {(map) => {
@@ -70,21 +71,17 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         return null;
                     }}
                 </MapConsumer>
-                <ClickMap 
+                <MapEvents 
                     ignoreLayers={this.ignoreCountires}
                     layerGroup={this.markerLayer}
                     markerIcon={this.markerIcon}
                     points={this.state.points}
+                    retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
                     addPoint={(point) => {
                             if(this.state.points) {
                                 this.state.points.push(point);
                                 this.props.retCoords(this.state.points);
                                 this.setState({points: this.state.points});
-                            }
-                            else {
-                                let temp: LatLng[] = [];
-                                temp.push(point);
-                                this.setState({points: temp})
                             }
                         }}
                     clearPoints={() => {
@@ -92,6 +89,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         this.state.points.pop();
                         this.setState({points: this.state.points});
                     }}
+
                 />
             </MapContainer>
         );

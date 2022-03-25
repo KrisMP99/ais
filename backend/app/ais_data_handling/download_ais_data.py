@@ -52,12 +52,9 @@ def connect_to_to_ais_web_server_and_get_data(logger):
         if "aisdk" in link.string:
             results.append(link.string)
             dates.append(link.string.split("aisdk-")[1].split(".zip")[0])
-    return results
+    return results, dates
 
-def start():
-    logger = get_logger()
-    results = connect_to_to_ais_web_server_and_get_data(logger)
-
+def get_latest_from_log(logger):
     try:
         flog = open(LOG_FILE_PATH,'a+')
         flog.seek(0)
@@ -67,8 +64,7 @@ def start():
         quit()
     finally:
         flog.close()
-
-
+    
     if len(data) <= 0:
         logger.error("Log file is empty, please insert the name of the latest downloaded ais file")
         quit()
@@ -78,20 +74,46 @@ def start():
     else:
         current_latest_entry = data[-1]
 
-    logger.info(f"Latest entry is: {current_latest_entry}")
+    return current_latest_entry   
 
-    latest_index = results.index(current_latest_entry)
-    len_results = len(results)
-    
-    if latest_index + 1 == len_results:
-        logger.info("No new entries available. Quitting.")
+def start(files_to_download, cont = False):
+    logger = get_logger()
+    results, dates = connect_to_to_ais_web_server_and_get_data(logger)
+
+    if cont:
+        begin_index_str = get_latest_from_log(logger)
+        end_index_str = len(results)
+        logger.info(f"Latest entry is: {begin_index_str}")
+    elif len(files_to_download) > 1:
+        begin_index_str = files_to_download[0]
+        end_index_str = None
+    elif len(files_to_download) == 1:
+        begin_index_str = files_to_download[0]
+        end_index_str = None
+    else:
+        logger.critical("Something went wrong when determining which files to download... Qutting!")
         quit()
-    
-    logger.info(f"There are {(len_results - 1) - latest_index} new entries available")
 
-    for entry in range(latest_index + 1, len_results):
+    start_index = results.index(begin_index_str)
+    
+    if end_index_str is not None:
+        end_index = results.index(end_index_str)
+    else:
+        end_index = results.index(begin_index_str)
+
+    len_results = len(results)
+ 
+    if(cont):
+        if start_index + 1 == len_results:
+            logger.info("No new entries available. Quitting.")
+            quit()
+        start_index += 1
+        logger.info(f"There are {(len_results - 1) - start_index} new entries available")
+    
+
+    # Numpy for ?
+    for entry in range(start_index, end_index):
         logger.info(f"Trying to download file '{results[entry]}'")
-        
         try:
             download_result = requests.get("https://web.ais.dk/aisdata/" + results[entry], allow_redirects=True)
             path_zip = DIR_PATH + results[entry]
@@ -249,6 +271,25 @@ def insert_csv_from_folder(folder_path):
     for file in files:
         insert_csv_to_db_manually(file)
 
+
+def extract_interval(interval_str):
+    interval_split = interval_str.split('::')
+    date_begin = interval_split[0]
+    date_end = interval_split[2]
+
+    return [date_begin, date_end]
+
+def download_interval(date_interval):
+    start()
+
+def start(interval_to_download = None, file_to_download = None, all = False, cont = False):
+    if interval_to_download is not None:
+        date_interval = extract_interval(interval_to_download)
+        start(date_interval)
+
+    print("We good")
+
 insert_csv_from_folder(DIR_PATH)
+
 
 #start()

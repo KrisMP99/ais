@@ -10,8 +10,6 @@ async function postCoordinates(coordinates: LatLng[]){
         headers: { 
             'Accept': 'application/json', 
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Credentials': 'true',
             'x-token':  process.env.REACT_APP_TOKEN!,
         },
         body: 

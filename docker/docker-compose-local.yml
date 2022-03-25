@@ -7,6 +7,7 @@ services:
       - '5431:5431'
     env_file: ../.env
     restart: always
+    
   api:
     build:
       context: ../
@@ -20,7 +21,7 @@ services:
         target: /srv/data/ais
     restart: always
     ports:
-      - 8008:8000
+      - 8080:8000
       
   client:
     build:

@@ -1,8 +1,7 @@
-import { render } from '@testing-library/react';
 import { LatLng } from 'leaflet';
 import React, { useState } from 'react';
 import './App.css';
-import DKMap from './Components/Map';
+import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
 import './Leaflet.css';
 

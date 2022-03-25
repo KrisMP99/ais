@@ -1,7 +1,7 @@
 import { LatLng, LatLngBoundsExpression } from 'leaflet';
 import React from 'react';
 import './App.css';
-import DKMap from './Components/Map';
+import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
 import './Leaflet.css';
 

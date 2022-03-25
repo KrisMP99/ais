@@ -10,9 +10,9 @@ async function postCoordinates(coordinates: LatLng[]){
         headers: { 
             'Accept': 'application/json', 
             'Content-Type': 'application/json',
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Credentials": "true",
-            'X-Token':  process.env.REACT_APP_TOKEN!,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': 'true',
+            'x-token':  process.env.REACT_APP_TOKEN!,
         },
         body: 
             JSON.stringify(
@@ -28,7 +28,7 @@ async function postCoordinates(coordinates: LatLng[]){
         })
     };
 
-    fetch('http://localhost:8000/trips/trip', requestOptions)
+    fetch('http://' + process.env.REACT_APP_API! + '/trips/trip', requestOptions)
     .then(response => response.json())
     .then(data => console.log(data))
   };

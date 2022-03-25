@@ -39,7 +39,7 @@ To exit the container, ```exit```
 
 To exit the container, ```\q```
 
-Access FastAPI on ```http://localhost:8008/```
+Access FastAPI on ```http://localhost:8080/``` or ```http://0.0.0.0:8080/```
 Access React on ```http://localhost:3000/```
 
 If you wish to install requirements packages and test the python program before running docker, create a virtual enviroment inside the backend folder
@@ -49,7 +49,7 @@ Run the virtual environment on Mac with
 ```source env/bin/activate```
 On windows with ```.\backend\env\Scripts\activate```
 
-## Database setup map-bounds
+## Database setup map-bounds and hexagrid
 1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON,3857));```
 1. Insert data into table 
 ```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
@@ -57,4 +57,4 @@ On windows with ```.\backend\env\Scripts\activate```
 1. Create a table for geometry
 ```CREATE TABLE hexagrid (hid serial PRIMARY KEY, geom geometry);```
 1. Run this query
-```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.02, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```
+```WITH geometry_hexagons AS (SELECT ST_AsGeoJSON(hexes.geom) FROM ST_HexagonGrid (0.00845, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes INNER JOIN map_bounds AS mb ON ST_Intersects(mb.geom, ST_Transform(hexes.geom, 3857)) GROUP BY hexes.geom) INSERT INTO hexagrid(geom) SELECT * FROM geometry_hexagons;```

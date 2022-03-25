@@ -16,22 +16,41 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 
-# conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
-# conn.autocommit = True
-# cursor = conn.cursor()
+cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
+                      timestamp TIMESTAMP WITHOUT TIME ZONE,\
+                      type_of_mobile VARCHAR,\
+                      mmsi integer,\
+                      latitude real,\
+                      longitude real,\
+                      navigational_status VARCHAR,\
+                      rot numeric,\
+                      sog numeric,\
+                      cog numeric,\
+                      heading smallint,\
+                      imo integer,\
+                      callsign VARCHAR,\
+                      name VARCHAR,\
+                      ship_type VARCHAR,\
+                      width smallint,\
+                      length smallint,\
+                      type_of_position_fixing_device VARCHAR,\
+                      draught numeric,\
+                      destination VARCHAR,\
+                      trip_id integer,\
+                      simplified_trip_id integer)" 
 
 def insert_cleansed_data(df):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     
     engine = create_engine(db_string)
     with engine.connect() as conn:
+        conn.execute(cleansed_table_sql)
         df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
 
 def convert_timestamp_to_date(row):
     timestamp = str(row['timestamp'])
     return (timestamp.split(' ')[0])
 
-# Remember to refactor/rewrite!!
 def convert_timestamp_to_time_and_date(row):
     timestamp = str(row['timestamp'])
     
@@ -45,21 +64,13 @@ def convert_timestamp_to_time_and_date(row):
     row['date_id'] = int(time_split[0].replace('-',''))
     row['time_id'] = int(time_split[1].replace(':',''))
 
-    #return date, time, date_id, time_id
-
-def insert_into_star(df):
-    print("Inserting DF to cleansed")
-    insert_cleansed_data(df)
-
-    # Update all rows with data for date- and time dimensions
-    # df[["date","time","date_id","time_id"]] = df.apply(convert_timestamp_to_time_and_date, axis=1, result_type="expand")
-
+def insert_into_star(logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
-    print("Getting cleansed data from db")
+    logger.info("Getting cleansed data from db")
     sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
     ais_source = SQLSource(connection=conn, query=sql_query)
 
@@ -106,7 +117,7 @@ def insert_into_star(df):
         targetconnection=conn_wrapper
     )
 
-    print("Inserting rows...")
+    logger.info("Inserting rows into star schema")
     index = 0
     for row in ais_source:
         convert_timestamp_to_time_and_date(row)
@@ -132,33 +143,37 @@ def insert_into_star(df):
 
         fact_table.insert(row)
 
-    print("Done inserting!")
-    print("Create line strings...")
+    logger.info("Done inserting into star schema")
+    logger.info("Generating line strings...")
+
     # Get the line string to start from
     cursor.execute("SELECT MIN(trip_id) FROM cleansed")
     result = cursor.fetchone()
     trip_id = result[0]
 
     sql_line_string_query = "WITH trip_list AS ( " \
-                            "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
-                            "FROM data_fact " \
-                            f"WHERE trip_id >= {trip_id}" \
-                            "GROUP BY trip_id)" \
+                                "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
+                                "FROM data_fact " \
+                                f"WHERE trip_id >= {trip_id}" \
+                                "GROUP BY trip_id)" \
                             "UPDATE trip_dim " \
-                            "SET line_string = ( " \
-	                        "SELECT line " \
-	                        "FROM trip_list " \
-	                        "WHERE trip_list.trip_id = trip_dim.trip_id)"
+                                "SET line_string = ( " \
+	                                "SELECT line " \
+	                                "FROM trip_list " \
+	                            "WHERE trip_list.trip_id = trip_dim.trip_id)"
 
 
     # Truncate cleansed table:
     cursor.execute(sql_line_string_query)
-    cursor.execute("TRUNCATE TABLE cleansed")
+
+    logger.info("Generated and updated all line strings, deleting raw_data and cleansed tables")
+
+    cursor.execute("DROP TABLE cleansed, raw_data")
 
     conn_wrapper.commit()
     conn_wrapper.close()
     conn.close()
-    # print(df.head(10))
-    # quit()
+    
+    logger.info("Finished!")
 
 

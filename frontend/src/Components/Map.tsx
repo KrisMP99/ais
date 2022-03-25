@@ -7,14 +7,13 @@ import iconUrl from '../Images/GreenCircle.png';
 
 interface DKMapProps {
     retCoords: (coords: LatLng[]) => void;
+    mapBounds: LatLngBoundsExpression;
+    mapCenter: LatLng;
 }
 
 interface DKMapStates {
     points: LatLng[];
 }
-
-const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
-const MAP_BOUNDS: LatLngBoundsExpression = [[58.5, 3.2], [53.5, 16.5]];
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
@@ -41,16 +40,17 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             <MapContainer
                 id='map'
                 className="map-container"
-                center={MAP_CENTER}
-                bounds={MAP_BOUNDS}
+                center={this.props.mapCenter}
+                bounds={this.props.mapBounds}
                 zoom={7}
                 minZoom={7}
                 maxZoom={12}
                 scrollWheelZoom={true}
+                maxBounds={this.props.mapBounds}
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    bounds={MAP_BOUNDS}
+                    // bounds={this.props.mapBounds}
                 />
                 <ClickMap 
                     layerGroup={this.markerLayer}

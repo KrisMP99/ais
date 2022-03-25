@@ -2,14 +2,14 @@ from venv import create
 import pandas as pd, numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
-import data_cleansing as dc
+import trips_partitioning as tp
 import data_insertion as di
 
 def create_line_strings():
     COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 
     # Loading of the point data from the csv file
-    trip_list = dc.get_cleansed_data()
+    trip_list = tp.get_cleansed_data()
     total_trip_points = []
     mmsi_line = []
     for trip in trip_list: 
@@ -53,9 +53,9 @@ def create_line_strings():
     # df['line_string'] = np.nan
     index = 0
     for trip in trip_list:
-        print(f"Currently adding trip {index} in douglas...")
+        #print(f"Currently adding trip {index} in douglas...")
         index +=1
-        for p in point_list:
+        for p in trip.get_points_in_trip():
             total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
         # trip_list.remove(trip)
 

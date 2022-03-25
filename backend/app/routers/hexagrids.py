@@ -32,14 +32,13 @@ async def index_hexagrid():
                 p6=Coordinate(long=json['coordinates'][0][5][0], lat=json['coordinates'][0][5][1]),
                 p7=Coordinate(long=json['coordinates'][0][6][0], lat=json['coordinates'][0][6][1])
             )
-
             polygon_collection.append(polygon) 
     
     print('Got all hexagons as json from database')
     print('Began sorting...')
 
-    #featureCollection.sort(key=lambda x: (['coordinates'][0][0], ['coordinates'][0][1]))
-    #print(len(featureCollection))
+    polygon_collection.sort(key=lambda x: x.get('')))
+
     return jsonable_encoder(polygon_collection[0])
 
 @router.get("/hexa_grid")

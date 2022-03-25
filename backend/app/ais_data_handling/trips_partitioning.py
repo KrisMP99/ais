@@ -94,20 +94,6 @@ def sog_time_distance(p1, p2):
     nautical_miles_sailed = float(p1.sog * ((time_elapsed.total_seconds() / 60) / 60))
     return int(nautical_miles_sailed)
 
-# Logging for file
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
-
-    logger = logging.getLogger()
-    return logger
-
 def get_data_from_query(sql_query):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     engine = create_engine(db_string)
@@ -118,7 +104,7 @@ def get_data_from_query(sql_query):
 
     return dataframe
 
-def get_trips(df):
+def get_trips(df, logger):
     trip_list = {}
     i = 0
     for mmsi in df.mmsi.drop_duplicates():
@@ -139,7 +125,7 @@ def get_trips(df):
 
     return trip_list
 
-def partition_trips(trip_list):
+def partition_trips(trip_list, logger):
     print(f"Before partiton: {len(trip_list)}")
     total_trips_cleansed = []
     trips_removed = 0
@@ -240,7 +226,7 @@ def partition_trips(trip_list):
     
     return trip_list
 
-def remove_outliers(trip_list):
+def remove_outliers(trip_list, logger):
     logger.info(f"Removing unrealistic points for all trips")
     for trip in trip_list:
         points_in_trip = trip.get_points_in_trip()
@@ -289,7 +275,7 @@ def remove_outliers(trip_list):
         
     return trip_list
 
-def export_trips_csv(trip_list, CSV_PATH = CSV_PATH):
+def export_trips_csv(trip_list, logger, CSV_PATH = CSV_PATH):
     logger.info("Exporting trips to csv..")
     header = ['mmsi','latitude','longitude','timestamp']
     
@@ -305,10 +291,7 @@ def export_trips_csv(trip_list, CSV_PATH = CSV_PATH):
                 row = [point.get_mmsi(), point.latitude, point.longitude, point.get_timestamp()]
                 writer.writerow(row)
 
-
-logger = get_logger()
-
-def get_cleansed_data():
+def get_cleansed_data(logger):
     sql_query = "SELECT * " \
                 "FROM raw_data " \
                 "WHERE "\
@@ -319,8 +302,8 @@ def get_cleansed_data():
                     "(mmsi IS NOT NULL) " \
                     "ORDER BY timestamp ASC "
     df = get_data_from_query(sql_query)
-    trip_list = get_trips(df)
-    trip_list = partition_trips(trip_list)
-    trip_list = remove_outliers(trip_list)
+    trip_list = get_trips(df, logger)
+    trip_list = partition_trips(trip_list, logger)
+    trip_list = remove_outliers(trip_list, logger)
 
     return trip_list

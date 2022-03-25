@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description="AIS data downloading, cleansing an
 parser.add_argument("-A", "-all", help="Download, cleanse and insert all available AIS data", required=False, default=False)
 parser.add_argument("-C", "--cont", help="Continue downloading, cleansing and inserting AIS-data from last downloaded file (read from .log-file)", required=False, default=False)
 parser.add_argument("-S", "--specific", help="Download, cleanse and insert a specific AIS-file and insert it. Name must be exact, without file-exstension",required=False, default="")
-parser.add_argument("-I", "--interval", help="Download, cleanse and insert AIS-data in the interval given. Example: 01-01-2021::31-01-2021 -> will download, cleanse and insert all AIS data between 01-01-2021 and 31-01-2021 (interval dates included)", required=False, default="")
+parser.add_argument("-I", "--interval", help="Download, cleanse and insert AIS-data in the interval given. Format: YYYY-MM-DD::YYY-MM-DD", required=False, default="")
 
 arguments = parser.parse_args()
 

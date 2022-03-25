@@ -8,19 +8,23 @@ from app.routers import trips
 
 load_dotenv()
 TESTSERVER = os.getenv('TEST_SERVER')
+TESTSERVERNOPORT = os.getenv('TEST_SERVER_NO_PORT')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
+PRODSERVERNOPORT = os.getenv('PRODUCTION_SERVER_NO_PORT')
 
 origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     f'http://{TESTSERVER}',
-    f'http://{PRODSERVER}'
+    f'http://{TESTSERVERNOPORT}',
+    f'http://{PRODSERVER}',
+    f'http://{PRODSERVERNOPORT}'
 ]
 
 middleware = [
     Middleware(
         CORSMiddleware, 
-        allow_origins=[origins],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*']

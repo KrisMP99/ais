@@ -16,9 +16,7 @@ origins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     f'http://{TESTSERVER}',
-    f'http://{TESTSERVERNOPORT}',
     f'http://{PRODSERVER}',
-    f'http://{PRODSERVERNOPORT}'
 ]
 
 middleware = [

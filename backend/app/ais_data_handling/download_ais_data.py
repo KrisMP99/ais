@@ -86,7 +86,7 @@ def connect_to_to_ais_web_server_and_get_data(logger):
         if "aisdk" in link.string:
             results.append(link.string)
             dates.append(link.string.split("aisdk-")[1].split(".zip")[0])
-    return results, dates
+    return results
 
 def get_latest_from_log(logger):
     try:
@@ -112,13 +112,18 @@ def get_latest_from_log(logger):
 
 
 def get_start_end_indexes(begin_index_str, end_index_str, results, logger):
+    begin_index_str = begin_index_str.replace('.csv','.zip')
+
+    if end_index_str is not None:
+        end_index_str = end_index_str.replace('.csv','.zip')
+
     if begin_index_str in results:
         start_index = results.index(begin_index_str)
     elif begin_index_str.replace('.zip','.rar') in results:
         begin_index_str = begin_index_str.replace('.zip','.rar')
         start_index = results.index(begin_index_str)
     else:
-        logger.critical(f"Could not find file {begin_index_str} in on site.")
+        logger.critical(f"Could not find file {begin_index_str} on site.")
         quit()
     
     if end_index_str is not None:
@@ -131,14 +136,21 @@ def get_start_end_indexes(begin_index_str, end_index_str, results, logger):
     
     return start_index, end_index
 
-def start(files_to_download, cont = False):
+def start(files_to_download=None, cont = False, all = False):
     logger = get_logger()
-    results, dates = connect_to_to_ais_web_server_and_get_data(logger)
+    results = connect_to_to_ais_web_server_and_get_data(logger)
 
     if cont:
         begin_index_str = get_latest_from_log(logger)
-        end_index_str = len(results)
+        if not begin_index_str:
+            logger.critical("No file to continue from. Please add a file to continue from in the log file.")
+            quit()
+        end_index_str = results[-1]
         logger.info(f"Latest entry is: {begin_index_str}")
+    elif all:
+        # change this
+        begin_index_str = 'aisdk-2006-03.zip'
+        end_index_str = results[-1]
     elif len(files_to_download) > 1:
         begin_index_str = files_to_download[0]
         end_index_str = None
@@ -226,7 +238,7 @@ def download_files_and_insert(start_index, end_index, results, logger):
 def insert_into_db(path_csv, name, logger):
     logger.info("Connecting to database")
     try:
-        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="db", port="5432")
+        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
         conn.autocommit = True
         cursor = conn.cursor()
     except psycopg2.OperationalError as op_err:
@@ -375,7 +387,7 @@ def insert_csv_from_folder(folder_path):
         insert_csv_to_db_manually(file)
 
 
-def extract_interval(interval_str):
+def extract_file_names_from_interval(interval_str):
     interval_split = interval_str.split('::')
     date_begin = f"aisdk-{interval_split[0]}.zip"
     date_end = f"aisdk-{interval_split[2]}.zip"
@@ -383,16 +395,34 @@ def extract_interval(interval_str):
     return [date_begin, date_end]
 
 def download_interval(date_interval):
-    start()
+    date_interval_files = extract_file_names_from_interval(date_interval)
+    start(date_interval_files)
 
-def start(interval_to_download = None, file_to_download = None, all = False, cont = False):
-    if interval_to_download is not None:
-        date_interval = extract_interval(interval_to_download)
-        start(date_interval)
+def delete_all_entries_in_log():
+    logger = get_logger()
+    try:
+        with open(LOG_FILE_PATH, 'r+') as log_file:
+            log_file.truncate(0)
+            logger.info("Successfully deleted all entries in log file")
+    except IOError as e:
+        logger.critical(f"IO error when accessing log file at {LOG_FILE_PATH}, error: {e}")
+    except Exception as e:
+        logger.critical(f"Something went wrong when accessing log file at {LOG_FILE_PATH}, error: {e}, error type: {type(e)}")
 
-    print("We good")
 
-insert_csv_from_folder(DIR_PATH)
+def download_all():
+    delete_all_entries_in_log()
+    start(all=True)
 
 
-#start()
+def begin(interval_to_download = None, file_to_download = None, all = False, cont = False):
+    if all:
+        download_all()
+    elif cont:
+        start(cont=True)
+    elif interval_to_download is not None:
+        download_interval(interval_to_download)
+    elif file_to_download is not None:
+        start(file_to_download)
+    else:
+        print("Something went wrong when determining to download an interval, specific, all or continue.")

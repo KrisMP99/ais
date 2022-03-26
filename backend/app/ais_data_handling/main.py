@@ -13,34 +13,20 @@ ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 DIR_PATH = os.getenv('DIR_PATH')
 
 parser = argparse.ArgumentParser(description="AIS data downloading, cleansing and insertion")
-parser.add_argument("-A", "-all", help="Download, cleanse and insert all available AIS data", required=False, default=False)
-parser.add_argument("-C", "--cont", help="Continue downloading, cleansing and inserting AIS-data from last downloaded file (read from .log-file)", required=False, default=False)
-parser.add_argument("-S", "--specific", help="Download, cleanse and insert a specific AIS-file and insert it. Name must be exact, without file-exstension",required=False, default="")
-parser.add_argument("-I", "--interval", help="Download, cleanse and insert AIS-data in the interval given. Format: YYYY-MM-DD::YYY-MM-DD", required=False, default="")
+parser.add_argument("-all", help="Download, cleanse and insert all available AIS data. NOTE: Will delete all entries in .log file and restart from first file.", required=False, default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--cont", help="Continue downloading, cleansing and inserting AIS-data from lastest downloaded file (read from .log-file)", required=False, default=False, action=argparse.BooleanOptionalAction)
+parser.add_argument("--specific", help="Download, cleanse and insert a specific AIS-file and insert it. Name must be exact, without file-exstension",required=False, default="")
+parser.add_argument("--interval", help="Download, cleanse and insert AIS-data in the interval given. Format: YYYY-MM-DD::YYY-MM-DD", required=False, default="")
 
-arguments = parser.parse_args()
+args = parser.parse_args()
 
-
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
-
-    logger = logging.getLogger()
-    return logger
-
-if arguments.all:
-    dlais.start(all=True)
-elif arguments.cont:
-    dlais.start(cont=True)
-elif arguments.specific:
-    dlais.start(file_to_download=arguments.specific)
-elif arguments.interval:
-    dlais.start(interval_to_download=arguments.interval)
+if args.all:
+    dlais.begin(all=True)
+elif args.cont:
+    dlais.begin(cont=True)
+elif args.specific:
+    dlais.begin(file_to_download=args.specific)
+elif args.interval:
+    dlais.begin(interval_to_download=args.interval)
 
 

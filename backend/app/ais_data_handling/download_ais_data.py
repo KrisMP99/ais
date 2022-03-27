@@ -108,7 +108,7 @@ def get_latest_from_log(logger):
     else:
         current_latest_entry = data[-1]
 
-    return current_latest_entry   
+    return current_latest_entry.replace('csv','.zip') 
 
 
 def get_start_end_indexes(begin_index_str, end_index_str, results, logger):
@@ -245,7 +245,6 @@ def insert_into_db(path_csv, name, logger):
         logger.critical(f"Something went wrong when connecting to the database: {op_err}")
         quit()
 
-    sql = "COPY raw_temp FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
 
     logger.info("Connection successful, opening CSV-file for copying")
     try:
@@ -267,6 +266,7 @@ def insert_into_db(path_csv, name, logger):
         conn.rollback()
         return
     
+    sql = "COPY raw_temp FROM STDIN WITH (format csv, delimiter E'\u002C', header true)"
     logger.info("Copying data into temp_table")
     try:
         cursor.execute("SET datestyle = DMY")
@@ -310,7 +310,7 @@ def add_new_file_to_log(file_name, logger):
             data = log_file.read(100)
             if len(data) > 0:
                 log_file.write("\n")
-            log_file.write(file_name)
+            log_file.write(file_name.replace('.zip', '.csv'))
             logger.info("Successfully added new file to log!")
     except IOError as e:
         logger.critical(f"IO error when accessing log file at {LOG_FILE_PATH}, error: {e}")
@@ -426,3 +426,6 @@ def begin(interval_to_download = None, file_to_download = None, all = False, con
         start(file_to_download)
     else:
         print("Something went wrong when determining to download an interval, specific, all or continue.")
+
+logger = get_logger()
+insert_into_db(DIR_PATH + 'aisdk-2022-03-09.csv','aisdk-2022-03-09.csv',logger)

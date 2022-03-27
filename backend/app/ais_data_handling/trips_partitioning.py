@@ -112,8 +112,8 @@ def get_trips(df, logger):
         trip_list[mmsi] = trip
         
     for timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination in zip(df.timestamp, df.type_of_mobile, df.mmsi, df.latitude, df.longitude, df.navigational_status, df.rot, df.sog, df.cog, df.heading, df.imo, df.callsign, df.name, df.ship_type, df.width, df.length, df.type_of_position_fixing_device, df.draught, df.destination):
-        if(i % 100000 == 0):
-            print(f"Added {i} points so far...")
+        # if(i % 100000 == 0):
+        #     print(f"Added {i} points so far...")
         try:
             trip = trip_list.get(mmsi)
             trip.add_point_to_trip(Point(timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination))
@@ -268,7 +268,7 @@ def remove_outliers(trip_list, logger):
         simplified_trip_PK_key += 1
         trip.trip_id = trip_PK_key
         trip.simplified_trip_id = simplified_trip_PK_key
-        print(f"Adding trip no. {trip.trip_id} (in data cleansing)")
+        # print(f"Adding trip no. {trip.trip_id} (in data cleansing)")
 
         for point in trip.get_points_in_trip():
             point.trip_id = trip.trip_id

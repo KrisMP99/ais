@@ -10,7 +10,9 @@ def create_line_strings(point_df, logger):
     pandarallel.initialize(progress_bar=True)
     
     logger.info("Creating line strings")
-    point_df['latitude','longitude'].style.set_precision(4)  # Only 4 decimals on lat and long
+    logger.info("Setting precision of lat and long to 4 decimals")
+    point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
+    logger.info("Sat precision!")
     time_begin = datetime.datetime.now()
     line_string_df = gpd.GeoDataFrame(point_df, geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude))
     logger.info("Finished converting all lat- and longs to points.")

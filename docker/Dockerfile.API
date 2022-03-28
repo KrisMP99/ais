@@ -3,8 +3,7 @@ FROM python:latest
 WORKDIR /srv/data/ais/backend
 
 # Install GDAL dependencies
-RUN apt-get install -y libgdal-dev g++ --no-install-recommends && \
-    apt-get clean -y
+RUN apt-get install -y gdal-bin libgdal-dev
 
 # Update C env vars so compiler can find gdal
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal

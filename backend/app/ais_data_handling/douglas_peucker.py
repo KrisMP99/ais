@@ -1,47 +1,61 @@
 from venv import create
 import pandas as pd
 from shapely.geometry import LineString
+import geopandas as gpd
 
-def create_line_strings(trip_list, logger):
-    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+def create_line_strings(point_df, logger):
+    # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+    logger.info("Creating line strings")
+    line_string_df = gpd.GeoDataFrame(point_df, geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude))
+    line_string_df = line_string_df.groupby('trip_id')['geometry'].apply(lambda x: LineString(x.tolist()))
+    
+    print(line_string_df.head(5))
+    quit()
 
-    total_trip_points = []
-    # mmsi_line = []
-    for trip in trip_list: 
-        point_list = trip.get_points_in_trip()
-        trip_point = []
+    # simplified_line_strings_df = point_df.groupby('trip_id').apply(lambda x: x. )
+    
 
-        for p in point_list:
-            trip_point.append([p.latitude, p.longitude])
+    # total_trip_points = []
+    # line_strings = []
+    # simplified_line_strings = []
+
+    # # mmsi_line = []
+    # for trip in trip_list: 
+    #     point_list = trip.get_points_in_trip()
+    #     trip_point = []
+
+    #     for p in point_list:
+    #         trip_point.append([p.latitude, p.longitude])
         
-        df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
-        trip_point.clear()
+    #     df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
+    #     trip_point.clear()
         
-        coordinates = df[["latitude", "longitude"]].values
+    #     coordinates = df[["latitude", "longitude"]].values
 
-        line = LineString(coordinates)
+    #     line = LineString(coordinates)
 
-        tolerance = 0.02
+    #     tolerance = 0.02
 
-        simplified_line = line.simplify(tolerance, preserve_topology=False)
+    #     simplified_line = line.simplify(tolerance, preserve_topology=False)
 
-        # mmsi_line.append([trip.get_mmsi(), simplified_line])
 
-        x_y_coords = simplified_line.xy
+    #     # mmsi_line.append([trip.get_mmsi(), simplified_line])
+
+    #     x_y_coords = simplified_line.xy
         
         
-        for x, y in zip(x_y_coords[0], x_y_coords[1]):
-            for p in point_list:
-                if x == p.latitude and y == p.longitude:
-                    p.simplified_trip_id = trip.simplified_trip_id
-                    break
+    #     for x, y in zip(x_y_coords[0], x_y_coords[1]):
+    #         for p in point_list:
+    #             if x == p.latitude and y == p.longitude:
+    #                 p.simplified_trip_id = trip.simplified_trip_id
+    #                 break
 
-    for trip in trip_list:
-        for p in trip.get_points_in_trip():
-            total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
+    # for trip in trip_list:
+    #     for p in trip.get_points_in_trip():
+    #         total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
 
-    df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
-    return df_all_points
+    # df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
+    return None
 
     # print(line.length, 'line length')
     # print(simplified_line.length, 'simplified line length')

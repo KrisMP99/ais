@@ -7,12 +7,13 @@ services:
       - '5431:5431'
     env_file: ../.env
     restart: always
-  project:
+    
+  api:
     build:
       context: ../
-      dockerfile: ./docker/Dockerfile.aisProject
-    image: ais_project
-    container_name: ais_project
+      dockerfile: ./docker/Dockerfile.API
+    image: ais_api
+    container_name: ais_api
     command: uvicorn app.main:app --host 0.0.0.0 --reload
     volumes:
       - type: bind
@@ -20,4 +21,19 @@ services:
         target: /srv/data/ais
     restart: always
     ports:
-      - 8008:8000
+      - 8080:8000
+      
+  client:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.Client
+    image: ais_client
+    container_name: ais_client
+    command: npm start
+    volumes:
+      - type: bind
+        source: ../
+        target: /srv/data/ais
+    restart: always
+    ports:
+      - 3000:3000

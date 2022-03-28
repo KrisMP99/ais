@@ -53,3 +53,4 @@ Fiona==1.8.15
 rarfile==4.0
 geopandas==0.10.2
 pygrametl==2.7
+pandarallel==1.6.1

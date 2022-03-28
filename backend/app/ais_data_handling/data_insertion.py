@@ -71,7 +71,7 @@ def insert_into_star(logger):
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
     logger.info("Getting cleansed data from db")
-    sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
+    sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),4326) AS location FROM cleansed"
     ais_source = SQLSource(connection=conn, query=sql_query)
 
     date_dim = CachedDimension(

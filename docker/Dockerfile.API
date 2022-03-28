@@ -1,0 +1,10 @@
+# syntax=docker/dockerfile:1
+FROM python:latest
+WORKDIR /srv/data/ais/backend
+
+RUN python -m venv /opt/venv
+# Enable venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY backend/requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt

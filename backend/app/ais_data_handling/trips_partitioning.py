@@ -8,6 +8,8 @@ from sqlalchemy import create_engine
 from math import cos, asin, sqrt
 import csv
 
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
@@ -250,6 +252,7 @@ def remove_outliers(trip_list, logger):
         if(len(trip.get_points_in_trip()) < MINIMUM_POINTS_IN_TRIP):
             trip_list.remove(trip)
 
+    logger.info(f"Removed unrealistic points for all trips.\nAdding trips keys")
     print(f"len of trip_list: {len(trip_list)}")
 
     # Add the trip_id index for each trip
@@ -263,6 +266,8 @@ def remove_outliers(trip_list, logger):
     if simplified_trip_PK_key is None:
         simplified_trip_PK_key = -1
 
+    # add trip_ids and convert to dataframe
+    point_list = []
     for trip in trip_list:
         trip_PK_key += 1
         simplified_trip_PK_key += 1
@@ -270,10 +275,13 @@ def remove_outliers(trip_list, logger):
         trip.simplified_trip_id = simplified_trip_PK_key
         # print(f"Adding trip no. {trip.trip_id} (in data cleansing)")
 
-        for point in trip.get_points_in_trip():
-            point.trip_id = trip.trip_id
+        for p in trip.get_points_in_trip():
+            p.trip_id = trip.trip_id
+            point_list.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
         
-    return trip_list
+    point_df = pd.DataFrame(point_list, columns=COLUMNS)
+    logger.info(f"Done adding trip keys.")
+    return point_df
 
 def export_trips_csv(trip_list, logger, CSV_PATH = CSV_PATH):
     logger.info("Exporting trips to csv..")
@@ -305,5 +313,8 @@ def get_cleansed_data(logger):
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)
+
+    # Convert to DF:
+
 
     return trip_list

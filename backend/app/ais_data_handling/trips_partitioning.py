@@ -252,7 +252,7 @@ def remove_outliers(trip_list, logger):
         if(len(trip.get_points_in_trip()) < MINIMUM_POINTS_IN_TRIP):
             trip_list.remove(trip)
 
-    logger.info(f"Removed unrealistic points for all trips.\nAdding trips keys")
+    logger.info(f"Removed unrealistic points for all trips. Adding trips keys")
     print(f"len of trip_list: {len(trip_list)}")
 
     # Add the trip_id index for each trip

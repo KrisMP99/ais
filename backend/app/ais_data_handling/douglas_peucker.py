@@ -3,14 +3,18 @@ import pandas as pd
 from shapely.geometry import LineString
 import geopandas as gpd
 import datetime
-import swifter
+from pandarallel import pandarallel
 
 def create_line_strings(point_df, logger):
     # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+    pandarallel.initialize(progress_bar=True)
+    
     logger.info("Creating line strings")
+    point_df['latitude','longitude'].style.set_precision(4)  # Only 4 decimals on lat and long
     time_begin = datetime.datetime.now()
     line_string_df = gpd.GeoDataFrame(point_df, geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude))
-    line_string_df = line_string_df.groupby('trip_id')['geometry'].swifter.apply(lambda x: LineString(x.tolist()))
+    logger.info("Finished converting all lat- and longs to points.")
+    line_string_df = line_string_df.groupby('trip_id')['geometry'].parallel_apply(lambda x: LineString(x.tolist()))
 
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin

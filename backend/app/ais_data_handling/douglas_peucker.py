@@ -16,7 +16,7 @@ def create_line_strings(point_df, logger):
     time_begin = datetime.datetime.now()
     line_string_df = gpd.GeoDataFrame(point_df, geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude))
     logger.info("Finished converting all lat- and longs to points.")
-    line_string_df = line_string_df.groupby('trip_id')['geometry'].parallel_apply(lambda x: LineString(x.tolist()))
+    line_string_df = line_string_df.groupby('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist()))
 
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin

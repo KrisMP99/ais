@@ -14,7 +14,7 @@ def convert_to_point(df):
 
 def create_line_strings(point_df, logger):
     # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
-    pandarallel.initialize(progress_bar=True, verbose=2)
+    pandarallel.initialize(progress_bar=True, verbose=2, use_memory_fs=False)
     
     logger.info("Creating line strings")
     logger.info("Setting precision of lat and long to 4 decimals")

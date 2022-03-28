@@ -4,10 +4,13 @@ from shapely.geometry import LineString, Point
 import geopandas as gpd
 import datetime
 from pandarallel import pandarallel
+import warnings
+from shapely.errors import ShapelyDeprecationWarning
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
 
 
 def convert_to_point(df):
-    df['geometry'] = Point(df['latitude'], df['longtide'])
+    df['geometry'] = Point(df['latitude'], df['longitude'])
 
 def create_line_strings(point_df, logger):
     # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']

@@ -3,18 +3,37 @@ import pandas as pd
 from shapely.geometry import LineString
 import geopandas as gpd
 import datetime
+import numpy as np
+from multiprocessing import Pool
+from shapely.geometry import Point
+
+def parallelize_dataframe(df, func, n_cores=4):
+    df_split = np.array_split(df, n_cores)
+    pool = Pool(n_cores)
+    df = pd.concat(pool.map(func, df_split))
+    pool.close()
+    pool.join()
+    return df
+
+def make_lat_long(df):
+    df['location'] = df.apply(lambda x: Point(x.latitude, x.longitude), axis=1)
+
+def make_line_strings(df):
+    df['geometry'] = df.groupby('trid_id').apply(lambda x: LineString(x.tolist()))
 
 def create_line_strings(point_df, logger):
     # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
     logger.info("Creating line strings")
     time_begin = datetime.datetime.now()
-    line_string_df = gpd.GeoDataFrame(point_df, geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude))
-    line_string_df = line_string_df.groupby('trip_id')['geometry'].apply(lambda x: LineString(x.tolist()))
+    line_string_df = parallelize_dataframe(gpd.GeoDataFrame(point_df),make_lat_long, n_cores=16)
+    line_string_df = parallelize_dataframe(line_string_df,make_line_strings, n_cores=16)
+    # line_string_df = line_string_df.groupby('trip_id')['geometry'].apply(lambda x: LineString(x.tolist()))
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin
+    # geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude)
     
     print(line_string_df.head(5))
-    print(f"Took approx: {time_delta.total_seconds() / 60} minutes, or {time_delta.total_seconds()} seconds.")
+    print(print(f"Took approx: {time_delta.total_seconds() / 60} minutes, or {time_delta.total_seconds()}"))
     quit()
 
     # simplified_line_strings_df = point_df.groupby('trip_id').apply(lambda x: x. )

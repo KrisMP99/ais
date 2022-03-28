@@ -1,23 +1,24 @@
 from venv import create
 import pandas as pd
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Point
 import geopandas as gpd
 import datetime
 from pandarallel import pandarallel
-import os
 
-os.environ['JOBLIB_TEMP_FOLDER'] = '/tmp'
+
+def convert_to_point(df):
+    df['geometry'] = Point(df['latitude'], df['longtide'])
 
 def create_line_strings(point_df, logger):
     # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
-    pandarallel.initialize(progress_bar=True)
+    pandarallel.initialize(progress_bar=True, verbose=2)
     
     logger.info("Creating line strings")
     logger.info("Setting precision of lat and long to 4 decimals")
-    point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
+    point_df = point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
     logger.info("Sat precision!")
     time_begin = datetime.datetime.now()
-    line_string_df = gpd.GeoDataFrame(point_df, geometry=gpd.points_from_xy(point_df.latitude, point_df.longitude))
+    line_string_df = gpd.GeoDataFrame(point_df, geometry=point_df.parallel_apply(convert_to_point, axis=1))
     logger.info("Finished converting all lat- and longs to points.")
     line_string_df = line_string_df.groupby('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist()))
 

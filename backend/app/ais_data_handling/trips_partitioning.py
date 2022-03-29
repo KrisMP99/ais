@@ -142,7 +142,7 @@ def partition_trips(trip_list, logger):
             trips_removed += 1
             continue
 
-        logger.info(f"Removed {trips_removed} as they had less than {MINIMUM_POINTS_IN_TRIP} points.")
+        
 
         # Cutting points used when splitting trips into multiple trips
         curr_point = points_in_trip[0]
@@ -222,7 +222,8 @@ def partition_trips(trip_list, logger):
             total_trips_cleansed.append(trip)
 
         trip_list.pop(trip_key)
-    
+
+    logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points.")
     trip_list = total_trips_cleansed
 
     print(f"After partiton: {len(trip_list)}")
@@ -280,9 +281,8 @@ def remove_outliers(trip_list, logger):
             p.trip_id = trip.trip_id
             point_list.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
         
-    point_df = pd.DataFrame(point_list, columns=COLUMNS)
     logger.info(f"Done adding trip keys.")
-    return point_df
+    return trip_list
 
 def export_trips_csv(trip_list, logger, CSV_PATH = CSV_PATH):
     logger.info("Exporting trips to csv..")
@@ -309,7 +309,8 @@ def get_cleansed_data(logger):
                     "(longitude >= 3.2 AND longitude <= 16.5) AND "\
                     "(sog >= 0 AND sog <= 102) AND " \
                     "(mmsi IS NOT NULL) " \
-                    "ORDER BY timestamp ASC "
+                    "ORDER BY timestamp ASC "\
+                    "LIMIT 1000000"
     df = get_data_from_query(sql_query)
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)

@@ -9,13 +9,14 @@ from pygrametl.datasources import SQLSource
 from pygrametl.tables import CachedDimension, BatchFactTable
 from sqlalchemy import create_engine
 import datetime
+import pandas as pd
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
-
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       timestamp TIMESTAMP WITHOUT TIME ZONE,\
                       type_of_mobile VARCHAR,\
@@ -38,6 +39,15 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       destination VARCHAR,\
                       trip_id integer,\
                       simplified_trip_id integer)" 
+
+def get_cleansed_data():
+    db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
+    
+    engine = create_engine(db_string)
+    with engine.connect() as conn:
+        result = conn.execute("SELECT * FROM cleansed")
+        return pd.DataFrame(result, columns=COLUMNS)
+        
 
 def insert_cleansed_data(df):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"

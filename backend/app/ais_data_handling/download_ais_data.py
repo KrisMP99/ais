@@ -297,8 +297,9 @@ def insert_into_db(path_csv, name, logger):
     
 def cleanse_data_and_insert(logger):
     trip_list = trp.get_cleansed_data(logger)
-    trip_list = dpe.create_line_strings(trip_list, logger)
     di.insert_cleansed_data(trip_list)
+    quit()
+    trip_list = dpe.create_line_strings(trip_list, logger)
     di.insert_into_star(logger)
     return
 
@@ -428,4 +429,4 @@ def begin(interval_to_download = None, file_to_download = None, all = False, con
         print("Something went wrong when determining to download an interval, specific, all or continue.")
 
 logger = get_logger()
-insert_into_db(DIR_PATH + 'aisdk-2022-03-09.csv','aisdk-2022-03-09.csv',logger)
+dpe.create_line_strings(logger)

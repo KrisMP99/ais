@@ -10,6 +10,7 @@ interface AppProps {
 }
 interface AppStates {
   pointCoords: LatLng[];
+  polylines: LatLng[];
 }
 
 
@@ -20,7 +21,8 @@ export class App extends React.Component<AppProps, AppStates> {
     super(props);
 
     this.state = {
-      pointCoords: []
+      pointCoords: [],
+      polylines: []
     }
   }
 
@@ -33,9 +35,11 @@ export class App extends React.Component<AppProps, AppStates> {
             retCoords={(points: LatLng[]) => {
               this.setState({pointCoords: points});
             }}
+            polylines={this.state.polylines}
           />
           <PostButton 
             coordinates={this.state.pointCoords}
+            getData={(data: LatLng[]) => this.setState({polylines: data})}
           />
         </div>
       </div>

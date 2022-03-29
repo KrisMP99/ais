@@ -10,6 +10,7 @@ import { GeoJsonObject } from 'geojson';
 
 interface DKMapProps {
     retCoords: (coords: LatLng[]) => void;
+    polylines: LatLng[];
 }
 
 interface DKMapStates {
@@ -63,6 +64,17 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     bounds={MAP_BOUNDS}
+                />
+                <MapConsumer>
+                    {(map) => {
+                        if(!this.countriesAdded) { 
+                            this.addCountryPolygons(map);                        
+                        }
+                        return null;
+                    }}
+                </MapConsumer>
+                <Polyline
+                    positions={this.props.polylines}
                 />
                 <ClickMap 
                     ignoreLayers={this.ignoreCountires}

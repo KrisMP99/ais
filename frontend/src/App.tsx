@@ -35,7 +35,7 @@ export class App extends React.Component<AppProps, AppStates> {
             }}
           />
           <PostButton 
-            coords={this.state.pointCoords}
+            coordinates={this.state.pointCoords}
           />
         </div>
       </div>

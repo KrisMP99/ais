@@ -8,6 +8,7 @@ interface ClickMapProps {
     addPoint: (pos: LatLng) => void;
     clearPoints: () => void;
     markerIcon: L.DivIcon;
+    fetchHexagon: (pos: LatLng) => void;
 }
 
 
@@ -40,3 +41,4 @@ export default function ClickMap(props: ClickMapProps) {
     }
     return null;
 }
+

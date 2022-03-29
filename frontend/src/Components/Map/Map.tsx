@@ -15,6 +15,7 @@ interface DKMapProps {
 
 interface DKMapStates {
     points: LatLng[];
+    hexPolygons: L.Polygon[];
 }
 
 const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
@@ -27,14 +28,14 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
     protected ignoreCountires: L.Layer[];
-    protected hexagonPolygons: L.Polygon[];
+    protected hexagons: L.Polygon[];
 
     constructor(props: DKMapProps) {
         super(props);
 
         this.ignoreCountires = [];
         this.countriesAdded = false;
-        this.hexagonPolygons = [];
+        this.hexagons = [];
 
         this.markerLayer = L.layerGroup();
         this.markerIcon = L.icon({
@@ -45,37 +46,39 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         });
 
         this.state = {
-            points: []
+            points: [],
+            hexPolygons: []
         }
     }
 
     render() {
+        // console.log(this.state.hexPolygons);
         return (
             <MapContainer
                 id='map'
                 className="map-container"
                 center={MAP_CENTER}
-                bounds={MAP_BOUNDS}
+                // bounds={MAP_BOUNDS}
                 zoom={7}
-                minZoom={7}
-                maxZoom={12}
+                // minZoom={7}
+                // maxZoom={12}
                 scrollWheelZoom={true}
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    bounds={MAP_BOUNDS}
+                    // bounds={MAP_BOUNDS}
                 />
                 <MapConsumer>
                     {(map) => {
                         if(!this.countriesAdded) { 
                             this.addCountryPolygons(map);                        
                         }
+                        this.state.hexPolygons.map((poly) => {
+                            return poly.addTo(map); 
+                        })
                         return null;
                     }}
                 </MapConsumer>
-                {/* <Polyline
-                    positions={this.props.polylines}
-                /> */}
                 <ClickMap 
                     ignoreLayers={this.ignoreCountires}
                     layerGroup={this.markerLayer}
@@ -88,11 +91,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                             this.fetchHexagon(point);
                             this.setState({points: this.state.points});
                         }}
-                        clearPoints={() => {
-                        this.state.points.pop();
-                        this.state.points.pop();
-                        this.hexagonPolygons = [];
-                        this.setState({points: this.state.points});
+                    clearPoints={() => {
+                        this.state.hexPolygons.forEach((hex)=>{
+                            hex.remove();
+                        })
+                        this.setState({points: [], hexPolygons: []});
                     }}
                     />
                     <MapConsumer>
@@ -108,6 +111,9 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     }
 
     protected async fetchHexagon(point: LatLng) {
+        let styling = {
+
+        }
         const requestOptions = {
             method: 'POST',
             headers: { 
@@ -125,19 +131,19 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         };
         fetch('http://' + process.env.REACT_APP_API! + '/hexagrids/hexagon', requestOptions)
         .then(response => response.json())
-        .then(data => {
-            if(this.hexagonPolygons) {
-                this.hexagonPolygons.push(data);
-            }
-            else {
-                this.hexagonPolygons = [];
-                this.hexagonPolygons.push(data);
-            }
+        .then((data: L.LatLngExpression[][]) => {
+            let temp: L.Polygon[] = this.state.hexPolygons;         
+            temp.push(new L.Polygon(data, {
+                opacity: 0,
+                fillOpacity: 1,
+                fillColor: "#000000"
+            }));
+            this.setState({hexPolygons: temp});
         });
     }
 
     protected addCountryPolygons(map: L.Map) {
-        let layer = L.geoJSON(countries as GeoJsonObject, 
+        L.geoJSON(countries as GeoJsonObject, 
             {
                 onEachFeature: this.onEachFeature, 
                 style: {

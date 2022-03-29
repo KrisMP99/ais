@@ -5,82 +5,56 @@ import geopandas as gpd
 import datetime
 from pandarallel import pandarallel
 import warnings
-from shapely.errors import ShapelyDeprecationWarning
-warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
-import data_insertion as di
 
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 
-# def convert_to_point(df):
-#     df['geometry'] = Point(df['latitude'], df['longitude'])
+def convert_to_point(df):
+    df['geometry'] = Point(df['latitude'], df['longitude'])
 
-def create_line_strings(logger):
-    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
-    COLUMNS_LINES = ['trip_id','location', 'line_string']
-    
-    pandarallel.initialize(progress_bar=True, verbose=2, use_memory_fs=False)
-    point_df = di.get_cleansed_data()
+def create_line_strings(trip_list, logger):    
     logger.info("Creating line strings")
-    #logger.info("Setting precision of lat and long to 4 decimals")
-    #point_df = point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
-    #logger.info("Sat precision!")
-    # lines_df = gpd.GeoDataFrame(point_df[['trip_id','latitude','longitude']],columns=COLUMNS_LINES, geometry='line_string')
-    time_begin = datetime.datetime.now()
-    lines_df = gpd.GeoDataFrame(point_df[['trip_id','location']],columns=COLUMNS_LINES, geometry=point_df.group_by('trip_id').parallel_apply(lambda x: LineString(x.location.tolist())))
-    logger.info("Finished converting all lat- and longs to points.")
-
-    # line_string_df = line_string_df.groupby('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist()))
-
-    time_end = datetime.datetime.now()
-    time_delta = time_end - time_begin
     
-    print(lines_df.head(5))
-    print(print(f"Took approx: {time_delta.total_seconds() / 60} minutes, or {time_delta.total_seconds()}"))
+    total_trip_points = []
+
+    # mmsi_line = []
+    for trip in trip_list: 
+        point_list = trip.get_points_in_trip()
+        trip_point = []
+
+        for p in point_list:
+            trip_point.append([p.latitude, p.longitude])
+        
+        df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
+        trip_point.clear()
+        
+        coordinates = df[["latitude", "longitude"]].values
+
+        line = LineString(coordinates)
+
+        tolerance = 0.02
+
+        simplified_line = line.simplify(tolerance, preserve_topology=False)
+
+
+        # mmsi_line.append([trip.get_mmsi(), simplified_line])
+
+        x_y_coords = simplified_line.xy
+        
+        
+        for x, y in zip(x_y_coords[0], x_y_coords[1]):
+            for p in point_list:
+                if x == p.latitude and y == p.longitude:
+                    p.simplified_trip_id = trip.simplified_trip_id
+                    break
+
+    for trip in trip_list:
+        for p in trip.get_points_in_trip():
+            total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
+
+    df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
+    print(df_all_points.head(5))
     quit()
-
-    # simplified_line_strings_df = point_df.groupby('trip_id').apply(lambda x: x. )
-    
-
-    # total_trip_points = []
-    # line_strings = []
-    # simplified_line_strings = []
-
-    # # mmsi_line = []
-    # for trip in trip_list: 
-    #     point_list = trip.get_points_in_trip()
-    #     trip_point = []
-
-    #     for p in point_list:
-    #         trip_point.append([p.latitude, p.longitude])
-        
-    #     df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
-    #     trip_point.clear()
-        
-    #     coordinates = df[["latitude", "longitude"]].values
-
-    #     line = LineString(coordinates)
-
-    #     tolerance = 0.02
-
-    #     simplified_line = line.simplify(tolerance, preserve_topology=False)
-
-
-    #     # mmsi_line.append([trip.get_mmsi(), simplified_line])
-
-    #     x_y_coords = simplified_line.xy
-        
-        
-    #     for x, y in zip(x_y_coords[0], x_y_coords[1]):
-    #         for p in point_list:
-    #             if x == p.latitude and y == p.longitude:
-    #                 p.simplified_trip_id = trip.simplified_trip_id
-    #                 break
-
-    # for trip in trip_list:
-    #     for p in trip.get_points_in_trip():
-    #         total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
-
-    # df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
-    return None
+    return df_all_points
 
     # print(line.length, 'line length')
     # print(simplified_line.length, 'simplified line length')

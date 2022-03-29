@@ -10,13 +10,14 @@ from pygrametl.tables import CachedDimension, BatchFactTable
 from sqlalchemy import create_engine
 import datetime
 import pandas as pd
+import geopandas as geo
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
-COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       timestamp TIMESTAMP WITHOUT TIME ZONE,\
                       type_of_mobile VARCHAR,\
@@ -40,15 +41,6 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       trip_id integer,\
                       simplified_trip_id integer)" 
 
-def get_cleansed_data():
-    db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
-    
-    engine = create_engine(db_string)
-    with engine.connect() as conn:
-        result = conn.execute("SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),4326) AS location FROM cleansed")
-        return pd.DataFrame(result, columns=COLUMNS)
-        
-
 def insert_cleansed_data(df,logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     logger.info("Inserting data into cleansed table...")
@@ -58,6 +50,7 @@ def insert_cleansed_data(df,logger):
         df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
         logger.info("1 insert done (5000000 row chunks)")
     logger.info("Done inserting!")
+
 
 def convert_timestamp_to_date(row):
     timestamp = str(row['timestamp'])

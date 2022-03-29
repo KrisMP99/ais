@@ -21,6 +21,7 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 DIR_PATH = os.getenv('DIR_PATH')
+HOST_DB = os.getenv('HOST_DB')
 
 raw_data_table_query = "CREATE TABLE IF NOT EXISTS raw_data ( \
                         timestamp TIMESTAMP WITHOUT TIME ZONE,\
@@ -238,7 +239,7 @@ def download_files_and_insert(start_index, end_index, results, logger):
 def insert_into_db(path_csv, name, logger):
     logger.info("Connecting to database")
     try:
-        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
+        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
         conn.autocommit = True
         cursor = conn.cursor()
     except psycopg2.OperationalError as op_err:
@@ -297,7 +298,7 @@ def insert_into_db(path_csv, name, logger):
     
 def cleanse_data_and_insert(logger):
     trip_list = trp.get_cleansed_data(logger)
-    di.insert_cleansed_data(trip_list)
+    di.insert_cleansed_data(trip_list,logger)
     quit()
     trip_list = dpe.create_line_strings(trip_list, logger)
     di.insert_into_star(logger)

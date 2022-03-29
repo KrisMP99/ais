@@ -49,13 +49,15 @@ def get_cleansed_data():
         return pd.DataFrame(result, columns=COLUMNS)
         
 
-def insert_cleansed_data(df):
+def insert_cleansed_data(df,logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
-    
+    logger.info("Inserting data into cleansed table...")
     engine = create_engine(db_string)
     with engine.connect() as conn:
         conn.execute(cleansed_table_sql)
         df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
+        logger.info("1 insert done (5000000 row chunks)")
+    logger.info("Done inserting!")
 
 def convert_timestamp_to_date(row):
     timestamp = str(row['timestamp'])

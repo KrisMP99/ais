@@ -430,4 +430,5 @@ def begin(interval_to_download = None, file_to_download = None, all = False, con
         print("Something went wrong when determining to download an interval, specific, all or continue.")
 
 logger = get_logger()
-dpe.create_line_strings(logger)
+#dpe.create_line_strings(logger)
+trp.get_trips(logger)

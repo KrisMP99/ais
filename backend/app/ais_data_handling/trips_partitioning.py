@@ -55,8 +55,8 @@ class Point:
         self.timestamp = timestamp 
         self.type_of_mobile = type_of_mobile 
         self.mmsi = mmsi 
-        self.latitude = latitude
-        self.longitude = longitude
+        self.latitude = round(latitude, 4)
+        self.longitude = round(longitude, 4)
         self.navigational_status = navigational_status
         self.rot = rot
         self.sog = sog
@@ -139,9 +139,10 @@ def partition_trips(trip_list, logger):
 
         if(len(points_in_trip) < MINIMUM_POINTS_IN_TRIP):
             trip_list.pop(trip_key)
-            logger.info(f"Removed trip from {trip.get_mmsi()} as it only has {len(points_in_trip)} points.")
             trips_removed += 1
             continue
+
+        logger.info(f"Removed {trips_removed} as they had less than {MINIMUM_POINTS_IN_TRIP} points.")
 
         # Cutting points used when splitting trips into multiple trips
         curr_point = points_in_trip[0]

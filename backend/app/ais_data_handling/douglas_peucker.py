@@ -15,17 +15,17 @@ import data_insertion as di
 
 def create_line_strings(logger):
     COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
-    COLUMNS_LINES = ['trip_id','latitude', 'longitude', 'line_string']
+    COLUMNS_LINES = ['trip_id','location', 'line_string']
     
     pandarallel.initialize(progress_bar=True, verbose=2, use_memory_fs=False)
     point_df = di.get_cleansed_data()
     logger.info("Creating line strings")
-    logger.info("Setting precision of lat and long to 4 decimals")
-    point_df = point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
-    logger.info("Sat precision!")
+    #logger.info("Setting precision of lat and long to 4 decimals")
+    #point_df = point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
+    #logger.info("Sat precision!")
     # lines_df = gpd.GeoDataFrame(point_df[['trip_id','latitude','longitude']],columns=COLUMNS_LINES, geometry='line_string')
     time_begin = datetime.datetime.now()
-    lines_df = gpd.GeoDataFrame(point_df[['trip_id','latitude','longitude']],columns=COLUMNS_LINES, geometry=point_df.group_by('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist())))
+    lines_df = gpd.GeoDataFrame(point_df[['trip_id','location']],columns=COLUMNS_LINES, geometry=point_df.group_by('trip_id').parallel_apply(lambda x: LineString(x.location.tolist())))
     logger.info("Finished converting all lat- and longs to points.")
 
     # line_string_df = line_string_df.groupby('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist()))

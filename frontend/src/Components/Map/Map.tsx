@@ -86,6 +86,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     markerIcon={this.markerIcon}
                     points={this.state.points}
                     fetchHexagon={(point) => this.fetchHexagon(point)}
+                    retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
                     addPoint={(point) => {
                         this.state.points.push(point);
                         this.fetchHexagon(point);

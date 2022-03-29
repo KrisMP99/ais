@@ -7,28 +7,33 @@ from pandarallel import pandarallel
 import warnings
 from shapely.errors import ShapelyDeprecationWarning
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
+import data_insertion as di
 
 
-def convert_to_point(df):
-    df['geometry'] = Point(df['latitude'], df['longitude'])
+# def convert_to_point(df):
+#     df['geometry'] = Point(df['latitude'], df['longitude'])
 
-def create_line_strings(point_df, logger):
-    # COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
-    pandarallel.initialize(progress_bar=True, verbose=2, use_memory_fs=False)
+def create_line_strings(logger):
+    COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+    COLUMNS_LINES = ['trip_id','latitude', 'longitude', 'line_string']
     
+    pandarallel.initialize(progress_bar=True, verbose=2, use_memory_fs=False)
+    point_df = di.get_cleansed_data()
     logger.info("Creating line strings")
     logger.info("Setting precision of lat and long to 4 decimals")
     point_df = point_df.round({'latitude':4,'longitude':4})  # Only 4 decimals on lat and long
     logger.info("Sat precision!")
+    # lines_df = gpd.GeoDataFrame(point_df[['trip_id','latitude','longitude']],columns=COLUMNS_LINES, geometry='line_string')
     time_begin = datetime.datetime.now()
-    line_string_df = gpd.GeoDataFrame(point_df, geometry=point_df.parallel_apply(convert_to_point, axis=1))
+    lines_df = gpd.GeoDataFrame(point_df[['trip_id','latitude','longitude']],columns=COLUMNS_LINES, geometry=point_df.group_by('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist())))
     logger.info("Finished converting all lat- and longs to points.")
-    line_string_df = line_string_df.groupby('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist()))
+
+    # line_string_df = line_string_df.groupby('trip_id').parallel_apply(lambda x: LineString(x.geometry.tolist()))
 
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin
     
-    print(line_string_df.head(5))
+    print(lines_df.head(5))
     print(print(f"Took approx: {time_delta.total_seconds() / 60} minutes, or {time_delta.total_seconds()}"))
     quit()
 

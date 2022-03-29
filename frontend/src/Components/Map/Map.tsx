@@ -73,9 +73,9 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         return null;
                     }}
                 </MapConsumer>
-                <Polyline
+                {/* <Polyline
                     positions={this.props.polylines}
-                />
+                /> */}
                 <ClickMap 
                     ignoreLayers={this.ignoreCountires}
                     layerGroup={this.markerLayer}

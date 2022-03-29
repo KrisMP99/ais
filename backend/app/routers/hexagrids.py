@@ -20,13 +20,13 @@ async def get_hexagon(p1: Coordinate):
     gp1 = Point((p1.long, p1.lat))
     query = f"WITH gp1 AS (\
     SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom)\
-    SELECT ST_AsGeoJSON(h.geom)::json AS st_asgeojson\
+    SELECT ST_AsGeoJSON(ST_FlipCoordinates(h.geom))::json AS st_asgeojson\
     FROM hexagrid as h, gp1\
     WHERE ST_Intersects(h.geom, ST_SetSRID(gp1.geom, 3857));"
 
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
-    polygon = Polygon((result['st_asgeojson'][0]['coordinates'][0]))
+    polygon = result['st_asgeojson'][0]['coordinates'][0]
 
     return polygon
 

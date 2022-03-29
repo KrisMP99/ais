@@ -16,7 +16,7 @@ USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
-COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       timestamp TIMESTAMP WITHOUT TIME ZONE,\
                       type_of_mobile VARCHAR,\
@@ -45,7 +45,7 @@ def get_cleansed_data():
     
     engine = create_engine(db_string)
     with engine.connect() as conn:
-        result = conn.execute("SELECT * FROM cleansed")
+        result = conn.execute("SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),4326) AS location FROM cleansed")
         return pd.DataFrame(result, columns=COLUMNS)
         
 

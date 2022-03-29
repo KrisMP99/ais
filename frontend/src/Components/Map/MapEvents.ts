@@ -34,7 +34,7 @@ export default function MapEvents(props: MapEventsProps) {
 
     function addMarker(e: LeafletMouseEvent) {
         let position: LatLng = new LatLng(e.latlng.lat, e.latlng.lng);
-        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat + " Lng: " + position.lng));
+        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat.toFixed(4) + " Lng: " + position.lng.toFixed(4)));
         props.addPoint(position);
     }
 

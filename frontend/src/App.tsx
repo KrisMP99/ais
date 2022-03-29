@@ -8,6 +8,7 @@ import './Leaflet.css';
 interface AppStates {
   pointCoords: LatLng[];
   mouseCoords: string[];
+  polylines: LatLng[];
 }
 
 export class App extends React.Component<any, AppStates> {
@@ -21,7 +22,8 @@ export class App extends React.Component<any, AppStates> {
     this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
     this.state = {
       pointCoords: [],
-      mouseCoords: []
+      mouseCoords: [],
+      polylines: []
     }
   }
 
@@ -37,6 +39,7 @@ export class App extends React.Component<any, AppStates> {
               this.setState({ pointCoords: points });
             }}
             retMousePos={(pos: string[]) => { this.setState({mouseCoords: pos}); }}
+            polylines={this.state.polylines}
           />
           <div className='right-side'>
             <div className='positions-container'>
@@ -56,7 +59,8 @@ export class App extends React.Component<any, AppStates> {
                 </p>
               </div>
               <PostButton
-                coords={this.state.pointCoords}
+                coordinates={this.state.pointCoords}
+                getData={(data: LatLng[]) => this.setState({polylines: data})}
               />
             </div>
             <div className='filter-container'>

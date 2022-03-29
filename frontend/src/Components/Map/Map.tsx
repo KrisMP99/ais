@@ -1,6 +1,6 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, Polygon } from 'react-leaflet';    
+import { MapConsumer, MapContainer, TileLayer, Polygon, Polyline} from 'react-leaflet';    
 import '../../Leaflet.css';
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
@@ -78,6 +78,9 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         return null;
                     }}
                 </MapConsumer>
+                <Polyline
+                    positions={this.props.polylines}
+                />
                 <ClickMap 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}

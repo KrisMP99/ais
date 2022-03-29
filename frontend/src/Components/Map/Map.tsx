@@ -1,6 +1,6 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
+import { MapConsumer, MapContainer, TileLayer, Polygon } from 'react-leaflet';    
 import '../../Leaflet.css';
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
@@ -26,12 +26,14 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
     protected ignoreCountires: L.Layer[];
+    protected hexagonPolygons: L.Polygon[];
 
     constructor(props: DKMapProps) {
         super(props);
 
         this.ignoreCountires = [];
         this.countriesAdded = false;
+        this.hexagonPolygons = [];
 
         this.markerLayer = L.layerGroup();
         this.markerIcon = L.icon({
@@ -62,39 +64,64 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     bounds={MAP_BOUNDS}
                 />
-                <MapConsumer>
-                    {(map) => {
-                        if(!this.countriesAdded) { 
-                            this.addCountryPolygons(map);                        
-                        }
-                        return null;
-                    }}
-                </MapConsumer>
                 <ClickMap 
                     ignoreLayers={this.ignoreCountires}
                     layerGroup={this.markerLayer}
                     markerIcon={this.markerIcon}
                     points={this.state.points}
+                    fetchHexagon={(point) => this.fetchHexagon(point)}
                     addPoint={(point) => {
-                            if(this.state.points) {
-                                this.state.points.push(point);
-                                this.props.retCoords(this.state.points);
-                                this.setState({points: this.state.points});
-                            }
-                            else {
-                                let temp: LatLng[] = [];
-                                temp.push(point);
-                                this.setState({points: temp})
-                            }
+                            this.state.points.push(point);
+                            this.props.retCoords(this.state.points);
+                            this.fetchHexagon(point);
+                            this.setState({points: this.state.points});
                         }}
-                    clearPoints={() => {
+                        clearPoints={() => {
                         this.state.points.pop();
                         this.state.points.pop();
+                        this.hexagonPolygons = [];
                         this.setState({points: this.state.points});
                     }}
-                />
+                    />
+                    <MapConsumer>
+                        {(map) => {
+                            if(!this.countriesAdded) { 
+                                this.addCountryPolygons(map);                        
+                            }
+                            return null;
+                        }}
+                    </MapConsumer>
             </MapContainer>
         );
+    }
+
+    protected async fetchHexagon(point: LatLng) {
+        const requestOptions = {
+            method: 'POST',
+            headers: { 
+                'Accept': 'application/json', 
+                'Content-Type': 'application/json',
+                'x-token':  process.env.REACT_APP_TOKEN!,
+            },
+            body: 
+                JSON.stringify(
+                    {
+                        "long": point.lng,
+                        "lat": point.lat
+                    }
+                )
+        };
+        fetch('http://' + process.env.REACT_APP_API! + '/hexagrids/hexagon', requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            if(this.hexagonPolygons) {
+                this.hexagonPolygons.push(data);
+            }
+            else {
+                this.hexagonPolygons = [];
+                this.hexagonPolygons.push(data);
+            }
+        });
     }
 
     protected addCountryPolygons(map: L.Map) {

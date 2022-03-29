@@ -30,7 +30,7 @@ async def get_hexagon(p1: Coordinate):
 
     return polygon
 
-@router.get("/hexa_grid")
+@router.get("/hexagrid")
 async def get_hexa_grid():
     query = 'SELECT ST_AsGeoJSON(geom)::json FROM hexagrid ORDER BY(geom);'
     #query = "SELECT jsonb_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM hexagrid AS t(hid, geom);"

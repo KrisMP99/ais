@@ -31,6 +31,7 @@ export default function ClickMap(props: ClickMapProps) {
 
     function addMarker(e: LeafletMouseEvent) {
         let position: LatLng = new LatLng(e.latlng.lat, e.latlng.lng);
+        
         props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat + " Lng: " + position.lng));
         props.addPoint(position);
     }

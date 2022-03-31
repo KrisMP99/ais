@@ -48,7 +48,6 @@ def insert_cleansed_data(df,logger):
     with engine.connect() as conn:
         conn.execute(cleansed_table_sql)
         df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
-        logger.info("Insert 500000 row chunk")
     logger.info("Done inserting!")
 
 
@@ -186,12 +185,19 @@ def insert_into_star(logger):
     logger.info("Generating line strings...")
 
     # Get the line string to start from
-    cursor.execute("SELECT MIN(trip_id) FROM cleansed")
-    result = cursor.fetchone()
-    trip_id = result[0]
+    cursor.execute("SELECT MIN(trip_id), MIN(simplified_trip_id) FROM cleansed")
+    result = cursor.fetchall()
+    # trip_id = result[0][0]
+    # simplified_trip_id = result[1][0]
+
+    for row in result:
+        trip_id = row[0]
+        simplified_trip_id = row[1]
 
     if trip_id is None:
         trip_id = 0
+    if simplified_trip_id is None:
+        simplified_trip_id = 0
 
     sql_line_string_query = "WITH trip_list AS ( " \
                                 "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
@@ -207,8 +213,8 @@ def insert_into_star(logger):
     sql_simplified_line_query = "WITH trip_list AS ( " \
                                 "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
                                 "FROM data_fact " \
-                                f"WHERE trip_id >= {trip_id}" \
-                                "GROUP BY trip_id)" \
+                                f"WHERE simplified_trip_id >= {simplified_trip_id}" \
+                                "GROUP BY simplified_trip_id)" \
                             "UPDATE simplified_trip_dim " \
                                 "SET line_string = ( " \
 	                                "SELECT line " \

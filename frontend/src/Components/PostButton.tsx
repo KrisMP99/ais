@@ -3,7 +3,7 @@ import { LatLng } from 'leaflet';
 
 interface PostButtonProps {
     coordinates: LatLng[];
-    getData: (data: LatLng[]) => void;
+    getData: (data: LatLng[][]) => void;
 }
 interface PostButtonStates {
 

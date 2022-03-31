@@ -7,10 +7,11 @@ import iconUrl from '../../Images/GreenCircle.png';
 import ClickMap from './PlacePoint';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
+import { randomInt } from 'crypto';
 
 interface DKMapProps {
     retCoords: (coords: LatLng[]) => void;
-    polylines: LatLng[];
+    polylines: LatLng[][];
 }
 
 interface DKMapStates {
@@ -20,6 +21,14 @@ interface DKMapStates {
 
 const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
 const MAP_BOUNDS: LatLngBoundsExpression = [[58.5, 3.2], [53.5, 16.5]];
+
+function getPolylineColor(){
+    return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
+}
+
+function createPolyline(polyline: LatLng[], key: number){
+    return <Polyline positions={polyline} key={key} color={getPolylineColor()} weight={5}/>
+}
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
@@ -78,6 +87,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         return null;
                     }}
                 </MapConsumer>
+                {this.props.polylines.map((polyline, key) => createPolyline(polyline, key))}
                 <Polyline
                     positions={this.props.polylines}
                 />

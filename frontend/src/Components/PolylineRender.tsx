@@ -18,7 +18,6 @@ export class PolylineRender extends React.Component<PolylineRenderProps, Polylin
         return(
             <Polyline
                 positions={this.props.polylines}
-                color={}
             />   
         );
     };

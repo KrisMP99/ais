@@ -39,13 +39,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
     
-    linestring_query = f"WITH gp1 AS (\
-    SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[0]}')) As geom),\
-    gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[1]}')) As geom)\
-    SELECT ST_AsGeoJSON(l.geom)::json AS st_asgeojson\
-    FROM linestring as l, gp1, gp2\
-    WHERE ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp1.geom, 3857))\
-    AND ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp2.geom, 3857));"
+    # linestring_query = f"WITH gp1 AS (\
+    # SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[0]}')) As geom),\
+    # gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[1]}')) As geom)\
+    # SELECT ST_AsGeoJSON(l.geom)::json AS st_asgeojson\
+    # FROM linestring as l, gp1, gp2\
+    # WHERE ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp1.geom, 3857))\
+    # AND ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp2.geom, 3857));"
+    linestring_query = "SELECT ST_AsGeoJSON(l.geom)::json AS st_asgeojson FROM linestring AS l;"
 
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):

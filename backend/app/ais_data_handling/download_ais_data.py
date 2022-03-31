@@ -298,8 +298,8 @@ def insert_into_db(path_csv, name, logger):
     
 def cleanse_data_and_insert(logger):
     trip_list = trp.get_cleansed_data(logger)
-    dpe.create_line_strings(trip_list, logger)
-    quit()
+    trip_list = dpe.create_line_strings(trip_list, logger)
+    di.insert_cleansed_data(trip_list,logger)
     di.insert_into_star(logger)
     return
 
@@ -322,7 +322,7 @@ def insert_csv_to_db_manually(path_csv):
     logger = get_logger()
     logger.info("Connecting to database...")
     try:
-        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
+        conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
         conn.autocommit = True
         cursor = conn.cursor()
     except Exception as err:
@@ -339,8 +339,9 @@ def insert_csv_to_db_manually(path_csv):
         logger.critical(f"Something went wrong when opening the csv file at: {path_csv}. Error: {err} Error type: {type(err)} Qutting")
         quit()
 
-    logger.info("Creating temp table...")
+    logger.info("Creating raw and temp table...")
     try:
+        cursor.execute(raw_data_table_query)
         cursor.execute("CREATE TEMPORARY TABLE raw_temp (LIKE raw_data)")
         cursor.execute("ALTER TABLE raw_temp ALTER COLUMN mmsi TYPE VARCHAR, ALTER COLUMN imo TYPE VARCHAR")
     except Exception as err:
@@ -386,6 +387,7 @@ def insert_csv_from_folder(folder_path):
 
     for file in files:
         insert_csv_to_db_manually(file)
+        cleanse_data_and_insert(logger)
 
 
 def extract_file_names_from_interval(interval_str):
@@ -430,4 +432,6 @@ def begin(interval_to_download = None, file_to_download = None, all = False, con
 
 logger = get_logger()
 
-cleanse_data_and_insert(logger)
+insert_csv_from_folder("C:\\Users\\Kristian\\Desktop\\")
+
+#cleanse_data_and_insert(logger)

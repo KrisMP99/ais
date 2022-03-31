@@ -48,9 +48,9 @@ urllib3==1.26.8
 uvicorn==0.15.0
 watchgod==0.7
 websockets==10.2
-GDAL==3.2.2.1
-Fiona==1.8.15
+#GDAL==3.2.2.1
+#Fiona==1.8.15
 rarfile==4.0
-geopandas==0.10.2
+#geopandas==0.10.2
 pygrametl==2.7
-pandarallel==1.6.1
+#pandarallel==1.6.1

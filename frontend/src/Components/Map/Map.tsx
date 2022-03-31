@@ -2,15 +2,20 @@ import React from 'react';
 import './Map.css';
 import { MapConsumer, MapContainer, TileLayer, Polygon, Polyline} from 'react-leaflet';    
 import '../../Leaflet.css';
+import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
-import ClickMap from './PlacePoint';
+import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
 import { randomInt } from 'crypto';
 
 interface DKMapProps {
+    mapBounds: LatLngBoundsExpression;
+    mapCenter: LatLng;
+
     retCoords: (coords: LatLng[]) => void;
+    retMousePos: (pos: string[]) => void;
     polylines: LatLng[][];
 }
 
@@ -18,9 +23,6 @@ interface DKMapStates {
     points: LatLng[];
     hexPolygons: L.Polygon[];
 }
-
-const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
-const MAP_BOUNDS: LatLngBoundsExpression = [[58.5, 3.2], [53.5, 16.5]];
 
 function getPolylineColor(){
     return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
@@ -65,12 +67,13 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             <MapContainer
                 id='map'
                 className="map-container"
-                center={MAP_CENTER}
+                center={this.props.mapCenter}
                 // bounds={MAP_BOUNDS}
                 zoom={7}
                 minZoom={5}
                 maxZoom={14}
                 scrollWheelZoom={true}
+                maxBounds={this.props.mapBounds}
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -91,12 +94,13 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 <Polyline
                     positions={this.props.polylines}
                 />
-                <ClickMap 
+                <MapEvents 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}
                     markerIcon={this.markerIcon}
                     points={this.state.points}
                     fetchHexagon={(point) => this.fetchHexagon(point)}
+                    retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
                     addPoint={(point) => {
                         this.state.points.push(point);
                         this.fetchHexagon(point);
@@ -109,15 +113,15 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         })
                         this.setState({points: [], hexPolygons: []});
                     }}
-                    />
-                    <MapConsumer>
-                        {(map) => {
-                            if(!this.countriesAdded) { 
-                                this.addCountryPolygons(map);                        
-                            }
-                            return null;
-                        }}
-                    </MapConsumer>
+                ></MapEvents>
+                <MapConsumer>
+                    {(map) => {
+                        if(!this.countriesAdded) { 
+                            this.addCountryPolygons(map);                        
+                        }
+                        return null;
+                    }}
+                </MapConsumer>
             </MapContainer>
         );
     }

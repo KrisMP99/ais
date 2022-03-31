@@ -34,6 +34,25 @@ async def get_hexagon(p1: Coordinate):
 
     return polygon
 
+@router.post('/hexagon-centroid')
+async def get_hexagon_centroid(p1: Coordinate):
+    gp1 = Point((p1.long, p1.lat))
+    query = f"WITH gp1 AS (\
+    SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom)\
+    SELECT ST_AsGeoJSON(ST_Centroid(ST_FlipCoordinates(h.geom)))::json AS st_asgeojson\
+    FROM hexagrid as h, gp1\
+    WHERE ST_Intersects(h.geom, ST_SetSRID(gp1.geom, 3857));"
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
+
+    if len(result) == 0:
+        logger.error('Could not find the given coordinates')
+        raise HTTPException(status_code=404, detail='Could not find the given coordinates')
+    polygon = result['st_asgeojson'][0]['coordinates']
+    
+    return polygon
+
 # @router.get("/hexagrid")
 # async def get_hexa_grid():
 #     query = 'SELECT ST_AsGeoJSON(geom)::json FROM hexagrid ORDER BY(geom);'

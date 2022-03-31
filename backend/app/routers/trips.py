@@ -1,6 +1,5 @@
 from numpy import less_equal
-from fastapi import APIRouter, Depends
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.db.database import engine, Session
@@ -55,5 +54,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                 linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
+            raise HTTPException(status_code=404, detail="No trips were found for the selected coordinates")
 
     return linestrings

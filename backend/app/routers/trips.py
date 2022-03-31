@@ -46,7 +46,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     # FROM linestring as l, gp1, gp2\
     # WHERE ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp1.geom, 3857))\
     # AND ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp2.geom, 3857));"
-    linestring_query = "SELECT ST_AsGeoJSON(l.geom)::json AS st_asgeojson FROM linestring AS l;"
+    linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM trip_dim AS td LIMIT(50);"
 
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):

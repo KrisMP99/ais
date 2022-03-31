@@ -5,7 +5,7 @@ import os
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
-ERROR_LOG_FILE_PATH = os.getenv('FILEPATH')
+ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 
 async def get_token_header(x_token: str = Header(...)):
     if x_token != TOKEN:

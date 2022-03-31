@@ -144,18 +144,25 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 )
         };
         fetch('http://' + process.env.REACT_APP_API! + '/hexagrids/hexagon', requestOptions)
-        .then(response => response.json())
-        .then((data: L.LatLngExpression[][]) => {
-            let temp: L.Polygon[] = this.state.hexPolygons;         
-            temp.push(new L.Polygon(data, {
-                opacity: 0,
-                fillOpacity: 1,
-                fillColor: "#000000"
-            }));
-            if(temp.length == 1) {
-                temp[0].bindPopup("Choose a point further from your first point!");
+        .then((response) => {
+            if(!response.ok){
+                return null;
+            } 
+            else return response.json();
+        })
+        .then((data: L.LatLngExpression[][] | null) => {
+            if (data){
+                let temp: L.Polygon[] = this.state.hexPolygons;         
+                temp.push(new L.Polygon(data, {
+                    opacity: 0,
+                    fillOpacity: 1,
+                    fillColor: "#000000"
+                }));
+                if(temp.length === 1) {
+                    temp[0].bindPopup("Choose a point further from your first point!");
+                }
+                this.setState({hexPolygons: temp});
             }
-            this.setState({hexPolygons: temp});
         });
     }
 

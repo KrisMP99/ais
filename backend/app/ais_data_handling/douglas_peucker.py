@@ -1,12 +1,8 @@
 from venv import create
 import pandas as pd
 from shapely.geometry import LineString, Point
-import geopandas as gpd
-import datetime
-from pandarallel import pandarallel
-import warnings
 
-COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 
 def convert_to_point(df):
     df['geometry'] = Point(df['latitude'], df['longitude'])
@@ -52,8 +48,6 @@ def create_line_strings(trip_list, logger):
             total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
 
     df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
-    print(df_all_points.head(5))
-    quit()
     return df_all_points
 
     # print(line.length, 'line length')

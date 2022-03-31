@@ -48,7 +48,7 @@ def insert_cleansed_data(df,logger):
     with engine.connect() as conn:
         conn.execute(cleansed_table_sql)
         df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
-        logger.info("1 insert done (5000000 row chunks)")
+        logger.info("Insert 500000 row chunk")
     logger.info("Done inserting!")
 
 
@@ -71,7 +71,7 @@ def convert_timestamp_to_time_and_date(row):
 
 def insert_into_star(logger):
     # Establish db connection
-    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host="localhost", port="5432")
+    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
@@ -129,6 +129,13 @@ def insert_into_star(logger):
         lookupatts=['line_string']
     )
 
+    simplified_trip_dim = CachedDimension (
+        name='simplified_trip_dim',
+        key='simplified_trip_id',
+        attributes=['line_string'],
+        lookupatts=['line_string']
+    )
+
     fact_table = BatchFactTable(
         name='data_fact',
         keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id'],
@@ -144,6 +151,7 @@ def insert_into_star(logger):
     for row in ais_source:
         convert_timestamp_to_time_and_date(row)
         row['line_string'] = None
+        row['simplified_line_string'] = None
 
         if row['date_id'] != date_dim.getbykey(row)['date_id']:
             date_dim.insert(row)
@@ -157,6 +165,11 @@ def insert_into_star(logger):
 
         if row['trip_id'] != trip_dim.getbykey(row)['trip_id']:
             trip_dim.insert(row)
+
+        if row['simplified_trip_id'] is not None:
+            if row['simplified_trip_id'] != simplified_trip_dim.getbykey(row)['simplified_trip_id']:
+                simplified_trip_dim.insert(row)
+
 
         if(index % 1000000 == 0):
             print(f"Inserted {index} rows into star schema...")
@@ -177,6 +190,9 @@ def insert_into_star(logger):
     result = cursor.fetchone()
     trip_id = result[0]
 
+    if trip_id is None:
+        trip_id = 0
+
     sql_line_string_query = "WITH trip_list AS ( " \
                                 "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
                                 "FROM data_fact " \
@@ -188,9 +204,20 @@ def insert_into_star(logger):
 	                                "FROM trip_list " \
 	                            "WHERE trip_list.trip_id = trip_dim.trip_id)"
 
+    sql_simplified_line_query = "WITH trip_list AS ( " \
+                                "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
+                                "FROM data_fact " \
+                                f"WHERE trip_id >= {trip_id}" \
+                                "GROUP BY trip_id)" \
+                            "UPDATE simplified_trip_dim " \
+                                "SET line_string = ( " \
+	                                "SELECT line " \
+	                                "FROM trip_list " \
+	                            "WHERE trip_list.simplified_trip = simplified_trip_dim.simplified_trip_id)"
 
     # Truncate cleansed table:
     cursor.execute(sql_line_string_query)
+    cursor.execute(sql_simplified_line_query)
 
     logger.info("Generated and updated all line strings, deleting raw_data and cleansed tables")
 

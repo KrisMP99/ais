@@ -54,6 +54,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                 linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=404, detail="No trips were found for the selected coordinates")
+            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
 
     return linestrings

@@ -29,7 +29,7 @@ async def get_hexagon(p1: Coordinate):
 
     if len(result) == 0:
         logger.error('Could not find the given coordinates')
-        raise HTTPException('Could not find the given coordinates')
+        raise HTTPException(status_code=404, detail='Could not find the given coordinates')
     polygon = result['st_asgeojson'][0]['coordinates'][0]
 
     return polygon

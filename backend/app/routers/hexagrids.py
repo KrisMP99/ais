@@ -28,6 +28,7 @@ async def get_hexagon(p1: Coordinate):
     result = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
 
     if len(result) == 0:
+        logger.error('Could not find the given coordinates')
         raise HTTPException('Could not find the given coordinates')
     polygon = result['st_asgeojson'][0]['coordinates'][0]
 

@@ -1,14 +1,12 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, Polygon, Polyline} from 'react-leaflet';    
-import '../../Leaflet.css';
-import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
+import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
+import '../../Leaflet.css'; 
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
-import { randomInt } from 'crypto';
 
 interface DKMapProps {
     mapBounds: LatLngBoundsExpression;

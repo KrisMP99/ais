@@ -50,7 +50,9 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
     
         fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions)
         .then((response) => {
-            if(!response.ok) return null;
+            if(!response.ok){
+                return null;
+            } 
             else return response.json();
           })
         .then((data) => {

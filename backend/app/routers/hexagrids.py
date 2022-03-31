@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.encoders import jsonable_encoder
-from app.dependencies import get_token_header
+from app.dependencies import get_token_header, get_logger
 from app.db.database import engine, Session
 from app.models.coordinate import Coordinate
-from geojson import Polygon, Point
+from geojson import Point
 import asyncio
 import pandas as pd
 
 session = Session()
+logger = get_logger()
 router = APIRouter(
     prefix="/hexagrids",
     tags=["hexagrids"],
@@ -26,15 +26,18 @@ async def get_hexagon(p1: Coordinate):
 
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
+
+    if len(result) == 0:
+        raise HTTPException('Could not find the given coordinates')
     polygon = result['st_asgeojson'][0]['coordinates'][0]
 
     return polygon
 
-@router.get("/hexagrid")
-async def get_hexa_grid():
-    query = 'SELECT ST_AsGeoJSON(geom)::json FROM hexagrid ORDER BY(geom);'
-    #query = "SELECT jsonb_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM hexagrid AS t(hid, geom);"
-    loop = asyncio.get_event_loop()
-    feature_collection = await loop.run_in_executor(None, pd.read_sql, query, engine)
+# @router.get("/hexagrid")
+# async def get_hexa_grid():
+#     query = 'SELECT ST_AsGeoJSON(geom)::json FROM hexagrid ORDER BY(geom);'
+#     #query = "SELECT jsonb_build_object('type', 'FeatureCollection', 'features', json_agg(ST_AsGeoJSON(t.*)::json)) FROM hexagrid AS t(hid, geom);"
+#     loop = asyncio.get_event_loop()
+#     feature_collection = await loop.run_in_executor(None, pd.read_sql, query, engine)
 
-    return jsonable_encoder(feature_collection[1])
+#     return jsonable_encoder(feature_collection[1])

@@ -132,7 +132,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     time_dim.time IS NOT NULL                                   \
                                                 LIMIT 1)                                                        \
                                         ELSE null                                                               \
-                                    END AS timestamp, pil.geom                                                  \
+                                    END AS timestamp, pil.geom, data_fact.sog                                                  \
                                 FROM                                                                            \
                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
                                 WHERE                                                                           \

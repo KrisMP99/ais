@@ -83,7 +83,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                     linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
+            raise HTTPException(status_code=204, detail='No trips were found for the selected coordinates')
 
     linestring_query_hexagon = f"WITH hex1 AS (                                                                 \
                                     SELECT                                                                      \
@@ -121,7 +121,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                 ST_SetSRID(hex1.geom, 3857))                                    \
                                             THEN(                                                               \
                                                 SELECT                                                          \
-                                                    std.simplified_trip_id                                      \
+                                                    time_dim.time                                               \
                                                 FROM                                                            \
                                                     simplified_trip_dim AS std,                                 \
                                                     data_fact, date_dim, time_dim                               \
@@ -130,23 +130,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     std.simplified_trip_id = pil.simplified_trip_id             \
                                                 LIMIT 1)                                                        \
                                         ELSE null                                                               \
-                                    END                                                                         \
-                                FROM points_in_linestring AS pil, hex1, hex2;"
-
-    #     CASE \
-    #         WHEN EXISTS (SELECT pil.geom FROM points_in_linestring AS pil WHERE ST_Intersects(ST_SetSRID(hex1.geom, 3857), pil.geom)) \
-    #             THEN 'hex1 says hello' \
-    #         WHEN EXISTS (SELECT pil.geom FROM points_in_linestring AS pil WHERE ST_Intersects(ST_SetSRID(hex2.geom, 3857), pil.geom)) \
-    #             THEN 'hex2 says hello' \
-    #         ELSE 'BYE' \
-    #     END first_point \
-    # FROM simplified_trip_dim as std, hex1, hex2 \
-    # WHERE ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(hex1.geom, 3857)) \
-    # AND ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(hex2.geom, 3857));"
-
-    # selects all points in a linestring
-    # ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string)))
-
+                                    END AS timestamp, date_dim.date_id, time_dim.time_id                        \
+                                FROM                                                                            \
+                                    points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
+                                WHERE                                                                           \
+                                    pil.simplified_trip_id = data_fact.simplified_trip_id AND                   \
+                                    data_fact.date_id = date_dim.date_id AND                                    \
+                                    date_fact.time_id = time_dim.time_id AND                                    \
+                                    time_dim.time = timestamp"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:
@@ -156,6 +147,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             #         print(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
+            raise HTTPException(status_code=204, detail='No trips were found for the selected coordinates')
 
     return linestrings

@@ -45,13 +45,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     # FROM linestring as l, gp1, gp2\
     # WHERE ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp1.geom, 3857))\
     # AND ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp2.geom, 3857));"
-    linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM trip_dim AS td LIMIT(50);"
+    linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):
         if len(chunk) != 0:
             for json in chunk['st_asgeojson']:
-                linestrings.append(json['coordinates'])
+                if json is not None:
+                    linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')

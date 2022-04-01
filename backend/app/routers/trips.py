@@ -65,15 +65,15 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[0]}')) As geom), \
     gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[1]}')) As geom), \
     points_in_linestring AS (SELECT ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string))) AS geom FROM simplified_trip_dim AS std, gp1, gp2\
-    WHERE ST_Intersects(std.line_string, ST_SetSRID(gp1.geom, 3857)) \
-    AND ST_Intersects(std.line_string, ST_SetSRID(gp2.geom, 3857))) \
+    WHERE ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp1.geom, 3857)) \
+    AND ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp2.geom, 3857))) \
     \
     SELECT CASE \
-        WHEN ST_Within(pil.geom, ST_SetSRID(gp1.geom, 3857)) \
+        WHEN ST_Within(ST_FlipCoordinates(pil.geom), ST_SetSRID(gp1.geom, 3857)) \
             THEN true \
-        WHEN ST_Within(pil.geom, ST_SetSRID(gp2.geom, 3857)) \
+        WHEN ST_Within(ST_FlipCoordinates(pil.geom), ST_SetSRID(gp2.geom, 3857)) \
             THEN true \
-        ELSE ST_Within(pil.geom, ST_SetSRID(gp1.geom, 3857)) \
+        ELSE ST_Within(ST_FlipCoordinates(pil.geom), ST_SetSRID(gp1.geom, 3857)) \
     END first_point\
     FROM points_in_linestring AS pil, gp1, gp2;"
 

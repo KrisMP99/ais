@@ -114,7 +114,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         ))                                                                      \
                                                                                                                 \
                                 SELECT                                                                          \
-                                    DISTINCT ON(date_dim.date_id) date_id,                                       \
+                                    DISTINCT date_dim.date_id,                                       \
                                     CASE                                                                        \
                                         WHEN                                                                    \
                                             ST_Within(                                                          \

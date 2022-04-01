@@ -1,5 +1,3 @@
-import re
-from time import time
 from urllib.error import HTTPError, URLError
 from bs4 import BeautifulSoup
 from urllib.request import urlopen

@@ -147,7 +147,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         if len(chunk) != 0:
             print(chunk)
         else:
-            logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
+            logger.warning('Could not find any hexagons')
 
     return linestrings

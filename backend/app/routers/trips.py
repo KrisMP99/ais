@@ -142,7 +142,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         if len(chunk) != 0:
             print(chunk)
             for time in chunk:
-                if time.get('timestamp') is not None:
+                if time['timestamp'] is not None:
                     print(time)
         else:
             logger.warning('No trips were found for the selected coordinates')

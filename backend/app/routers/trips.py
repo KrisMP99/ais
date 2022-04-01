@@ -136,7 +136,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 WHERE                                                                           \
                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND                   \
                                     data_fact.date_id = date_dim.date_id AND                                    \
-                                    date_fact.time_id = time_dim.time_id AND                                    \
+                                    data_fact.time_id = time_dim.time_id AND                                    \
                                     time_dim.time = timestamp"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):

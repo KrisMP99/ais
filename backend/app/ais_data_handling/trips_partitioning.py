@@ -300,18 +300,17 @@ def export_trips_csv(trip_list, logger, CSV_PATH = CSV_PATH):
                 row = [point.get_mmsi(), point.latitude, point.longitude, point.get_timestamp()]
                 writer.writerow(row)
 
-def get_cleansed_data(logger):
-    sql_query = "SELECT * " \
-                "FROM raw_data " \
-                "WHERE "\
-                    "(type_of_mobile = 'Class A') AND "\
-                    "(latitude >= 53.5 AND latitude <= 58.5) AND "\
-                    "(longitude >= 3.2 AND longitude <= 16.5) AND "\
-                    "(sog >= 0 AND sog <= 102) AND " \
-                    "(mmsi IS NOT NULL) " \
-                    "ORDER BY timestamp ASC "\
-                    "LIMIT 1000000"
-    df = get_data_from_query(sql_query)
+def get_cleansed_data(df, logger):
+    # sql_query = "SELECT * " \
+    #             "FROM raw_data " \
+    #             "WHERE "\
+    #                 "(type_of_mobile = 'Class A') AND "\
+    #                 "(latitude >= 53.5 AND latitude <= 58.5) AND "\
+    #                 "(longitude >= 3.2 AND longitude <= 16.5) AND "\
+    #                 "(sog >= 0 AND sog <= 102) AND " \
+    #                 "(mmsi IS NOT NULL) " \
+    #                 "ORDER BY timestamp ASC "
+    # df = get_data_from_query(sql_query)
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)

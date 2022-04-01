@@ -71,8 +71,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
                                 ST_SetSRID(hex2.geom, 3857)                                     \
-                            )                                                                   \
-                        );"
+                            );"
 
     #linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM trip_dim AS td"
 

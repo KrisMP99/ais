@@ -49,31 +49,31 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
     
     # Then we select all linestrings that intersect with the two polygons
-    # linestring_query = f"WITH hex1 AS (                                                         \
-    #                         SELECT                                                              \
-    #                             ST_AsText(                                                      \
-    #                                 ST_GeomFromGeoJSON('{polygons[0]}')) As geom),              \
-    #                                                                                             \
-    #                     hex2 AS (                                                               \
-    #                         SELECT                                                              \
-    #                             ST_AsText(                                                      \
-    #                                 ST_GeomFromGeoJSON('{polygons[1]}')) As geom)               \
-    #                                                                                             \
-    #                     SELECT                                                                  \
-    #                         ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
-    #                     FROM                                                                    \
-    #                         simplified_trip_dim as std, hex1, hex2                              \
-    #                     WHERE                                                                   \
-    #                         ST_Intersects(                                                      \
-    #                             ST_FlipCoordinates(std.line_string),                            \
-    #                             ST_SetSRID(hex1.geom, 3857)                                     \
-    #                         ) AND                                                               \
-    #                         ST_Intersects(                                                      \
-    #                             ST_FlipCoordinates(std.line_string),                            \
-    #                             ST_SetSRID(hex2.geom, 3857)                                     \
-    #                         );"
+    linestring_query = f"WITH hex1 AS (                                                         \
+                            SELECT                                                              \
+                                ST_AsText(                                                      \
+                                    ST_GeomFromGeoJSON('{polygons[0]}')) As geom),              \
+                                                                                                \
+                        hex2 AS (                                                               \
+                            SELECT                                                              \
+                                ST_AsText(                                                      \
+                                    ST_GeomFromGeoJSON('{polygons[1]}')) As geom)               \
+                                                                                                \
+                        SELECT                                                                  \
+                            ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
+                        FROM                                                                    \
+                            simplified_trip_dim as std, hex1, hex2                              \
+                        WHERE                                                                   \
+                            ST_Intersects(                                                      \
+                                ST_FlipCoordinates(std.line_string),                            \
+                                ST_SetSRID(hex1.geom, 3857)                                     \
+                            ) AND                                                               \
+                            ST_Intersects(                                                      \
+                                ST_FlipCoordinates(std.line_string),                            \
+                                ST_SetSRID(hex2.geom, 3857)                                     \
+                            );"
 
-    linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
+    # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):

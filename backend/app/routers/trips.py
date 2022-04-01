@@ -70,6 +70,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     WHERE ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp1.geom, 3857))\
     AND ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp2.geom, 3857));"
 
-    print()
+    for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
+        if len(chunk) != 0:
+            print(chunk)
+        else:
+            logger.warning('No trips were found for the selected coordinates')
+            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
 
     return linestrings

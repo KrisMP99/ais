@@ -67,13 +67,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     \
     SELECT\
         CASE\
-            WHEN ST_Contains(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, 0))\
+            WHEN EXISTS(ST_Intersects(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string)))))\
                 THEN 'Hello'\
-            ELSE 'Bye'\
+                ELSE 'BYE'\
         END first_point\
     FROM simplified_trip_dim as std, gp1, gp2\
     WHERE ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp1.geom, 3857))\
-    AND ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp2.geom, 3857));"
+    AND ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp2.geom, 3857))\
+    WHEN ;"
 
     # selects all points in a linestring
     # ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string)))
@@ -81,7 +82,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:
-            print(chunk)
+            for json in chunk['st_asgeojson']:
+                if json is not None:
+                    print(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')

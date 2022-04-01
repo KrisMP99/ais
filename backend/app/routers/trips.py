@@ -130,7 +130,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     std.simplified_trip_id = pil.simplified_trip_id             \
                                                 LIMIT 1)                                                        \
                                         ELSE null                                                               \
-                                    END AS timestamp, DISTINCT date_dim.date_id                     \
+                                    END AS timestamp, DISTINCT ON(date_dim.date_id) date_id                             \
                                 FROM                                                                            \
                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
                                 WHERE                                                                           \

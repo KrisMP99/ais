@@ -10,7 +10,6 @@ from pygrametl.tables import CachedDimension, BatchFactTable
 from sqlalchemy import create_engine
 import datetime
 import pandas as pd
-import geopandas as geo
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -185,7 +184,7 @@ def insert_into_star(logger):
     logger.info("Generating line strings...")
 
     # Get the line string to start from
-    cursor.execute("SELECT MIN(trip_id), MIN(simplified_trip_id) FROM cleansed")
+    cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM cleansed")
     result = cursor.fetchall()
     # trip_id = result[0][0]
     # simplified_trip_id = result[1][0]
@@ -202,7 +201,7 @@ def insert_into_star(logger):
     sql_line_string_query = "WITH trip_list AS ( " \
                                 "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
                                 "FROM data_fact " \
-                                f"WHERE trip_id >= {trip_id}" \
+                                f"WHERE trip_id > {trip_id}" \
                                 "GROUP BY trip_id)" \
                             "UPDATE trip_dim " \
                                 "SET line_string = ( " \
@@ -213,13 +212,13 @@ def insert_into_star(logger):
     sql_simplified_line_query = "WITH trip_list AS ( " \
                                 "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
                                 "FROM data_fact " \
-                                f"WHERE simplified_trip_id >= {simplified_trip_id}" \
+                                f"WHERE simplified_trip_id > {simplified_trip_id}" \
                                 "GROUP BY simplified_trip_id)" \
                             "UPDATE simplified_trip_dim " \
                                 "SET line_string = ( " \
 	                                "SELECT line " \
 	                                "FROM trip_list " \
-	                            "WHERE trip_list.simplified_trip = simplified_trip_dim.simplified_trip_id)"
+	                            "WHERE trip_list.simplified_trip_id = simplified_trip_dim.simplified_trip_id)"
 
     # Truncate cleansed table:
     cursor.execute(sql_line_string_query)

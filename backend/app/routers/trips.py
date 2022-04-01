@@ -140,8 +140,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:
-            for time in chunk:
-                print(time)
+            print(chunk)
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=204, detail='No trips were found for the selected coordinates')

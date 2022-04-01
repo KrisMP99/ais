@@ -136,7 +136,7 @@ def insert_into_star(logger):
 
     fact_table = BatchFactTable(
         name='data_fact',
-        keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id'],
+        keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id'],
         measures=['location','rot','sog','cog','heading','draught','destination'],
         batchsize=500000,
         targetconnection=conn_wrapper
@@ -167,12 +167,6 @@ def insert_into_star(logger):
         if row['simplified_trip_id'] is not None:
             if row['simplified_trip_id'] != simplified_trip_dim.getbykey(row)['simplified_trip_id']:
                 simplified_trip_dim.insert(row)
-
-
-        if(index % 1000000 == 0):
-            print(f"Inserted {index} rows into star schema...")
-        
-        index += 1
 
         fact_table.insert(row)
 

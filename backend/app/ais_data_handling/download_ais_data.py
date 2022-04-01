@@ -432,6 +432,6 @@ def begin(interval_to_download = None, file_to_download = None, all = False, con
 
 logger = get_logger()
 
-insert_csv_from_folder("C:\\Users\\Kristian\\Desktop\\")
+insert_csv_from_folder("C:\\Users\\Krist\\Desktop\\data_ais\\")
 
 #cleanse_data_and_insert(logger)

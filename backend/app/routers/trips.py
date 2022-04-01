@@ -74,7 +74,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             WHERE std.simplified_trip_id = data_fact.simplified_trip_id\
             AND std.simplified_trip_id = pil.simplified_trip_id) \
         ELSE null \
-    END\
+    END,\
     CASE \
         WHEN ST_Within(ST_FlipCoordinates(pil.geom), ST_SetSRID(gp2.geom, 3857)) \
             THEN (SELECT * FROM simplified_trip_dim AS std, data_fact, date_dim, time_dim\

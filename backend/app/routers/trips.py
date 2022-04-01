@@ -129,7 +129,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                 WHERE                                                           \
                                                     std.simplified_trip_id = data_fact.simplified_trip_id AND   \
                                                     std.simplified_trip_id = pil.simplified_trip_id AND         \
-                                                    time_dim.time IS NOT NULL                                   \
+                                                    time_dim.time IS NOT NULL                                  \
                                                 LIMIT 1)                                                        \
                                         ELSE null                                                               \
                                     END AS timestamp, pil.geom, data_fact.sog                                                  \
@@ -141,7 +141,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     data_fact.time_id = time_dim.time_id AND                                    \
                                     ST_Within(                                                                  \
                                                 ST_FlipCoordinates(pil.geom),                                   \
-                                                ST_SetSRID(hex1.geom, 3857))"
+                                                ST_SetSRID(hex1.geom, 3857)) AND\
+                                    pil.geom = data_fact.location"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:

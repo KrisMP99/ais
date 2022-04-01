@@ -74,6 +74,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         WHEN ST_Intersects(ST_SetSRID(gp2.geom, 3857), pil.geom) \
             THEN 'gp2 says hello' \
         ELSE 'Keep trying' \
+    END first_point\
     FROM points_in_linestring AS pil, gp1, gp2;"
 
     #     CASE \

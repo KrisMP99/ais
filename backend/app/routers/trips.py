@@ -64,11 +64,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     linestring_query_hexagon = f"WITH gp1 AS (\
     SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[0]}')) As geom),\
     gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[1]}')) As geom),\
-    points_in_linestring AS (SELECT ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string))) AS geom FROM simplified_trip_dim AS std),\
+    points_in_linestring AS (SELECT ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string))) AS geom FROM simplified_trip_dim AS std)\
     \
     SELECT\
         CASE\
-            WHEN EXISTS(SELECT * FROM points_in_linstring AS pil WHERE ST_Intersects(ST_SetSRID(gp1.geom, 3857), pil.geom))\
+            WHEN EXISTS(SELECT pil.geom FROM points_in_linstring AS pil WHERE ST_Intersects(ST_SetSRID(gp1.geom, 3857), pil.geom))\
                 THEN 'Hello'\
                 ELSE 'BYE'\
         END first_point\

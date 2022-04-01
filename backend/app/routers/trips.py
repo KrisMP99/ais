@@ -84,8 +84,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                             SELECT std.simplified_trip_id \
                                             FROM simplified_trip_dim AS std, data_fact, date_dim, time_dim \
                                             WHERE std.simplified_trip_id = data_fact.simplified_trip_id AND \
-                                                  std.simplified_trip_id = pil.simplified_trip_id) \
-                                            limit 1 \
+                                                  std.simplified_trip_id = pil.simplified_trip_id \
+                                            LIMIT 1 ) \
                                     ELSE null \
                                 END\
                                 FROM points_in_linestring AS pil, hex1, hex2;"

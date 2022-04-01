@@ -83,7 +83,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                     linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=204, detail='No trips were found for the selected coordinates')
+            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
 
     linestring_query_hexagon = f"WITH hex1 AS (                                                                 \
                                     SELECT                                                                      \
@@ -148,6 +148,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             print(chunk)
         else:
             logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=204, detail='No trips were found for the selected coordinates')
+            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
 
     return linestrings

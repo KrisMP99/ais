@@ -68,7 +68,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     \
     SELECT \
         CASE \
-            WHEN EXISTS (SELECT pil.geom FROM points_in_linstring AS pil WHERE ST_Intersects(ST_SetSRID(gp1.geom, 3857), pil.geom)) \
+            WHEN EXISTS (SELECT pil.geom FROM points_in_linestring AS pil WHERE ST_Intersects(ST_SetSRID(gp1.geom, 3857), pil.geom)) \
                 THEN 'Hello' \
                 ELSE 'BYE' \
         END first_point \

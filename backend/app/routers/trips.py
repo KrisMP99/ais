@@ -67,7 +67,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     \
     SELECT\
         CASE\
-            WHEN ST_Intersects(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, 1))\
+            WHEN ST_Contains(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, 1))\
                 THEN 'Hello'\
             ELSE 'Bye'\
         END first_point\

@@ -67,7 +67,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     \
     SELECT\
         CASE\
-            WHEN ST_Intersects(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, generate_series(1, ST_NPOINTS(std.line_string))))\
+            WHEN ST_Intersects(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, 1)))\
                 THEN 'Hello'\
         END first_point\
     FROM simplified_trip_dim as std, gp1, gp2\

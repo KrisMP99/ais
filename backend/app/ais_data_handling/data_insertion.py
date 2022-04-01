@@ -1,4 +1,3 @@
-from multiprocessing import connection
 from venv import create
 import numpy as np
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ from pygrametl.datasources import SQLSource
 from pygrametl.tables import CachedDimension, BatchFactTable
 from sqlalchemy import create_engine
 import datetime
-import pandas as pd
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -60,7 +58,6 @@ def convert_timestamp_to_time_and_date(row):
     time_split = timestamp.split(' ')
     row['date'] = time_split[0]
 
-    # row['time'] = np.ceil((row['timestamp'] - row['timestamp'].replace(hour=0,minute=0,second=0,microsecond=0)).total_seconds()/60/10)
     seconds_elapsed = np.ceil((row['timestamp'] - row['timestamp'].replace(hour=0,minute=0,second=0,microsecond=0)).total_seconds())
     row['time'] = datetime.timedelta(seconds=seconds_elapsed)
 
@@ -143,7 +140,6 @@ def insert_into_star(logger):
     )
 
     logger.info("Inserting rows into star schema")
-    index = 0
     time_begin = datetime.datetime.now()
     print("Time begin: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
     for row in ais_source:
@@ -178,7 +174,7 @@ def insert_into_star(logger):
     logger.info("Generating line strings...")
 
     # Get the line string to start from
-    cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM cleansed")
+    cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")
     result = cursor.fetchall()
     # trip_id = result[0][0]
     # simplified_trip_id = result[1][0]
@@ -188,15 +184,15 @@ def insert_into_star(logger):
         simplified_trip_id = row[1]
 
     if trip_id is None:
-        trip_id = 0
+        trip_id = -1
     if simplified_trip_id is None:
-        simplified_trip_id = 0
+        simplified_trip_id = -1
 
     sql_line_string_query = "WITH trip_list AS ( " \
                                 "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
                                 "FROM data_fact " \
-                                f"WHERE trip_id > {trip_id}" \
-                                "GROUP BY trip_id)" \
+                                f"WHERE trip_id > {trip_id} " \
+                                "GROUP BY trip_id) " \
                             "UPDATE trip_dim " \
                                 "SET line_string = ( " \
 	                                "SELECT line " \
@@ -206,8 +202,8 @@ def insert_into_star(logger):
     sql_simplified_line_query = "WITH trip_list AS ( " \
                                 "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
                                 "FROM data_fact " \
-                                f"WHERE simplified_trip_id > {simplified_trip_id}" \
-                                "GROUP BY simplified_trip_id)" \
+                                f"WHERE simplified_trip_id > {simplified_trip_id} " \
+                                "GROUP BY simplified_trip_id) " \
                             "UPDATE simplified_trip_dim " \
                                 "SET line_string = ( " \
 	                                "SELECT line " \

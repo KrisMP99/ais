@@ -7,39 +7,38 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import requests
 import zipfile, rarfile
-from backend.app.ais_data_handling.data_insertion import insert_cleansed_data, insert_into_star
-from backend.app.ais_data_handling.douglas_peucker import create_line_strings
-
-from backend.app.ais_data_handling.trips_partitioning import get_cleansed_data
+from data_insertion import insert_cleansed_data, insert_into_star
+from douglas_peucker import create_line_strings
+from trips_partitioning import get_cleansed_data
 
 load_dotenv()
-USER = os.getenv('POSTGRES_USER')
-PASS = os.getenv('POSTGRES_PASSWORD')
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
-HOST_DB = os.getenv('HOST_DB')
 
-def get_downloaded_csv_files_from_folder(logger):
+def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
     Gets the .csv files located in the specified folder.
     :param logger: A logger used for logging errors/warnings.
+    :param month_file_name: To only look for the .csv file from a specific month of a specific year. Example: 'aisdk-2022-01' will return the paths to all the .zip files from that month.
     :return: A list of file names.
     """
     logger.info(f"Retrieving .csv files from {CSV_FILES_PATH}")
     file_names = []
     try:
-        file_paths = glob.glob(CSV_FILES_PATH + "*.csv")
+        if month_file_name is not None:
+            file_paths = glob.glob(CSV_FILES_PATH + month_file_name + "*.csv")
+        else:
+            file_paths = glob.glob(CSV_FILES_PATH + "*.csv")
     except Exception as err:
-        logger.warning("No .csv files in {CSV_FILES_PATH}")
+        logger.warning(f"No .csv files in {CSV_FILES_PATH}")
         file_paths = []
     finally:
         if len(file_paths) > 0:
             for file in file_paths:
-                file_paths.append(file.split(CSV_FILES_PATH)[-1])
+                file_names.append(file.split(CSV_FILES_PATH)[-1])
     
-    return file_paths
-
+    return file_names
 
 def get_csv_files_from_log(logger):
     """
@@ -106,7 +105,6 @@ def download_file_from_ais_web_server(file_name, logger):
     except requests.exceptions.RequestException as re_error:
         logger.warning(f"Something went wrong when requesting to download file {file_name}. Error: {re_error}. Skipping this file.")
 
-
     path_to_compressed_file = CSV_FILES_PATH + file_name
     
     try:
@@ -157,19 +155,20 @@ def add_new_file_to_log(file_name, logger):
     except Exception as e:
         logger.critical(f"Something went wrong when accessing log file at {LOG_FILE_PATH}, error: {e}, error type: {type(e)}")
 
-def cleanse_csv_file_and_convert_to_df(file_name):
+def cleanse_csv_file_and_convert_to_df(file_name, logger):
     """
     Takes a .csv file and cleanses it according to the set predicates.
     :param file_name: File name to cleanse. Example: 'aisdk-2022-01-01.csv'
     :return: A cleansed dataframe, sorted by timestamp (ascending)
     """
+    logger.info(f"Loading, converting and cleansing {file_name}")
     df = pd.read_csv(CSV_FILES_PATH + file_name, na_values=['Unknown','Undefined'])
-    df = df.drop(['A','B','C','D','Destination','ETA','Cargo type','Data source type'],axis=1)
-    
+
+    # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
+    # errors='ignore' is sat because older ais data files may not contain these columns.
+    df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
+
     # Remove all the rows which does not satisfy our conditions
-    df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S")
-    df['Latitude'] = df['Latitude'].round(4)
-    df['Longitude'] = df['Longitude'].round(4)
     df = df[
             (df["Type of mobile"] != "Class B") &
             (df["MMSI"].notna()) &
@@ -178,37 +177,57 @@ def cleanse_csv_file_and_convert_to_df(file_name):
             (df['Longitude'] >= 3.2) & (df['Longitude'] <=16.5) &
             (df['SOG'] >= 0) & (df['SOG'] <=102)
            ].reset_index()
-    df = df.sort_values(by=['# Timestamp'], ignore_index=True)
+    
+    # We round the lat and longs as we do not need 15 decimals of precision
+    # This will save some computation time later.
+    df['Latitude'] = df['Latitude'].round(4)
+    df['Longitude'] = df['Longitude'].round(4)
+    df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S")
+
+    # Rename the columns
+    df = df.rename(columns={
+            '# Timestamp':'timestamp',
+            'Type of mobile':'type_of_mobile',
+            'Navigational status':'navigational_status',
+            'Ship type':'ship_type',
+            'Type of position fixing device':'type_of_position_fixing_device',
+        })
+    
+    # lower case names in the columns
+    df.columns = map(str.lower, df.columns)
+ 
+    # Maybe move this to trips_partitioning...
+    df = df.sort_values(by=['timestamp'], ignore_index=True)
 
     return df
 
 def check_if_csv_is_in_log(logger):
     """
     Checks if all the downloaded .csv files are also present in the log file.
-    If they are not, it will run them through the pipeline and add it to the logs.
+    If they are not, it will run them through the pipeline and update the log.
     :param logger: A logger to log warning/errors.
     """
 
-    csv_files_log = get_csv_files_from_log()
-    downloaded_csv_files = get_downloaded_csv_files_from_folder()
+    csv_files_log = get_csv_files_from_log(logger)
+    downloaded_csv_files = get_downloaded_csv_files_from_folder(logger)
 
     # Check if the downloaded .csv files are also present in the logs.
     # If they are not present in the logs, it will add the .csv files
     # to the database and to the log.
     for downloaded_csv in downloaded_csv_files:
         if downloaded_csv not in csv_files_log:
-            df = cleanse_csv_file_and_convert_to_df(downloaded_csv)
+            df = cleanse_csv_file_and_convert_to_df(downloaded_csv, logger=logger)
             partition_trips_and_insert(file_name=downloaded_csv, df=df, logger=logger)
-
 
 def continue_from_log(logger):
     logger.info("Continuing from the log file.")
 
-    check_if_csv_is_in_log()
+    # First we check if we have any .csv files downloaded, that have not yet been inserted
+    check_if_csv_is_in_log(logger)
 
-    # Continue from log now.
-    latest_csv_file = get_csv_files_from_log()[-1]
-    files_on_server = connect_to_to_ais_web_server_and_get_data()
+    # Continue from log
+    latest_csv_file = get_csv_files_from_log(logger)[-1]
+    files_on_server = connect_to_to_ais_web_server_and_get_data(logger)
 
     # Take the latest .csv file from the log and continues from there.
     try:
@@ -217,12 +236,27 @@ def continue_from_log(logger):
         logger.critical("Could not find {latest_csv_file} on the ais web server. Quitting.")
         quit()
 
-    files_to_download = files_on_server[latest_file_index + 1, -1]
+    files_to_download = files_on_server[latest_file_index + 1: -1]
+    logger.info(f"There are {len(files_to_download)} compressed files to download.")
 
     for file in files_to_download:
-        download_cleanse_insert(file)
+        download_cleanse_insert(file, logger=logger)
 
-def download_cleanse_insert(file_name, logger, check_for_month_download = False):
+def does_file_contain_whole_month(file_name):
+    """
+    Checks if the file contains a whole month.
+    E.g., a file name with the name 'aisdk-2022-01.zip' will contain data for the whole month of January
+    :param file_name: The file name to check. Example: 'aisdk-2022-01.zip will return True, 'aisdk-2022-01-01.zip' will return False.
+    :return: True | False
+    """
+    # This should probably be done with strftime instead
+    # See https://www.programiz.com/python-programming/datetime/strftime
+    if(len(file_name.split('-')) <= 3):
+        return True
+    else:
+        return False
+
+def download_cleanse_insert(file_name, logger):
     """
     Downloads the given file, runs it through the pipeline and adds the file to the log.
     :param file_name: The file to be downloaded, cleansed and inserted
@@ -230,12 +264,15 @@ def download_cleanse_insert(file_name, logger, check_for_month_download = False)
     """
     download_file_from_ais_web_server(file_name, logger)
 
-    if(check_for_month_download):
-        check_if_csv_is_in_log()
-        return
+    if(does_file_contain_whole_month):
+        files_to_insert = get_downloaded_csv_files_from_folder(file_name, logger=logger)
 
-    df = cleanse_csv_file_and_convert_to_df(file_name)
-    partition_trips_and_insert(file_name, df, logger)
+    if len(files_to_insert) <= 0:
+        files_to_insert.append(file_name)
+    
+    for file in files_to_insert:
+        df = cleanse_csv_file_and_convert_to_df(file, logger=logger)
+        partition_trips_and_insert(file, df, logger)
 
 def partition_trips_and_insert(file_name, df, logger):
     """
@@ -248,19 +285,26 @@ def partition_trips_and_insert(file_name, df, logger):
     trip_list = create_line_strings(trip_list, logger)
     insert_cleansed_data(trip_list, logger)
     insert_into_star(logger)
-    add_new_file_to_log(file_name)
+    add_new_file_to_log(file_name, logger=logger)
 
 def download_all_and_process_everything(logger):
-    files_to_download_and_process = connect_to_to_ais_web_server_and_get_data()
+    """
+    Downloads everything available on the ais web site and runs it through the pipeline.
+    :param logger: A logger used for logging errors/warnings.
+    """
+    logger.info("Downloading and processing EVERYTHING.")
+    files_to_download_and_process = connect_to_to_ais_web_server_and_get_data(logger)
+    logger.info(f"There are in total {files_to_download_and_process} compressed files to download and process.")
     for file in files_to_download_and_process:
-        if(file.split('-') <= 3):
-            download_cleanse_insert(file_name=file, logger=logger, check_for_month_download=True)
-        else:
-            download_cleanse_insert(file_name=file, logger=logger, check_for_month_download=False)
+        download_cleanse_insert(file_name=file, logger=logger)
 
 def download_interval(interval, logger):
+    """
+    Downloads and processes all the available ais data in the given interval.
+    :param interval: The interval (date) to download and process.
+    """
     dates = interval.split('::')
-    csv_files_on_server = connect_to_to_ais_web_server_and_get_data()
+    csv_files_on_server = connect_to_to_ais_web_server_and_get_data(logger)
 
     for csv_file in csv_files_on_server:
         if dates[0] in csv_file:
@@ -273,16 +317,23 @@ def download_interval(interval, logger):
         logger.critical("The files on the webserver does not contain the interval you're trying to download. Qutting.")
         quit()
 
-    files_to_download = csv_files_on_server[begin_index,end_index]
+    files_to_download = csv_files_on_server[begin_index:end_index]
+
+    logger.info(f"There are in total {len(files_to_download)} compressed files to download and process.")
 
     for file in files_to_download:
-        if(file.split('-') <= 3):
-            download_cleanse_insert(file, check_for_month_download=True)
-        else:
-            download_cleanse_insert(file, check_for_month_download=False)
+        download_cleanse_insert(file, logger)
 
-
-def begin(logger, interval_to_download = None, file_to_download = None, all = False, cont = False):
+def start(logger, interval_to_download = None, file_to_download = None, all = False, cont = False, only_from_folder = False):
+    """
+    Main function of the module. Used to start the download and processesing process.
+    :param logger: A logger used for logging warnings/errors.
+    :param interval_to_download: The interval to download and process. Default is 'None'
+    :param file_to_download: A specific file to download and proces. Default is 'None'
+    :param all: If True, will download and process all avaiable ais data. Default is 'False'
+    :param cont: If True, will continue to download and process data from the latest file entry of the log file. Default is 'False'
+    :param only_from_folder: Will only process and insert data from a folder. Default is 'False'
+    """
     if all:
         download_all_and_process_everything(logger)
     elif cont:
@@ -290,5 +341,7 @@ def begin(logger, interval_to_download = None, file_to_download = None, all = Fa
     elif interval_to_download is not None:
         download_interval(interval_to_download, logger)
     elif file_to_download is not None:
-        download_cleanse_insert(file_to_download, check_for_month_download=True)
+        download_cleanse_insert(file_to_download, logger)
+    elif only_from_folder is not None:
+        check_if_csv_is_in_log(logger)
 

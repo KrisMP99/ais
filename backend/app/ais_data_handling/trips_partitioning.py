@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from math import cos, asin, sqrt
 import csv
 
-COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
+COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'latitude', 'longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'trip_id', 'simplified_trip_id']
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -18,6 +18,7 @@ DB_NAME = os.getenv('DB_NAME')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_PATH = os.getenv('CSV_PATH')
 
+# Thresholds
 MAX_SPEED_IN_HARBOR = 8
 MAX_POINTS_IN_HARBOR = 20
 MAX_DIST_IN_HARBOR = 1.08
@@ -55,8 +56,8 @@ class Point:
         self.timestamp = timestamp 
         self.type_of_mobile = type_of_mobile 
         self.mmsi = mmsi 
-        self.latitude = round(latitude, 4)
-        self.longitude = round(longitude, 4)
+        self.latitude = latitude
+        self.longitude = longitude
         self.navigational_status = navigational_status
         self.rot = rot
         self.sog = sog
@@ -114,8 +115,6 @@ def get_trips(df, logger):
         trip_list[mmsi] = trip
         
     for timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination in zip(df.timestamp, df.type_of_mobile, df.mmsi, df.latitude, df.longitude, df.navigational_status, df.rot, df.sog, df.cog, df.heading, df.imo, df.callsign, df.name, df.ship_type, df.width, df.length, df.type_of_position_fixing_device, df.draught, df.destination):
-        # if(i % 100000 == 0):
-        #     print(f"Added {i} points so far...")
         try:
             trip = trip_list.get(mmsi)
             trip.add_point_to_trip(Point(timestamp, type_of_mobile, mmsi, latitude, longitude, navigational_status, rot, sog, cog, heading, imo, callsign, name, ship_type, width, length, type_of_position_fixing_device, draught, destination))
@@ -147,6 +146,8 @@ def partition_trips(trip_list, logger):
         # Cutting points used when splitting trips into multiple trips
         curr_point = points_in_trip[0]
         cut_point = points_in_trip[0]
+        index_curr = 0
+        index_cut = 0
 
         # Used for counting number of points below the threshold
         index = 0
@@ -158,10 +159,6 @@ def partition_trips(trip_list, logger):
         # Basically, if a ship is at a still-stand (e.g., in harbor or at anker) we wait untill the ship has sailed
         # at least MAX_DIST_IN_HARBOR before we consider it a new trip (so we don't get multiple trips while the ship is still at port/standstill)
         dist_to_new_trip = 0
-
-        # In case a trip hasn't been split, we still need to include the original trip
-        # in our final list of trips (total_trips_cleansed)
-        route_has_been_cut = False
 
         # Temp list to hold points that is below a given threshold
         points_below_threshold = []
@@ -211,16 +208,23 @@ def partition_trips(trip_list, logger):
                 # Reset our distance and new trip variables (as there can be several trips)
                 dist_to_new_trip = 0
                 is_new_trip = False
-                route_has_been_cut = True
 
             # Update our current point
             curr_point = point
 
-        # If we haven't split a route into several routes, we append it to our cleansed routes and then pop it
-        # Else, just pop (saves memory)
-        if(not route_has_been_cut):
-            total_trips_cleansed.append(trip)
+        # If cut_point != curr_point after going through all the points,
+        # means that there are still a sub trip left in the original trip
+        # Example: 
+        # The vertical lines | represents a cut point.
+        # ----|----|-----|-----
+        # A new trip would then be cut, containing the points inside the '[]'
+        # [----]|[----]|[-----]|-----
+        # As seen in the example, we also need the last part, which we check here:
+        if index_cut != index_curr:
+            new_trip = Trip(curr_point.get_mmsi())
+            new_trip.insert_point_list(points_in_trip[index_cut:index_curr])
 
+        # Remove the trip we just went trough (saves memory)
         trip_list.pop(trip_key)
 
     logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points.")
@@ -301,21 +305,7 @@ def export_trips_csv(trip_list, logger, CSV_PATH = CSV_PATH):
                 writer.writerow(row)
 
 def get_cleansed_data(df, logger):
-    # sql_query = "SELECT * " \
-    #             "FROM raw_data " \
-    #             "WHERE "\
-    #                 "(type_of_mobile = 'Class A') AND "\
-    #                 "(latitude >= 53.5 AND latitude <= 58.5) AND "\
-    #                 "(longitude >= 3.2 AND longitude <= 16.5) AND "\
-    #                 "(sog >= 0 AND sog <= 102) AND " \
-    #                 "(mmsi IS NOT NULL) " \
-    #                 "ORDER BY timestamp ASC "
-    # df = get_data_from_query(sql_query)
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)
-
-    # Convert to DF:
-
-
     return trip_list

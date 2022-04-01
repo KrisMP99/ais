@@ -4,9 +4,6 @@ from shapely.geometry import LineString, Point
 
 COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 
-def convert_to_point(df):
-    df['geometry'] = Point(df['latitude'], df['longitude'])
-
 def create_line_strings(trip_list, logger):    
     logger.info("Creating line strings")
     

@@ -73,7 +73,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             THEN 'gp1 says hello' \
         WHEN ST_Within(ST_SetSRID(gp2.geom, 3857), pil.geom) \
             THEN 'gp2 says hello' \
-        ELSE 'Keep trying' \
+        ELSE ST_Within(ST_SetSRID(gp1.geom, 3857), pil.geom) \
     END first_point\
     FROM points_in_linestring AS pil, gp1, gp2;"
 

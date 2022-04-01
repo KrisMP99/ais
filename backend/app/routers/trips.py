@@ -21,6 +21,8 @@ router = APIRouter(
 async def get_trip(p1: Coordinate, p2: Coordinate): 
     gp1 = Point((p1.long, p1.lat))
     gp2 = Point((p2.long, p2.lat))
+
+    # First we select the two polygon where the points choosen reside
     polygon_query = f"WITH gp1 AS (\
         SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom),\
         gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{gp2}')) As geom)\
@@ -38,14 +40,17 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
     
-    # linestring_query = f"WITH gp1 AS (\
-    # SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[0]}')) As geom),\
-    # gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[1]}')) As geom)\
-    # SELECT ST_AsGeoJSON(l.geom)::json AS st_asgeojson\
-    # FROM linestring as l, gp1, gp2\
-    # WHERE ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp1.geom, 3857))\
-    # AND ST_Intersects(ST_FlipCoordinates(l.geom), ST_SetSRID(gp2.geom, 3857));"
-    linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
+    # Then we select all linestrings that intersect with the two polygons
+    linestring_query = f"WITH gp1 AS (\
+    SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[0]}')) As geom),\
+    gp2 AS (SELECT ST_AsText(ST_GeomFromGeoJSON('{polygons[1]}')) As geom)\
+    SELECT ST_AsGeoJSON(std.line_string)::json AS st_asgeojson\
+    FROM simplified_trip_dim as std, gp1, gp2\
+    WHERE ST_Intersects(ST_FlipCoordinates(std.geom), ST_SetSRID(gp1.geom, 3857))\
+    AND ST_Intersects(ST_FlipCoordinates(std.geom), ST_SetSRID(gp2.geom, 3857));"
+
+
+    # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM trip_dim AS td LIMIT(50);"
 
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):

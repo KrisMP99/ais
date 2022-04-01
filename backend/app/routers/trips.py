@@ -111,7 +111,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         ST_Intersects(                                                          \
                                             ST_FlipCoordinates(std.line_string),                                \
                                             ST_SetSRID(hex2.geom, 3857)                                         \
-                                        ),                                                                       \
+                                        )                                                                       \
                                                                                                                 \
                                 SELECT                                                                          \
                                     CASE                                                                        \
@@ -120,7 +120,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                 ST_FlipCoordinates(pil.geom),                                   \
                                                 ST_SetSRID(hex1.geom, 3857))                                    \
                                             THEN(                                                               \
-                                                SELECT                                                          \
+                                                SELECT,                                                          \
                                                     std.simplified_trip_id                                      \
                                                 FROM                                                            \
                                                     simplified_trip_dim AS std,                                 \

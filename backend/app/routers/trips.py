@@ -142,7 +142,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     pil.geom = data_fact.location AND                                           \
                                     ST_Within(                                                                  \
                                                 ST_FlipCoordinates(pil.geom),                                   \
-                                                ST_SetSRID(hex1.geom, 3857)) "
+                                                ST_SetSRID(hex1.geom, 3857)) " #gør så der kun bliver returneret en. Skal gennemtænkes bedre
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:

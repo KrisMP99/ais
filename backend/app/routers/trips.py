@@ -69,6 +69,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         CASE\
             WHEN ST_Intersects(ST_SetSRID(gp1.geom, 3857), ST_PointN(std.line_string, 1))\
                 THEN 'Hello'\
+            ELSE 'Bye'\
         END first_point\
     FROM simplified_trip_dim as std, gp1, gp2\
     WHERE ST_Intersects(ST_FlipCoordinates(std.line_string), ST_SetSRID(gp1.geom, 3857))\

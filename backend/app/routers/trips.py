@@ -113,32 +113,49 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                             ST_SetSRID(hex2.geom, 3857)                                         \
                                         )                                                                       \
                                 ),                                                                              \
-                                points_in_hexagon AS (                                                          \
-                                    SELECT                                                                          \
-                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom           \
-                                    FROM                                                                            \
-                                        points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
-                                    WHERE                                                                           \
-                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND                   \
-                                        data_fact.date_id = date_dim.date_id AND                                    \
-                                        data_fact.time_id = time_dim.time_id AND                                    \
-                                        pil.geom = data_fact.location AND                                           \
-                                        ST_Within(                                                                  \
-                                                    ST_FlipCoordinates(pil.geom),                                   \
-                                                    ST_SetSRID(hex1.geom, 3857)                                     \
-                                        )                                                                           \
-                                )                                                                                   \
-                                SELECT                                                                              \
-                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                        \
-                                    ST_Centroid(hex1.geom)                                                          \
-                                FROM                                                                                \
-                                    points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim          \
-                                WHERE                                                                               \
-                                    pil.simplified_trip_id = data_fact.simplified_trip_id AND                       \
-                                    data_fact.date_id = date_dim.date_id AND                                        \
-                                    data_fact.time_id = time_dim.time_id AND                                        \
-                                    pil.geom = data_fact.location                                                   \
-                                LIMIT 1;"
+                                point_in_hexagon AS (                                                           \
+                                    SELECT                                                                      \
+                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom       \
+                                    FROM                                                                        \
+                                        points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim  \
+                                    WHERE                                                                       \
+                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
+                                        data_fact.date_id = date_dim.date_id AND                                \
+                                        data_fact.time_id = time_dim.time_id AND                                \
+                                        pil.geom = data_fact.location AND                                       \
+                                        ST_Within(                                                              \
+                                                    ST_FlipCoordinates(pil.geom),                               \
+                                                    ST_SetSRID(hex1.geom, 3857)                                 \
+                                        )                                                                       \
+                                ),                                                                              \
+                                hexagon_centroid AS (                                                           \
+                                    SELECT                                                                      \
+                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                \
+                                        ST_Centroid(hex1.geom) AS geom                                          \
+                                    FROM                                                                        \
+                                        points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim  \
+                                    WHERE                                                                       \
+                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
+                                        data_fact.date_id = date_dim.date_id AND                                \
+                                        data_fact.time_id = time_dim.time_id AND                                \
+                                        pil.geom = data_fact.location                                           \
+                                    LIMIT 1;                                                                    \
+                                )                                                                               \
+                                SELECT                                                                          \
+                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
+                                        CASE                                                                    \
+                                            WHEN EXISTS(SELECT points_in_hexagon.geom FROM point_in_hexagon)    \
+                                                THEN points_in_hexagon.geom                                     \
+                                            ELSE (SELECT hexagon_centroid.geom FROM hexagon_centroid)           \
+                                        END AS geom                                                             \
+                                    FROM                                                                        \
+                                        points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim, \
+                                        point_in_hexagon, hexagon_centroid                                      \
+                                    WHERE                                                                       \
+                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
+                                        data_fact.date_id = date_dim.date_id AND                                \
+                                        data_fact.time_id = time_dim.time_id AND                                \
+                                        pil.geom = data_fact.location"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:

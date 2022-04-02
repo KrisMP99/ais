@@ -129,18 +129,15 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         )                                                                           \
                                 )                                                                                   \
                                 SELECT                                                                              \
-                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom               \
+                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                        \
+                                    ST_Centroid(hex1.geom)                                                          \
                                 FROM                                                                                \
                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim          \
                                 WHERE                                                                               \
                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND                       \
                                     data_fact.date_id = date_dim.date_id AND                                        \
                                     data_fact.time_id = time_dim.time_id AND                                        \
-                                    pil.geom = data_fact.location AND                                               \
-                                    ST_ClostPoint(                                                                  \
-                                                ST_SetSRID(hex1.geom, 3857),                                        \
-                                                ST_FlipCoordinates(pil.geom)                                        \
-                                    )"
+                                    pil.geom = data_fact.location"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:

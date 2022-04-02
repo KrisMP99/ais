@@ -139,7 +139,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.date_id = date_dim.date_id AND                                \
                                         data_fact.time_id = time_dim.time_id AND                                \
                                         pil.geom = data_fact.location                                           \
-                                    LIMIT 1;                                                                    \
+                                    LIMIT 1                                                                     \
                                 )                                                                               \
                                 SELECT                                                                          \
                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
@@ -155,7 +155,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
                                         data_fact.date_id = date_dim.date_id AND                                \
                                         data_fact.time_id = time_dim.time_id AND                                \
-                                        pil.geom = data_fact.location"
+                                        pil.geom = data_fact.location;"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:

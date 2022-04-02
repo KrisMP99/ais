@@ -36,7 +36,8 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       draught numeric,\
                       destination VARCHAR,\
                       trip_id integer,\
-                      simplified_trip_id integer)" 
+                      simplified_trip_id integer, \
+                      line_string INTEGER)" 
 
 def insert_cleansed_data(df,logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
@@ -69,6 +70,21 @@ def insert_into_star(logger):
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
+
+    # Get the line string to start from
+    cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")
+    result = cursor.fetchall()
+    # trip_id = result[0][0]
+    # simplified_trip_id = result[1][0]
+
+    for row in result:
+        trip_id = row[0]
+        simplified_trip_id = row[1]
+
+    if trip_id is None:
+        trip_id = -1
+    if simplified_trip_id is None:
+        simplified_trip_id = -1
 
     logger.info("Getting cleansed data from db")
     sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
@@ -144,8 +160,6 @@ def insert_into_star(logger):
     print("Time begin: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
     for row in ais_source:
         convert_timestamp_to_time_and_date(row)
-        row['line_string'] = None
-        row['simplified_line_string'] = None
 
         if row['date_id'] != date_dim.getbykey(row)['date_id']:
             date_dim.insert(row)
@@ -173,20 +187,7 @@ def insert_into_star(logger):
     logger.info("Done inserting into star schema")
     logger.info("Generating line strings...")
 
-    # Get the line string to start from
-    cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")
-    result = cursor.fetchall()
-    # trip_id = result[0][0]
-    # simplified_trip_id = result[1][0]
-
-    for row in result:
-        trip_id = row[0]
-        simplified_trip_id = row[1]
-
-    if trip_id is None:
-        trip_id = -1
-    if simplified_trip_id is None:
-        simplified_trip_id = -1
+    
 
     sql_line_string_query = "WITH trip_list AS ( " \
                                 "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \

@@ -88,13 +88,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     linestring_query_hexagon = f"WITH hex1 AS (                                                                 \
                                     SELECT                                                                      \
                                         ST_AsText(                                                              \
-                                            ST_GeomFromGeoJSON('{polygons[0]}')) As geom),                      \
-                                                                                                                \
+                                            ST_GeomFromGeoJSON('{polygons[0]}')) As geom                        \
+                                ),                                                                              \
                                 hex2 AS (                                                                       \
                                     SELECT                                                                      \
                                         ST_AsText(                                                              \
-                                            ST_GeomFromGeoJSON('{polygons[1]}')) As geom),                      \
-                                                                                                                \
+                                            ST_GeomFromGeoJSON('{polygons[1]}')) As geom                        \
+                                ),                                                                              \
                                 points_in_linestring AS (                                                       \
                                     SELECT                                                                      \
                                         ST_PointN(                                                              \
@@ -111,20 +111,36 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         ST_Intersects(                                                          \
                                             ST_FlipCoordinates(std.line_string),                                \
                                             ST_SetSRID(hex2.geom, 3857)                                         \
-                                        ))                                                                      \
-                                                                                                                \
-                                SELECT                                                                          \
-                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom           \
-                                FROM                                                                            \
-                                    points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
-                                WHERE                                                                           \
-                                    pil.simplified_trip_id = data_fact.simplified_trip_id AND                   \
-                                    data_fact.date_id = date_dim.date_id AND                                    \
-                                    data_fact.time_id = time_dim.time_id AND                                    \
-                                    pil.geom = data_fact.location AND                                           \
-                                    ST_Within(                                                                  \
-                                                ST_FlipCoordinates(pil.geom),                                   \
-                                                ST_SetSRID(hex1.geom, 3857)) " #gør så der kun bliver returneret en. Skal gennemtænkes bedre
+                                        )                                                                       \
+                                ),                                                                              \
+                                points_in_hexagon AS (                                                          \
+                                    SELECT                                                                          \
+                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom           \
+                                    FROM                                                                            \
+                                        points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
+                                    WHERE                                                                           \
+                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND                   \
+                                        data_fact.date_id = date_dim.date_id AND                                    \
+                                        data_fact.time_id = time_dim.time_id AND                                    \
+                                        pil.geom = data_fact.location AND                                           \
+                                        ST_Within(                                                                  \
+                                                    ST_FlipCoordinates(pil.geom),                                   \
+                                                    ST_SetSRID(hex1.geom, 3857)                                     \
+                                        )                                                                           \
+                                )                                                                                   \
+                                SELECT                                                                              \
+                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom               \
+                                FROM                                                                                \
+                                    points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim          \
+                                WHERE                                                                               \
+                                    pil.simplified_trip_id = data_fact.simplified_trip_id AND                       \
+                                    data_fact.date_id = date_dim.date_id AND                                        \
+                                    data_fact.time_id = time_dim.time_id AND                                        \
+                                    pil.geom = data_fact.location AND                                               \
+                                    ST_ClostPoint(                                                                  \
+                                                ST_SetSRID(hex1.geom, 3857),                                        \
+                                                ST_FlipCoordinates(pil.geom)                                        \
+                                    )"
 
     for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
         if len(chunk) != 0:

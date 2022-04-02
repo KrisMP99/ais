@@ -10,11 +10,27 @@ import zipfile, rarfile
 from data_insertion import insert_cleansed_data, insert_into_star
 from douglas_peucker import create_line_strings
 from trips_partitioning import get_cleansed_data
+import geopandas as gpd
+import logging
 
 load_dotenv()
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
+
+# Logging for file
+def get_logger():
+    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
+    logging.basicConfig(format = Log_Format,
+                        force = True,
+                        handlers = [
+                            logging.FileHandler(ERROR_LOG_FILE_PATH),
+                            logging.StreamHandler()
+                        ],
+                        level = logging.INFO)
+
+    logger = logging.getLogger()
+    return logger
 
 def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
@@ -84,7 +100,7 @@ def connect_to_to_ais_web_server_and_get_data(logger):
 
     return results
 
-def download_file_from_ais_web_server(file_name, logger):
+def download_file_from_ais_web_server(file_name: str, logger):
     """
     Downloads a specified file from the webserver into the CSV_FILES_FOLDER.
     It will also unzip it, as well as delete the compressed file afterwards.
@@ -134,7 +150,7 @@ def download_file_from_ais_web_server(file_name, logger):
         logger.critical(f"Something went wrong when extracting the file: {err}, type: {type(err)}")
         quit()
 
-def add_new_file_to_log(file_name, logger):
+def add_new_file_to_log(file_name: str, logger):
     """
     Adds the specificed file to the log.
     The .env variable LOG_FILE_PATH must be specified.
@@ -155,11 +171,11 @@ def add_new_file_to_log(file_name, logger):
     except Exception as e:
         logger.critical(f"Something went wrong when accessing log file at {LOG_FILE_PATH}, error: {e}, error type: {type(e)}")
 
-def cleanse_csv_file_and_convert_to_df(file_name, logger):
+def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     """
     Takes a .csv file and cleanses it according to the set predicates.
     :param file_name: File name to cleanse. Example: 'aisdk-2022-01-01.csv'
-    :return: A cleansed dataframe, sorted by timestamp (ascending)
+    :return: A cleansed geodataframe, sorted by timestamp (ascending)
     """
     logger.info(f"Loading, converting and cleansing {file_name}")
     df = pd.read_csv(CSV_FILES_PATH + file_name, na_values=['Unknown','Undefined'])
@@ -177,7 +193,6 @@ def cleanse_csv_file_and_convert_to_df(file_name, logger):
             (df['Longitude'] >= 3.2) & (df['Longitude'] <=16.5) &
             (df['SOG'] >= 0) & (df['SOG'] <=102)
            ].reset_index()
-    
     # We round the lat and longs as we do not need 15 decimals of precision
     # This will save some computation time later.
     df['Latitude'] = df['Latitude'].round(4)
@@ -195,9 +210,16 @@ def cleanse_csv_file_and_convert_to_df(file_name, logger):
     
     # lower case names in the columns
     df.columns = map(str.lower, df.columns)
- 
+
     # Maybe move this to trips_partitioning...
     df = df.sort_values(by=['timestamp'], ignore_index=True)
+
+    # Convert to geopandas dataframe
+    # We use 'EPSG:4326' as this is what we recieve from the AIS site
+    # However, we convert it to 3857, such that we can use it calculate distances in meters
+    df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['longitude'], df['latitude']), crs="EPSG:4326")
+    df = df.drop(columns=['index','latitude','longitude'], errors='ignore')
+    df = df.to_crs(epsg="3857")
 
     return df
 
@@ -242,7 +264,7 @@ def continue_from_log(logger):
     for file in files_to_download:
         download_cleanse_insert(file, logger=logger)
 
-def does_file_contain_whole_month(file_name):
+def does_file_contain_whole_month(file_name: str):
     """
     Checks if the file contains a whole month.
     E.g., a file name with the name 'aisdk-2022-01.zip' will contain data for the whole month of January
@@ -256,7 +278,7 @@ def does_file_contain_whole_month(file_name):
     else:
         return False
 
-def download_cleanse_insert(file_name, logger):
+def download_cleanse_insert(file_name: str, logger):
     """
     Downloads the given file, runs it through the pipeline and adds the file to the log.
     :param file_name: The file to be downloaded, cleansed and inserted
@@ -274,7 +296,7 @@ def download_cleanse_insert(file_name, logger):
         df = cleanse_csv_file_and_convert_to_df(file, logger=logger)
         partition_trips_and_insert(file, df, logger)
 
-def partition_trips_and_insert(file_name, df, logger):
+def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     """
     Takes a dataframe and runs it through the pipeline (trips partitioning, cleansing) and inserts it into the star schema.
     It will also add the file to the log.
@@ -298,7 +320,7 @@ def download_all_and_process_everything(logger):
     for file in files_to_download_and_process:
         download_cleanse_insert(file_name=file, logger=logger)
 
-def download_interval(interval, logger):
+def download_interval(interval: str, logger):
     """
     Downloads and processes all the available ais data in the given interval.
     :param interval: The interval (date) to download and process.

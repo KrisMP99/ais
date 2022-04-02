@@ -1,12 +1,18 @@
 from venv import create
 import pandas as pd
+import geopandas as gpd
 from shapely.geometry import LineString, Point
 
 COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 
-def create_line_strings(trip_list, logger):    
+def create_line_strings(trip_list: gpd.GeoDataFrame, logger):    
     logger.info("Creating line strings")
     
+    df = trip_list.groupby(by=['trip_id'])['geometry'].apply(lambda x: LineString(x.tolist()))
+    print(df.head(5))
+    quit()
+
+
     total_trip_points = []
 
     # mmsi_line = []
@@ -42,7 +48,7 @@ def create_line_strings(trip_list, logger):
 
     for trip in trip_list:
         for p in trip.get_points_in_trip():
-            total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id])
+            total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id, None])
 
     df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
     return df_all_points

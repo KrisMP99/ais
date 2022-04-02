@@ -114,25 +114,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         ))                                                                      \
                                                                                                                 \
                                 SELECT                                                                          \
-                                    DISTINCT date_dim.date_id,                                                  \
-                                    CASE                                                                        \
-                                        WHEN                                                                    \
-                                            ST_Within(                                                          \
-                                                ST_FlipCoordinates(pil.geom),                                   \
-                                                ST_SetSRID(hex1.geom, 3857))                                    \
-                                            THEN(                                                               \
-                                                SELECT                                                          \
-                                                    pil.geom                                              \
-                                                FROM                                                            \
-                                                    simplified_trip_dim AS std,                                 \
-                                                    data_fact, date_dim, time_dim                               \
-                                                WHERE                                                           \
-                                                    std.simplified_trip_id = data_fact.simplified_trip_id AND   \
-                                                    std.simplified_trip_id = pil.simplified_trip_id AND         \
-                                                    time_dim.time IS NOT NULL                                   \
-                                                LIMIT 1)                                                        \
-                                        ELSE null                                                               \
-                                    END AS geom, time_dim.time, data_fact.sog                                   \
+                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom           \
                                 FROM                                                                            \
                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim      \
                                 WHERE                                                                           \

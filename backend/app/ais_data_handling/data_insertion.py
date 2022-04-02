@@ -4,10 +4,11 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import pygrametl
-from pygrametl.datasources import SQLSource
+from pygrametl.datasources import PandasSource
 from pygrametl.tables import CachedDimension, BatchFactTable
 from sqlalchemy import create_engine
 import datetime
+import geopandas as gpd
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -65,30 +66,33 @@ def convert_timestamp_to_time_and_date(row):
     row['date_id'] = int(time_split[0].replace('-',''))
     row['time_id'] = int(time_split[1].replace(':',''))
 
-def insert_into_star(logger):
+def insert_into_star(df: gpd.GeoDataFrame, df_trip: gpd.GeoDataFrame, df_trip_simplified: gpd.GeoDataFrame, logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
-    cursor = conn.cursor()
+    # cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
-    # Get the line string to start from
-    cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")
-    result = cursor.fetchall()
+    # First we insert the data for the trip_dim and simplified_trip_dim:
+    df_trip.to_postgis(name='trip_dim', con=conn, if_exists='append', )
+
+    # # Get the line string to start from
+    # cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")
+    # result = cursor.fetchall()
     # trip_id = result[0][0]
     # simplified_trip_id = result[1][0]
 
-    for row in result:
-        trip_id = row[0]
-        simplified_trip_id = row[1]
+    # for row in result:
+    #     trip_id = row[0]
+    #     simplified_trip_id = row[1]
 
-    if trip_id is None:
-        trip_id = -1
-    if simplified_trip_id is None:
-        simplified_trip_id = -1
+    # if trip_id is None:
+    #     trip_id = -1
+    # if simplified_trip_id is None:
+    #     simplified_trip_id = -1
 
-    logger.info("Getting cleansed data from db")
-    sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
-    ais_source = SQLSource(connection=conn, query=sql_query)
+    # logger.info("Getting cleansed data from db")
+    # sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
+    ais_source = PandasSource(df)
 
     date_dim = CachedDimension(
         name='date_dim',
@@ -133,19 +137,19 @@ def insert_into_star(logger):
         cacheoninsert=True
     )
 
-    trip_dim = CachedDimension (
-        name='trip_dim',
-        key='trip_id',
-        attributes=['line_string'],
-        lookupatts=['line_string']
-    )
+    # trip_dim = CachedDimension (
+    #     name='trip_dim',
+    #     key='trip_id',
+    #     attributes=['line_string'],
+    #     lookupatts=['line_string']
+    # )
 
-    simplified_trip_dim = CachedDimension (
-        name='simplified_trip_dim',
-        key='simplified_trip_id',
-        attributes=['line_string'],
-        lookupatts=['line_string']
-    )
+    # simplified_trip_dim = CachedDimension (
+    #     name='simplified_trip_dim',
+    #     key='simplified_trip_id',
+    #     attributes=['line_string'],
+    #     lookupatts=['line_string']
+    # )
 
     fact_table = BatchFactTable(
         name='data_fact',
@@ -171,53 +175,53 @@ def insert_into_star(logger):
         row['ship_id'] = ship_dim.ensure(row)
         row['ship_type_id'] = ship_type_dim.ensure(row)
 
-        if row['trip_id'] != trip_dim.getbykey(row)['trip_id']:
-            trip_dim.insert(row)
+        # if row['trip_id'] != trip_dim.getbykey(row)['trip_id']:
+        #     trip_dim.insert(row)
 
-        if row['simplified_trip_id'] is not None:
-            if row['simplified_trip_id'] != simplified_trip_dim.getbykey(row)['simplified_trip_id']:
-                simplified_trip_dim.insert(row)
+        # if row['simplified_trip_id'] is not None:
+        #     if row['simplified_trip_id'] != simplified_trip_dim.getbykey(row)['simplified_trip_id']:
+        #         simplified_trip_dim.insert(row)
 
         fact_table.insert(row)
 
-    time_end = datetime.datetime.now()
-    time_delta = time_end - time_begin
-    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
-    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")
-    logger.info("Done inserting into star schema")
-    logger.info("Generating line strings...")
+    # time_end = datetime.datetime.now()
+    # time_delta = time_end - time_begin
+    # print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
+    # print(f"Took approx: {time_delta.total_seconds() / 60} minutes")
+    # logger.info("Done inserting into star schema")
+    # logger.info("Generating line strings...")
 
     
 
-    sql_line_string_query = "WITH trip_list AS ( " \
-                                "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
-                                "FROM data_fact " \
-                                f"WHERE trip_id > {trip_id} " \
-                                "GROUP BY trip_id) " \
-                            "UPDATE trip_dim " \
-                                "SET line_string = ( " \
-	                                "SELECT line " \
-	                                "FROM trip_list " \
-	                            "WHERE trip_list.trip_id = trip_dim.trip_id)"
+    # sql_line_string_query = "WITH trip_list AS ( " \
+    #                             "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
+    #                             "FROM data_fact " \
+    #                             f"WHERE trip_id > {trip_id} " \
+    #                             "GROUP BY trip_id) " \
+    #                         "UPDATE trip_dim " \
+    #                             "SET line_string = ( " \
+	#                                 "SELECT line " \
+	#                                 "FROM trip_list " \
+	#                             "WHERE trip_list.trip_id = trip_dim.trip_id)"
 
-    sql_simplified_line_query = "WITH trip_list AS ( " \
-                                "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
-                                "FROM data_fact " \
-                                f"WHERE simplified_trip_id > {simplified_trip_id} " \
-                                "GROUP BY simplified_trip_id) " \
-                            "UPDATE simplified_trip_dim " \
-                                "SET line_string = ( " \
-	                                "SELECT line " \
-	                                "FROM trip_list " \
-	                            "WHERE trip_list.simplified_trip_id = simplified_trip_dim.simplified_trip_id)"
+    # sql_simplified_line_query = "WITH trip_list AS ( " \
+    #                             "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
+    #                             "FROM data_fact " \
+    #                             f"WHERE simplified_trip_id > {simplified_trip_id} " \
+    #                             "GROUP BY simplified_trip_id) " \
+    #                         "UPDATE simplified_trip_dim " \
+    #                             "SET line_string = ( " \
+	#                                 "SELECT line " \
+	#                                 "FROM trip_list " \
+	#                             "WHERE trip_list.simplified_trip_id = simplified_trip_dim.simplified_trip_id)"
 
-    # Truncate cleansed table:
-    cursor.execute(sql_line_string_query)
-    cursor.execute(sql_simplified_line_query)
+    # # Truncate cleansed table:
+    # cursor.execute(sql_line_string_query)
+    # cursor.execute(sql_simplified_line_query)
 
-    logger.info("Generated and updated all line strings, deleting raw_data and cleansed tables")
+    # logger.info("Generated and updated all line strings, deleting raw_data and cleansed tables")
 
-    cursor.execute("DROP TABLE cleansed, raw_data")
+    # cursor.execute("DROP TABLE cleansed, raw_data")
 
     conn_wrapper.commit()
     conn_wrapper.close()

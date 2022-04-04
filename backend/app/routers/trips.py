@@ -166,11 +166,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.geom = data_fact.location                                           \
                                     LIMIT 1                                                                     \
                                 )"
-    for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
-        if len(chunk) != 0:
-            print(chunk)
-        else:
-            logger.warning('Could not find any hexagons')
+    # for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
+    #     if len(chunk) != 0:
+    #         print(chunk)
+    #     else:
+    #         logger.warning('Could not find any hexagons')
 
     return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \

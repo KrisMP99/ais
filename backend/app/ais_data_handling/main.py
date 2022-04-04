@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 import argparse
 import logging
 
-from parso import parse
 from handle_ais_data import start 
 
 load_dotenv()

@@ -66,14 +66,25 @@ def convert_timestamp_to_time_and_date(row):
     row['date_id'] = int(time_split[0].replace('-',''))
     row['time_id'] = int(time_split[1].replace(':',''))
 
-def insert_into_star(df: gpd.GeoDataFrame, df_trip: gpd.GeoDataFrame, df_trip_simplified: gpd.GeoDataFrame, logger):
+def insert_trips(trip_df: gpd.GeoDataFrame, logger):
+    db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
+    engine = create_engine(db_string)
+    logger.info("Inserting trips into 'trip_dim'")
+    trip_df.to_postgis("trip_dim",con=engine, if_exists='append')
+    logger.info("Finished inserting trips into 'trip_dim'")
+
+def insert_simplified_trips(simplified_trip_df: gpd.GeoDataFrame, logger):
+    db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
+    engine = create_engine(db_string)
+    logger.info("Inserting simplified trips into 'simplified_trip_dim'")
+    simplified_trip_df.to_postgis("simplified_trip_dim",con=engine, if_exists='append')
+    logger.info("Finished inserting simplified trips into 'simplified_trip_dim'")
+
+def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     # cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
-
-    # First we insert the data for the trip_dim and simplified_trip_dim:
-    df_trip.to_postgis(name='trip_dim', con=conn, if_exists='append', )
 
     # # Get the line string to start from
     # cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")

@@ -51,7 +51,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     linestring_query = f"WITH hexagons AS (                                                     \
                             SELECT                                                              \
                                 ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[0]}')) As hex1),              \
+                                    ST_GeomFromGeoJSON('{polygons[0]}')) As hex1,              \
                                 ST_AsText(                                                      \
                                     ST_GeomFromGeoJSON('{polygons[1]}')) As hex2)               \
                                                                                                 \

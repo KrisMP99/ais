@@ -8,6 +8,7 @@ import asyncio
 import pandas as pd
 from pypika import Query, Table, AliasedQuery
 import shapely.geometry
+from shapely import geometry, wkb
 
 session = Session()
 logger = get_logger()
@@ -46,8 +47,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     if len(result['st_asgeojson']) <= 1:
         logger.error('The two coordinates intersect with each other')
         return []
-    polygons.append(shapely.geometry.Polygon(result['st_asgeojson'][0]['coordinates'][0]).__geom__)
-    polygons.append(shapely.geometry.Polygon(result['st_asgeojson'][1]['coordinates'][0]).__geom__)
+    polygons.append(wkb.dumps(shapely.geometry.Polygon(result['st_asgeojson'][0]['coordinates'][0]), hex=True, srid=3857))
+    polygons.append(wkb.dumps(shapely.geometry.Polygon(result['st_asgeojson'][1]['coordinates'][0]), hex=True, srid=3857))
     
     # Then we select all linestrings that intersect with the two polygons
     linestring_query = f"SELECT                                                                 \

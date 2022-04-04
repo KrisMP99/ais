@@ -3,12 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.db.database import engine, Session
-from geojson import Point
+from geojson import Point, Polygon
+import logging
 import asyncio
 import pandas as pd
 from pypika import Query, Table, AliasedQuery
 import shapely.geometry
-from shapely import geometry, wkb
 
 session = Session()
 logger = get_logger()
@@ -47,22 +47,34 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     if len(result['st_asgeojson']) <= 1:
         logger.error('The two coordinates intersect with each other')
         return []
-    polygons.append(wkb.dumps(shapely.geometry.Polygon(result['st_asgeojson'][0]['coordinates'][0]), hex=True, srid=3857))
-    polygons.append(wkb.dumps(shapely.geometry.Polygon(result['st_asgeojson'][1]['coordinates'][0]), hex=True, srid=3857))
+    polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
+    polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
+
+    
     
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = f"SELECT                                                                 \
+    linestring_query = f"WITH hex1 AS (                                                         \
+                            SELECT                                                              \
+                                ST_AsText(                                                      \
+                                    ST_GeomFromGeoJSON('{polygons[0]}')) As geom),              \
+                                                                                                \
+                        hex2 AS (                                                               \
+                            SELECT                                                              \
+                                ST_AsText(                                                      \
+                                    ST_GeomFromGeoJSON('{polygons[1]}')) As geom)               \
+                                                                                                \
+                        SELECT                                                                  \
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
                         FROM                                                                    \
-                            simplified_trip_dim as std                                          \
+                            simplified_trip_dim as std, hex1, hex2                              \
                         WHERE                                                                   \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_SetSRID('{polygons[0]}', 3857)                                     \
+                                ST_SetSRID(hex1.geom, 3857)                                     \
                             ) AND                                                               \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_SetSRID('{polygons[1]}', 3857)                                     \
+                                ST_SetSRID(hex2.geom, 3857)                                     \
                             );"
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
@@ -72,7 +84,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         if len(chunk) != 0:
             for json in chunk['st_asgeojson']:
                 if json is not None:
-                     linestrings.append(json['coordinates'])
+                    linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
@@ -136,11 +148,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.geom = data_fact.location                                           \
                                     LIMIT 1                                                                     \
                                 )"
-    # for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
-    #     if len(chunk) != 0:
-    #         print(chunk)
-    #     else:
-    #         logger.warning('Could not find any hexagons')
+    for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
+        if len(chunk) != 0:
+            print(chunk)
+        else:
+            logger.warning('Could not find any hexagons')
 
     return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \

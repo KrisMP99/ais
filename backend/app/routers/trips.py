@@ -47,14 +47,15 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
     
-    # Then we select all linestrings that intersect with the two polygons
-    linestring_query = f"WITH hexagons AS (                                                     \
+    hexagon_query = f"WITH hexagons AS (                                                     \
                             SELECT                                                              \
                                 ST_AsText(                                                      \
                                     ST_GeomFromGeoJSON('{polygons[0]}')) As hex1,              \
                                 ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[1]}')) As hex2)               \
-                                                                                                \
+                                    ST_GeomFromGeoJSON('{polygons[1]}')) As hex2)"
+
+    # Then we select all linestrings that intersect with the two polygons
+    linestring_query = f"{hexagon_query}                                                        \
                         SELECT                                                                  \
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
                         FROM                                                                    \

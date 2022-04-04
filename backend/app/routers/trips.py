@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.db.database import engine, Session
-from geojson import Point, Polygon
-import logging
+from geojson import Point
 import asyncio
 import pandas as pd
+from pypika import Query, Table, AliasedQuery
+import shapely.geometry
 
 session = Session()
 logger = get_logger()
@@ -45,32 +46,22 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     if len(result['st_asgeojson']) <= 1:
         logger.error('The two coordinates intersect with each other')
         return []
-    polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
-    polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
+    polygons.append(shapely.geometry.Polygon(result['st_asgeojson'][0]['coordinates'][0]).__geom__)
+    polygons.append(shapely.geometry.Polygon(result['st_asgeojson'][1]['coordinates'][0]).__geom__)
     
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = f"WITH hex1 AS (                                                         \
-                            SELECT                                                              \
-                                ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[0]}')) As geom),              \
-                                                                                                \
-                        hex2 AS (                                                               \
-                            SELECT                                                              \
-                                ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[1]}')) As geom)               \
-                                                                                                \
-                        SELECT                                                                  \
+    linestring_query = f"SELECT                                                                 \
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
                         FROM                                                                    \
-                            simplified_trip_dim as std, hex1, hex2                              \
+                            simplified_trip_dim as std                                          \
                         WHERE                                                                   \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_SetSRID(hex1.geom, 3857)                                     \
+                                ST_SetSRID('{polygons[0]}', 3857)                                     \
                             ) AND                                                               \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_SetSRID(hex2.geom, 3857)                                     \
+                                ST_SetSRID('{polygons[1]}', 3857)                                     \
                             );"
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
@@ -80,40 +71,42 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         if len(chunk) != 0:
             for json in chunk['st_asgeojson']:
                 if json is not None:
-                    linestrings.append(json['coordinates'])
+                     linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
+    
 
-    linestring_query_hexagon = f"WITH hex1 AS (                                                                 \
-                                    SELECT                                                                      \
-                                        ST_AsText(                                                              \
-                                            ST_GeomFromGeoJSON('{polygons[0]}')) As geom                        \
-                                ),                                                                              \
-                                hex2 AS (                                                                       \
-                                    SELECT                                                                      \
-                                        ST_AsText(                                                              \
-                                            ST_GeomFromGeoJSON('{polygons[1]}')) As geom                        \
-                                ),                                                                              \
-                                points_in_linestring AS (                                                       \
-                                    SELECT                                                                      \
-                                        ST_PointN(                                                              \
-                                            std.line_string,                                                    \
-                                            generate_series(1, ST_NPOINTS(std.line_string))                     \
-                                        ) AS geom, std.simplified_trip_id                                       \
-                                    FROM                                                                        \
-                                        simplified_trip_dim AS std, hex1, hex2                                  \
-                                    WHERE                                                                       \
-                                        ST_Intersects(                                                          \
-                                            ST_FlipCoordinates(std.line_string),                                \
-                                            ST_SetSRID(hex1.geom, 3857)                                         \
-                                        ) AND                                                                   \
-                                        ST_Intersects(                                                          \
-                                            ST_FlipCoordinates(std.line_string),                                \
-                                            ST_SetSRID(hex2.geom, 3857)                                         \
-                                        )                                                                       \
-                                ),                                                                              \
-                                point_in_hexagon AS (                                                           \
+    linestring = f"WITH hex1 AS (                                                                   \
+                        SELECT                                                                      \
+                            ST_AsText(                                                              \
+                                ST_GeomFromGeoJSON('{polygons[0]}')) As geom                        \
+                    ),                                                                              \
+                    hex2 AS (                                                                       \
+                        SELECT                                                                      \
+                            ST_AsText(                                                              \
+                                ST_GeomFromGeoJSON('{polygons[1]}')) As geom                        \
+                    ),                                                                              \
+                    points_in_linestring AS (                                                       \
+                        SELECT                                                                      \
+                            ST_PointN(                                                              \
+                                std.line_string,                                                    \
+                                generate_series(1, ST_NPOINTS(std.line_string))                     \
+                            ) AS geom, std.simplified_trip_id                                       \
+                        FROM                                                                        \
+                            simplified_trip_dim AS std, hex1, hex2                                  \
+                        WHERE                                                                       \
+                            ST_Intersects(                                                          \
+                                ST_FlipCoordinates(std.line_string),                                \
+                                ST_SetSRID(hex1.geom, 3857)                                         \
+                            ) AND                                                                   \
+                            ST_Intersects(                                                          \
+                                ST_FlipCoordinates(std.line_string),                                \
+                                ST_SetSRID(hex2.geom, 3857)                                         \
+                            )                                                                       \
+                    )"
+
+    point_exists_in_hexagon = f"point_in_hexagon AS (                                                           \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom       \
                                     FROM                                                                        \
@@ -127,8 +120,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     ST_FlipCoordinates(pil.geom),                               \
                                                     ST_SetSRID(hex1.geom, 3857)                                 \
                                         )                                                                       \
-                                ),                                                                              \
-                                hexagon_centroid AS (                                                           \
+                                )"
+
+    create_point = f"hexagon_centroid AS (                                                           \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                \
                                         ST_Centroid(hex1.geom) AS geom                                          \
@@ -140,27 +134,26 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.time_id = time_dim.time_id AND                                \
                                         pil.geom = data_fact.location                                           \
                                     LIMIT 1                                                                     \
-                                )                                                                               \
-                                SELECT                                                                          \
-                                    DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
-                                        CASE                                                                    \
-                                            WHEN EXISTS(SELECT point_in_hexagon.geom FROM point_in_hexagon)     \
-                                                THEN point_in_hexagon.geom                                      \
-                                            ELSE (SELECT hexagon_centroid.geom FROM hexagon_centroid)           \
-                                        END AS geom                                                             \
-                                    FROM                                                                        \
-                                        points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim, \
-                                        point_in_hexagon, hexagon_centroid                                      \
-                                    WHERE                                                                       \
-                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
-                                        data_fact.date_id = date_dim.date_id AND                                \
-                                        data_fact.time_id = time_dim.time_id AND                                \
-                                        pil.geom = data_fact.location;"
-
-    for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
-        if len(chunk) != 0:
-            print(chunk)
-        else:
-            logger.warning('Could not find any hexagons')
+                                )"
+    # for chunk in pd.read_sql_query(linestring_query_hexagon, engine, chunksize=50000):
+    #     if len(chunk) != 0:
+    #         print(chunk)
+    #     else:
+    #         logger.warning('Could not find any hexagons')
 
     return linestrings
+    # linestring_query_hexagon = f"SELECT                                                                          \
+    #                                 DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
+    #                                     CASE                                                                    \
+    #                                         WHEN EXISTS(SELECT point_in_hexagon.geom FROM point_in_hexagon)     \
+    #                                             THEN point_in_hexagon.geom                                      \
+    #                                         ELSE (SELECT hexagon_centroid.geom FROM hexagon_centroid)           \
+    #                                     END AS geom                                                             \
+    #                                 FROM                                                                        \
+    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim, \
+    #                                     point_in_hexagon, hexagon_centroid                                      \
+    #                                 WHERE                                                                       \
+    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
+    #                                     data_fact.date_id = date_dim.date_id AND                                \
+    #                                     data_fact.time_id = time_dim.time_id AND                                \
+    #                                     pil.geom = data_fact.location;"

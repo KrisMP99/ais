@@ -3,12 +3,8 @@ from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.db.database import engine, Session
 from geojson import Point, Polygon
-import logging
 import asyncio
 import pandas as pd
-from pypika import Query, Table, AliasedQuery, Order
-from pypika_gis.spatialtypes import postgis as st
-import shapely.geometry
 
 session = Session()
 logger = get_logger()
@@ -50,23 +46,31 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
-    hexagons_query = (Query.select(
-                        st.AsText(
-                            st.GeomFromGeoJSON(polygons[0])).as_('hex1'),
-                        st.AsText(
-                            st.GeomFromGeoJSON(polygons[1])).as_('hex2')))
+    
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = (Query
-                .with_(hexagons_query, 'hexagons')
-                .from_('simplified_trip_dim')
-                .select(st.AsGeoJSON('simplified_trip_dim.line_string'))
-                .where(
-                    st.Intersects('ST_FlipCoordinates(simplified_trip_dim.line_string)', st.SetSRID('hexagons.hex2', 3857)))
-                .where(st.Intersects('ST_FlipCoordinates(simplified_trip_dim.line_string)', st.SetSRID('hexagons.hex2', 3857))))
+    linestring_query = f"WITH hexagons AS (                                                     \
+                            SELECT                                                              \
+                                ST_AsText(                                                      \
+                                    ST_GeomFromGeoJSON('{polygons[0]}')) As hex1),              \
+                                ST_AsText(                                                      \
+                                    ST_GeomFromGeoJSON('{polygons[1]}')) As hex2)               \
+                                                                                                \
+                        SELECT                                                                  \
+                            ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
+                        FROM                                                                    \
+                            simplified_trip_dim as std, hexagons                                \
+                        WHERE                                                                   \
+                            ST_Intersects(                                                      \
+                                ST_FlipCoordinates(std.line_string),                            \
+                                ST_SetSRID(hexagons.hex1, 3857)                                 \
+                            ) AND                                                               \
+                            ST_Intersects(                                                      \
+                                ST_FlipCoordinates(std.line_string),                            \
+                                ST_SetSRID(hexagons.hex2, 3857)                                 \
+                            );"
 
-    # QUERY FOR TESTING
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
-    print(linestring_query)
+
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):
         if len(chunk) != 0:

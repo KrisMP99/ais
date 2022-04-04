@@ -3,10 +3,12 @@ import React from 'react';
 import './App.css';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
+import { ShipTypeFilter } from './Components/ShipTypeFilter';
 import './Leaflet.css';
 
 interface AppStates {
   pointCoords: LatLng[];
+  shipType: string;
   mouseCoords: string[];
   polylines: LatLng[][];
 }
@@ -23,7 +25,9 @@ export class App extends React.Component<any, AppStates> {
     this.state = {
       pointCoords: [],
       mouseCoords: [],
-      polylines: []
+      polylines: [],
+      shipType: "",
+      
     }
   }
 
@@ -64,9 +68,16 @@ export class App extends React.Component<any, AppStates> {
               />
             </div>
             <div className='filter-container'>
+              <hr></hr>
+              <p className='ship-type-header'>Ship type filter</p>
+              <hr className='shorter-hr'></hr>
+              <ShipTypeFilter
+                shipType={this.state.shipType}
+              />
             </div>
           </div>
         </div>
+
       </div>
     );
   }

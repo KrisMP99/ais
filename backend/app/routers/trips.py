@@ -50,12 +50,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
-    hex1_query = (Query.select(
+    hexagons_query = (Query.select(
                         st.AsText(
-                            st.GeomFromGeoJSON(polygons[0])).as_('geom')))
-    hex2_query = (Query.select(
+                            st.GeomFromGeoJSON(polygons[0])).as_('hex1'),
                         st.AsText(
-                            st.GeomFromGeoJSON(polygons[1])).as_('geom')))
+                            st.GeomFromGeoJSON(polygons[1])).as_('hex2')))
     
     # Then we select all linestrings that intersect with the two polygons
     # linestring_query = f"WITH hex1 AS (                                                         \
@@ -69,18 +68,16 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                                 ST_GeomFromGeoJSON('{polygons[1]}')) As geom)               \
     simplified_trip_dim = Table('simplified_trip_dim')
     linestring_query = (Query
-                        .with_(hex1_query, 'hex1')
-                        .with_(hex2_query, 'hex2')
-                        .from_(
-                            simplified_trip_dim, AliasedQuery('hex1'), AliasedQuery('hex2'))
+                        .with_(hexagons_query, 'hexagons')
+                        .from_(simplified_trip_dim, AliasedQuery('hexagons'))
                         .select(
                             st.AsGeoJSON(simplified_trip_dim.line_string))
                         .where(
                             st.Intersects(
                                 st.FlipCoordinates(simplified_trip_dim.line_string, st.SetSRID('hex1.geom'))))
                         .where(st.Intersects(
-                                st.FlipCoordinates(simplified_trip_dim.line_string, st.SetSRID('hex1.geom')))))
-    
+                                st.FlipCoordinates(simplified_trip_dim.line_string, st.SetSRID('hex2.geom')))))
+
     # "SELECT                                                                  \
     #                         ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
     #                     FROM                                                                    \

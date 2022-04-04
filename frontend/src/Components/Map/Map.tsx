@@ -126,7 +126,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
 
     protected async fetchHexagon(point: LatLng) {
         let styling = {
-
+            
         }
         const requestOptions = {
             method: 'POST',

@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import requests
 import zipfile, rarfile
+from douglas_peucker import add_simplified_trip_ids
+from data_insertion import insert_simplified_trips, insert_trips
+from douglas_peucker import create_simplified_trip_line_strings, create_trip_line_strings
 from data_insertion import insert_cleansed_data, insert_into_star
 from douglas_peucker import create_line_strings
 from trips_partitioning import get_cleansed_data
@@ -183,7 +186,7 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
-
+    
     # Remove all the rows which does not satisfy our conditions
     df = df[
             (df["Type of mobile"] != "Class B") &
@@ -303,11 +306,18 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     :param df: The dataframe to insert
     :param file_name: The .csv file name to add to the log.
     """
-    trip_list = get_cleansed_data(df, logger)
-    trip_list = create_line_strings(trip_list, logger)
-    insert_cleansed_data(trip_list, logger)
-    insert_into_star(logger)
-    add_new_file_to_log(file_name, logger=logger)
+    df_cleansed = get_cleansed_data(df, logger)
+    trip_df = create_trip_line_strings(df_cleansed, logger)
+    simplified_trip_df = create_simplified_trip_line_strings(df_cleansed, logger)
+    add_simplified_trip_ids(df_cleansed, simplified_trip_df)
+    insert_simplified_trips(simplified_trip_df, logger)
+    insert_trips(trip_df,logger)
+    # # insert_cleansed_data(trip_list, logger)
+    # Convert back to regular dataframe
+    df_cleansed = df_cleansed.drop(['geometry', 'point'], axis=1)
+    print(df_cleansed.columns)
+    insert_into_star(df_cleansed, logger)
+    # add_new_file_to_log(file_name, logger=logger)
 
 def download_all_and_process_everything(logger):
     """

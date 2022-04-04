@@ -144,8 +144,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 SELECT                                                                          \
                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
                                         CASE                                                                    \
-                                            WHEN EXISTS(SELECT point_in_hexagon.geom FROM point_in_hexagon)    \
-                                                THEN point_in_hexagon.geom                                     \
+                                            WHEN EXISTS(SELECT point_in_hexagon.geom FROM point_in_hexagon)     \
+                                                THEN point_in_hexagon.geom                                      \
                                             ELSE (SELECT hexagon_centroid.geom FROM hexagon_centroid)           \
                                         END AS geom                                                             \
                                     FROM                                                                        \

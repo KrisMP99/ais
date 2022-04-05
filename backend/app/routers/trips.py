@@ -165,9 +165,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     hex1_df = group.get_group(hexagons_list[0])
     hex2_df = group.get_group(hexagons_list[1])
 
-    print("Hex_df1: ", hex1_df.head())
-    print("Hex_df2: ", hex2_df.head())
-
     countSeries = df['hexgeom'].value_counts()
 
     pointsInHex1 = countSeries[0]
@@ -176,9 +173,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     if pointsInHex1 != pointsInHex2:
         if pointsInHex1 > pointsInHex2:
-            hex1_df['diff'] = hex1_df['time_id'] - hex2_df['time_id']
+            latest_time_in_hex2 = hex2_df.time_id.iat[-1]
+            hex1_df = hex1_df[(df['time_id'] < latest_time_in_hex2)]
         else:
-            hex2_df['diff'] = hex2_df['time_id'] - hex1_df['time_id']
+            latest_time_in_hex1 = hex1_df.time_id.iat[-1]
+            hex2_df = hex2_df[(df['time_id'] < latest_time_in_hex1)]
             
     print("Hex_df1: ", hex1_df.head())
     print("Hex_df2: ", hex2_df.head())

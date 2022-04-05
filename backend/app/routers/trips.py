@@ -117,11 +117,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         ST_Within(                                                              \
                                                     ST_FlipCoordinates(pil.geom),                               \
                                                     ST_SetSRID(hexagons.hex1, 3857)                             \
-                                        ) OR                                                                    \
-                                        ST_Within(                                                              \
-                                                    ST_FlipCoordinates(pil.geom),                               \
-                                                    ST_SetSRID(hexagons.hex2, 3857)                             \
-                                        )                                                                                                                            \
+                                        )                                                                                                                           \
                                     LIMIT 1;"
 
     # create_point_query = f"hexagon_centroid AS (                                                           \

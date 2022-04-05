@@ -48,7 +48,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
     print('got hexagons. Began getting linestrings')
-    hexagon_query = f"WITH hexagons AS (                                                        \
+    hexagon_query = f"hexagons AS (                                                        \
                             SELECT                                                              \
                                 ST_AsText(                                                      \
                                     ST_GeomFromGeoJSON('{polygons[0]}')) AS hex1,               \
@@ -56,7 +56,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     ST_GeomFromGeoJSON('{polygons[1]}')) AS hex2) "
 
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = f"{hexagon_query}                                                        \
+    linestring_query = f"WITH {hexagon_query}                                                        \
                         SELECT                                                                  \
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
                         FROM                                                                    \
@@ -84,7 +84,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
     print('got linestrings')
 
-    linestring_points_query = f"{hexagon_query},                                                                              \
+    linestring_points_query = f"WITH {hexagon_query},                                                                              \
                     points_in_linestring AS (                                                       \
                         SELECT                                                                      \
                             ST_PointN(                                                              \
@@ -141,11 +141,12 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                                     pil.geom = data_fact.location                                           \
     #                                 LIMIT 1                                                                     \
     #                             )"
-    for chunk in pd.read_sql_query(point_exists_in_hexagon_query, engine, chunksize=50000):
-        if len(chunk) != 0:
-            print(chunk)
-        else:
-            logger.warning('Could not find any hexagons')
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    if len(result) <= 1:
+        logger.error('problem occured')
+    else: print(result)
 
     return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \

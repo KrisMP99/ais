@@ -171,19 +171,17 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     pointsInHex2 = countSeries[1]
     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
     if pointsInHex1 != pointsInHex2:
-        latest_time_in_hex1 = hex1_df.time_id.iat[-1]
-        latest_time_in_hex2 = hex2_df.time_id.iat[-1]
 
         if pointsInHex1 > pointsInHex2:
-            if latest_time_in_hex1 > latest_time_in_hex2:
-                hex1_df = hex1_df[(hex1_df['time_id'] > latest_time_in_hex2)]
-            else:
-                hex1_df = hex1_df[(hex1_df['time_id'] < latest_time_in_hex2)]
+            diff = pointsInHex1 - pointsInHex2
+            while(diff != 0):
+                hex1_df = hex1_df.drop(index=hex1_df.index[-1],axis=0)
+                diff += 1
         else:
-            if(latest_time_in_hex2 > latest_time_in_hex1):
-                hex2_df = hex2_df[(hex2_df['time_id'] > latest_time_in_hex1)]
-            else:
-                hex2_df = hex2_df[(hex2_df['time_id'] < latest_time_in_hex1)]
+            diff = pointsInHex2 - pointsInHex1
+            while(diff != 0):
+                hex2_df = hex2_df.drop(index=hex2_df.index[-1],axis=0)
+                diff += 1
             
     print("Hex_df1: ", hex1_df.head())
     print("Hex_df2: ", hex2_df.head())

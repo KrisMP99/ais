@@ -142,7 +142,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     ST_FlipCoordinates(pil.geom),                               \
                                                     ST_SetSRID(hexagons.hex2, 3857)                             \
                                         ))                                                                                                                            \
-                                    ORDER BY time_dim.time"
+                                    ORDER BY time_dim.time_id"
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \

@@ -37,6 +37,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                         ST_Intersects(h.geom, ST_SetSRID(point1.geom, 3857)) OR     \
                         ST_Intersects(h.geom, ST_SetSRID(point2.geom, 3857));"
 
+    print('about to make hexagons')
     polygons = []
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, polygon_query, engine)
@@ -45,7 +46,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         return []
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
-
+    print('got hexagons')
     
     hexagon_query = f"WITH hexagons AS (                                                     \
                             SELECT                                                              \
@@ -71,7 +72,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             );"
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
-
+    print('about to make linestrings')
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):
         print(chunk)

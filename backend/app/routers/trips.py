@@ -174,9 +174,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     if pointsInHex1 != pointsInHex2:
         if pointsInHex1 > pointsInHex2:
-            hex1_df['diff'] = (pd.to_datetime(hex1_df['time']) - pd.to_datetime(hex2_df['time'])).total_seconds()
+            hex1_df['diff'] = hex1_df['time'].apply(pd.Timestamp) - hex2_df['time'].apply(pd.Timestamp)
         else:
-            hex2_df['diff'] = (pd.to_datetime(hex2_df['time']) - pd.to_datetime(hex1_df['time'])).total_seconds()
+            hex2_df['diff'] = hex2_df['time'].apply(pd.Timestamp) - hex1_df['time'].apply(pd.Timestamp)
             
     print("Hex_df1: ", hex1_df.head())
     print("Hex_df2: ", hex2_df.head())

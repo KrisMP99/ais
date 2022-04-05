@@ -160,9 +160,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    print(df['time_id'])
     hexagons_list = df['hexgeom'].unique().tolist()
-    print(hexagons_list, len(hexagons_list))
     group = df.groupby(by=['hexgeom'])
     hex1_df = group.get_group(hexagons_list[0])
     hex2_df = group.get_group(hexagons_list[1])
@@ -172,18 +170,19 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     pointsInHex1 = countSeries[0]
     pointsInHex2 = countSeries[1]
     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
-    print("Hex1df time_ids:", hex1_df['time_id'])
-    print("Hex2df time_ids:", hex2_df['time_id'])
     if pointsInHex1 != pointsInHex2:
+        latest_time_in_hex1 = hex1_df.time_id.iat[-1]
+        latest_time_in_hex2 = hex2_df.time_id.iat[-1]
+
         if pointsInHex1 > pointsInHex2:
-            latest_time_in_hex2 = hex2_df.time_id.iat[-1]
-            hex1_df = hex1_df[(df['time_id'] < latest_time_in_hex2)]
-            if len(hex1_df) > len(hex2_df):
+            if latest_time_in_hex1 > latest_time_in_hex2:
+                hex1_df = hex1_df[(df['time_id'] < latest_time_in_hex2)]
+            else:
                 hex1_df = hex1_df[(df['time_id'] > latest_time_in_hex2)]
         else:
-            latest_time_in_hex1 = hex1_df.time_id.iat[-1]
-            hex2_df = hex2_df[(df['time_id'] < latest_time_in_hex1)]
-            if len(hex2_df) > len(hex1_df):
+            if(latest_time_in_hex2 > latest_time_in_hex1):
+                hex2_df = hex2_df[(df['time_id'] < latest_time_in_hex1)]
+            else:
                 hex2_df = hex2_df[(df['time_id'] > latest_time_in_hex1)]
             
     print("Hex_df1: ", hex1_df.head())

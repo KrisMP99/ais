@@ -5,7 +5,6 @@ from app.db.database import engine, Session
 from geojson import Point, Polygon
 import asyncio
 import pandas as pd
-import geopandas as gpd
 from shapely.geometry import Polygon
 
 session = Session()

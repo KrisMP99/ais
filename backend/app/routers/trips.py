@@ -20,6 +20,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     gp1 = Point((p1.long, p1.lat))
     gp2 = Point((p2.long, p2.lat))
 
+    print('this is it')
     # First we select the two polygon where the points choosen reside
     polygon_query = f"WITH point1 AS (                                              \
                         SELECT                                                      \

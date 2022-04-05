@@ -84,49 +84,49 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
     print('got linestrings')
 
-    # linestring_points_query = f"{hexagon_query},                                                                              \
-    #                 points_in_linestring AS (                                                       \
-    #                     SELECT                                                                      \
-    #                         ST_PointN(                                                              \
-    #                             std.line_string,                                                    \
-    #                             generate_series(1, ST_NPOINTS(std.line_string))                     \
-    #                         ) AS geom, std.simplified_trip_id                                       \
-    #                     FROM                                                                        \
-    #                         simplified_trip_dim AS std, hexagons                                    \
-    #                     WHERE                                                                       \
-    #                         ST_Intersects(                                                          \
-    #                             ST_FlipCoordinates(std.line_string),                                \
-    #                             ST_SetSRID(hexagons.hex1, 3857)                                     \
-    #                         ) AND                                                                   \
-    #                         ST_Intersects(                                                          \
-    #                             ST_FlipCoordinates(std.line_string),                                \
-    #                             ST_SetSRID(hexagons.hex2, 3857)                                     \
-    #                         )                                                                       \
-    #                 )"
+    linestring_points_query = f"{hexagon_query},                                                                              \
+                    points_in_linestring AS (                                                       \
+                        SELECT                                                                      \
+                            ST_PointN(                                                              \
+                                std.line_string,                                                    \
+                                generate_series(1, ST_NPOINTS(std.line_string))                     \
+                            ) AS geom, std.simplified_trip_id                                       \
+                        FROM                                                                        \
+                            simplified_trip_dim AS std, hexagons                                    \
+                        WHERE                                                                       \
+                            ST_Intersects(                                                          \
+                                ST_FlipCoordinates(std.line_string),                                \
+                                ST_SetSRID(hexagons.hex1, 3857)                                     \
+                            ) AND                                                                   \
+                            ST_Intersects(                                                          \
+                                ST_FlipCoordinates(std.line_string),                                \
+                                ST_SetSRID(hexagons.hex2, 3857)                                     \
+                            )                                                                       \
+                    )"
 
-    # point_exists_in_hexagon_query = f"{linestring_points_query}                                                                    \
-    #                                 SELECT                                                                      \
-    #                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
-    #                                     ship_type_dim.ship_type                                                 \
-    #                                 FROM                                                                        \
-    #                                     points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons,   \
-    #                                     ship_type_dim                                                           \
-    #                                 WHERE                                                                       \
-    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
-    #                                     data_fact.date_id = date_dim.date_id AND                                \
-    #                                     data_fact.time_id = time_dim.time_id AND                                \
-    #                                     data_fact.ship_type_id = ship_type_dim.ship_type_id AND                 \
-    #                                     pil.geom = data_fact.location AND                                       \
-    #                                     ST_Within(                                                              \
-    #                                                 ST_FlipCoordinates(pil.geom),                               \
-    #                                                 ST_SetSRID(hexagons.hex1, 3857)                             \
-    #                                     ) OR                                                                    \
-    #                                     ST_Within(                                                              \
-    #                                                 ST_FlipCoordinates(pil.geom),                               \
-    #                                                 ST_SetSRID(hexagons.hex2, 3857)                             \
-    #                                     )                                                                       \
-    #                                 ORDER BY time_dim.time                                                      \
-    #                                 LIMIT 1;"
+    point_exists_in_hexagon_query = f"{linestring_points_query}                                                                    \
+                                    SELECT                                                                      \
+                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
+                                        ship_type_dim.ship_type                                                 \
+                                    FROM                                                                        \
+                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons,   \
+                                        ship_type_dim                                                           \
+                                    WHERE                                                                       \
+                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
+                                        data_fact.date_id = date_dim.date_id AND                                \
+                                        data_fact.time_id = time_dim.time_id AND                                \
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND                 \
+                                        pil.geom = data_fact.location AND                                       \
+                                        ST_Within(                                                              \
+                                                    ST_FlipCoordinates(pil.geom),                               \
+                                                    ST_SetSRID(hexagons.hex1, 3857)                             \
+                                        ) OR                                                                    \
+                                        ST_Within(                                                              \
+                                                    ST_FlipCoordinates(pil.geom),                               \
+                                                    ST_SetSRID(hexagons.hex2, 3857)                             \
+                                        )                                                                       \
+                                    ORDER BY time_dim.time                                                      \
+                                    LIMIT 1;"
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \
@@ -141,11 +141,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                                     pil.geom = data_fact.location                                           \
     #                                 LIMIT 1                                                                     \
     #                             )"
-    # for chunk in pd.read_sql_query(point_exists_in_hexagon_query, engine, chunksize=50000):
-    #     if len(chunk) != 0:
-    #         print(chunk)
-    #     else:
-    #         logger.warning('Could not find any hexagons')
+    for chunk in pd.read_sql_query(point_exists_in_hexagon_query, engine, chunksize=50000):
+        if len(chunk) != 0:
+            print(chunk)
+        else:
+            logger.warning('Could not find any hexagons')
 
     return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \

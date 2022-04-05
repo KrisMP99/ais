@@ -19,7 +19,7 @@ router = APIRouter(
 async def get_trip(p1: Coordinate, p2: Coordinate): 
     gp1 = Point((p1.long, p1.lat))
     gp2 = Point((p2.long, p2.lat))
-
+    print('start')
     # First we select the two polygon where the points choosen reside
     polygon_query = f"WITH point1 AS (                                              \
                         SELECT                                                      \
@@ -37,6 +37,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                         ST_Intersects(h.geom, ST_SetSRID(point1.geom, 3857)) OR     \
                         ST_Intersects(h.geom, ST_SetSRID(point2.geom, 3857));"
 
+    print('tried gettings hexagons')
     polygons = []
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, polygon_query, engine)
@@ -46,7 +47,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
-    
+    print('got hexagons. Began getting linestrings')
     hexagon_query = f"WITH hexagons AS (                                                     \
                             SELECT                                                              \
                                 ST_AsText(                                                      \
@@ -81,7 +82,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
-    
+    print('got linestrings')
 
     linestring_points_query = f"{hexagon_query},                                                                              \
                     points_in_linestring AS (                                                       \

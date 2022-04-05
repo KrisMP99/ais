@@ -163,8 +163,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     hexagon1 = df['hexgeom'].values[0]
     hexagon2 = df['hexgeom'].values[1]
 
-    hex1_df = df[(df['hexgeom'] == hexagon1)].reset_index()
-    hex2_df = df[(df['hexgeom'] == hexagon2)].reset_index()
+    hex1_df = df[(df['hexgeom'] != hexagon2)].reset_index()
+    hex2_df = df[(df['hexgeom'] != hexagon1)].reset_index()
+
+    print("Hex_df1: ", hex1_df.head())
+    print("Hex_df2: ", hex2_df.head())
 
     countSeries = df['hexgeom'].value_counts()
 

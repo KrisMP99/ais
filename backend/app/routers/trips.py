@@ -48,7 +48,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
     print('got hexagons. Began getting linestrings')
-    hexagon_query = f"hexagons AS (                                                        \
+    hexagon_query = f"hexagons AS (                                                             \
                             SELECT                                                              \
                                 ST_AsText(                                                      \
                                     ST_GeomFromGeoJSON('{polygons[0]}')) AS hex1,               \
@@ -56,7 +56,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     ST_GeomFromGeoJSON('{polygons[1]}')) AS hex2) "
 
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = f"WITH {hexagon_query}                                                        \
+    linestring_query = f"WITH {hexagon_query}                                                   \
                         SELECT                                                                  \
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
                         FROM                                                                    \
@@ -104,17 +104,19 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             )                                                                       \
                     )"
 
-    point_exists_in_hexagon_query = f"{linestring_points_query}                                                                    \
+    point_exists_in_hexagon_query = f"{linestring_points_query}                                                 \
                                     SELECT                                                                      \
-                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom                                                   \
+                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
+                                        ship_type_dim.ship_type                                                 \
                                     FROM                                                                        \
-                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons                                                          \
+                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons    \
                                     WHERE                                                                       \
-                                        pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
+                                        data_fact.simplified_trip_id = pil.simplified_trip_id AND               \
                                         data_fact.date_id = date_dim.date_id AND                                \
-                                        data_fact.time_id = time_dim.time_id AND                                                \
-                                        pil.geom = data_fact.location AND                                       \
-                                        (ST_Within(                                                              \
+                                        data_fact.time_id = time_dim.time_id AND                                \
+                                        data_fact.location = pil.geom AND                                       \
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND                 \
+                                        (ST_Within(                                                             \
                                                     ST_FlipCoordinates(pil.geom),                               \
                                                     ST_SetSRID(hexagons.hex1, 3857)                             \
                                         ) OR                                                                    \
@@ -140,9 +142,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    if len(result) <= 1:
-        logger.error('problem occured')
-    else: print(result)
+    print(result)
 
     return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \

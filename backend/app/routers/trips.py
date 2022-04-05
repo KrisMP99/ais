@@ -170,7 +170,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     pointsInHex1 = countSeries[0]
     pointsInHex2 = countSeries[1]
     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
-
+    print("Hex1df time_ids:", hex1_df['time_id'])
+    print("Hex2df time_ids:", hex1_df['time_id'])
     if pointsInHex1 != pointsInHex2:
         if pointsInHex1 > pointsInHex2:
             latest_time_in_hex2 = hex2_df.time_id.iat[-1]

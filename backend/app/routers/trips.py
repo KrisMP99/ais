@@ -139,6 +139,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.geom = data_fact.location                                           \
                                     LIMIT 1                                                                     \
                                 )"
+    print('made it this far')
     for chunk in pd.read_sql_query(point_exists_in_hexagon_query, engine, chunksize=50000):
         if len(chunk) != 0:
             print(chunk)

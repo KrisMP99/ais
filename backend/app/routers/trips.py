@@ -89,7 +89,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                         SELECT                                                                      \
                             ST_PointN(                                                              \
                                 std.line_string,                                                    \
-                                generate_series(1, ST_NPOINTS(std.line_string))                     \
+                                generate_series(1, ST_NPoints(std.line_string))                     \
                             ) AS geom, std.simplified_trip_id                                       \
                         FROM                                                                        \
                             simplified_trip_dim AS std, hexagons                                    \

@@ -5,6 +5,7 @@ from app.db.database import engine, Session
 from geojson import Point, Polygon
 import asyncio
 import pandas as pd
+import numpy as np
 
 session = Session()
 logger = get_logger()
@@ -159,12 +160,26 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    hexagon1 = df['hexageom'].values[0]
+    hexagon2 = df['hexageom'].values[1]
+
+    hex1_df = df[(df['hexageom'] == hexagon1)].reset_index()
+    hex2_df = df[(df['hexageom'] == hexagon2)].reset_index()
+
     countSeries = df['hexgeom'].value_counts()
 
     pointsInHex1 = countSeries[0]
     pointsInHex2 = countSeries[1]
     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
 
+    if pointsInHex1 != pointsInHex2:
+        if pointsInHex1 > pointsInHex2:
+            hex1_df['diff'] = hex1_df['time'] - hex2_df['time']
+        else:
+            hex2_df['diff'] = hex2_df['time'] - hex1_df['time']
+            
+    print("Hex_df1: ", hex1_df.head())
+    print("Hex_df2: ", hex2_df.head())
 
 
 

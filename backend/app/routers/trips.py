@@ -109,11 +109,20 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
                                         ship_type_dim.ship_type,                                                \
                                         CASE                                                                    \
-                                            WHEN ST_Within(                                                     \
+                                            WHEN                                                                \
+                                                ST_Within(                                                      \
                                                     ST_FlipCoordinates(pil.geom),                               \
                                                     ST_SetSRID(hexagons.hex1, 3857))                            \
-                                                THEN hexagons.hex1                                              \
-                                            ELSE hexagons.hex2                                                  \
+                                                THEN (                                                          \
+                                                    SELECT                                                      \
+                                                        hexagons.hex1                                           \
+                                                    FROM hexagons                                               \
+                                                )                                                               \
+                                            ELSE (                                                              \
+                                                SELECT                                                          \
+                                                    hexagons.hex2                                               \
+                                                FROM hexagons                                                   \
+                                            )                                                                   \
                                         END AS hexgeom                                                          \
                                     FROM                                                                        \
                                         points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons,   \

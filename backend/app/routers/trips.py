@@ -171,16 +171,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     pointsInHex2 = countSeries[1]
     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
     if pointsInHex1 != pointsInHex2:
-
         if pointsInHex1 > pointsInHex2:
             diff = pointsInHex1 - pointsInHex2
             hex1_df = hex1_df.iloc[:-diff]
         else:
             diff = pointsInHex2 - pointsInHex1
             hex2_df = hex2_df.iloc[:-diff]
-            
-    print("Hex_df1: ", hex1_df.head())
-    print("Hex_df2: ", hex2_df.head())
+        
 
 
 

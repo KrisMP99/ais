@@ -10,20 +10,24 @@ interface ShipFilterStates {
 }
 
 export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterStates>{
-
+    protected s: number;
     constructor(props: ShipFilterProps) {
         super(props);
+        this.s = 0;
         this.state = {
             shipTypes: []
         }
     }
 
     render() {
+        if(!this.s) {
+            this.fetchShipTypes();
+        }
         return (
             <div className="align-filter-options">
                 <ul>
-                    {this.state.shipTypes.map((val) => {
-                        return <li>{val}<input type={"checkbox"} onClick={(e) => this.props.returnShipType(val)}></input></li>
+                    {this.state.shipTypes.map((val, key) => {
+                        return <li key={key}>{val}<input type={"checkbox"} onClick={(e) => this.props.returnShipType(val)}></input></li>
                     })}
                 </ul>
             </div>
@@ -40,16 +44,15 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             }
         };
 
-        fetch('http://' + process.env.REACT_APP_API! + '/trips/ship-trips', requestOptions)
-            .then((response) => {
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+            .then(async response => {
+                const data = await response.json();
                 if (!response.ok) {
                     return null;
                 }
-                else return response.json();
+                return this.setState({ shipTypes: data })
             })
-            .then((data: string[]) => {
-                return this.setState({ shipTypes: data });
-            })
+        this.s += 1;
     };
 }
 

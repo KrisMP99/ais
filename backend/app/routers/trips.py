@@ -107,7 +107,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     point_exists_in_hexagon_query = f"{linestring_points_query}                                                 \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
-                                        ship_type_dim.ship_type                                                 \
+                                        ship_type_dim.ship_type,                                                \
+                                        CASE                                                                    \
+                                            WHEN ST_Within(                                                     \
+                                                    ST_FlipCoordinates(pil.geom),                               \
+                                                    ST_SetSRID(hexagons.hex1, 3857))                            \
+                                                THEN hexagons.hex1                                              \
+                                            ELSE hexagons.hex2                                                  \
+                                        END AS hexgeom                                                          \
                                     FROM                                                                        \
                                         points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons,   \
                                         ship_type_dim                                                           \
@@ -125,7 +132,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     ST_FlipCoordinates(pil.geom),                               \
                                                     ST_SetSRID(hexagons.hex2, 3857)                             \
                                         ))                                                                                                                            \
-                                    LIMIT 1;"
+                                    ORDER BY time_dim.time"
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \
@@ -143,7 +150,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    print(result)
+    if len(result) == 0:
+        print('ha')
+    elif len(result) == 1:
+        print('ha')
+    
 
     return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \

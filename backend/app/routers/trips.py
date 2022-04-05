@@ -159,10 +159,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    df = df.groupby(by=['hexgeom']).count()
-    print(df.columns)
-    print(df.head())
-    print(df.values)
+    df['count'] = df.groupby(by=['hexgeom']).count()
+    print(f"There are {df['count'].values[0]} points in the first hexagon, and {df['count'].values[1]} points in the second hexagon")
 
 
 

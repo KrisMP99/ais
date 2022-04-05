@@ -102,7 +102,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 ST_SetSRID(hexagons.hex2, 3857)                                     \
                             )                                                                       \
                     )"
-
+    print("HERE M8")
     point_exists_in_hexagon_query = f"{linestring_points_query}                                                                    \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \

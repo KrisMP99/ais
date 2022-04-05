@@ -161,8 +161,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
     hexagons_list = df['hexgeom'].unique().tolist()
-    hex1_df = df[(df['hexgeom'] == df[hexagons_list[0]])]
-    hex2_df = df[(df['hexgeom'] == df[hexagons_list[1]])]
+    hex1_df = df[(df['hexgeom'] == df[str(hexagons_list[0])])]
+    hex2_df = df[(df['hexgeom'] == df[str(hexagons_list[1])])]
 
     print("Hex_df1: ", hex1_df.head())
     print("Hex_df2: ", hex2_df.head())

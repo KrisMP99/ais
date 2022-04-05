@@ -283,15 +283,15 @@ def remove_outliers(trip_list: list[Trip], logger):
     print(f"len of trip_list: {len(trip_list)}")
 
     # Add the trip_id index for each trip
-    sql = "SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim"
+    sql = "SELECT MAX(trip_dim.trip_id) as trip_id, MAX(simplified_trip_dim.simplified_trip_id) as simplified_id FROM trip_dim, simplified_trip_dim"
     df = get_data_from_query(sql)
-    trip_PK_key = df.iat[0,0]
-    simplified_trip_PK_key = df.iat[0,1]
+    trip_PK_key = df['trip_id'].values[0]
+    simplified_trip_PK_key = df['simplified_id'].values[0]
 
     if trip_PK_key is None:
-        trip_PK_key = -1
+        trip_PK_key = 0
     if simplified_trip_PK_key is None:
-        simplified_trip_PK_key = -1
+        simplified_trip_PK_key = 0
 
     # add trip_ids and convert to dataframe
     point_list = []
@@ -309,7 +309,8 @@ def remove_outliers(trip_list: list[Trip], logger):
     
     logger.info(f"Done adding trip keys. Converting to geopandas dataframe.")
     df = pd.DataFrame(point_list, columns=COLUMNS)
-    return gpd.GeoDataFrame(df, geometry=df['point'], crs="EPSG:3857")
+    df = gpd.GeoDataFrame(df, geometry=df['point'], crs="EPSG:3857")
+    return df
 
 def export_trips_csv(trip_list: list[Trip], logger, CSV_PATH = CSV_PATH):
     logger.info("Exporting trips to csv..")

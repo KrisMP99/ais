@@ -11,7 +11,6 @@ from douglas_peucker import add_simplified_trip_ids
 from data_insertion import insert_simplified_trips, insert_trips
 from douglas_peucker import create_simplified_trip_line_strings, create_trip_line_strings
 from data_insertion import insert_cleansed_data, insert_into_star
-from douglas_peucker import create_line_strings
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
 import logging
@@ -312,12 +311,10 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     add_simplified_trip_ids(df_cleansed, simplified_trip_df)
     insert_simplified_trips(simplified_trip_df, logger)
     insert_trips(trip_df,logger)
-    # # insert_cleansed_data(trip_list, logger)
     # Convert back to regular dataframe
-    df_cleansed = df_cleansed.drop(['geometry', 'point'], axis=1)
-    print(df_cleansed.columns)
+    df_cleansed = df_cleansed.rename(columns={'point':'location'})
     insert_into_star(df_cleansed, logger)
-    # add_new_file_to_log(file_name, logger=logger)
+    add_new_file_to_log(file_name, logger=logger)
 
 def download_all_and_process_everything(logger):
     """

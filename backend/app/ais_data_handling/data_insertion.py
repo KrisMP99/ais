@@ -5,10 +5,13 @@ import psycopg2
 import os
 import pygrametl
 from pygrametl.datasources import PandasSource
-from pygrametl.tables import CachedDimension, BatchFactTable
+from pygrametl.tables import CachedDimension, BatchFactTable, FactTable
 from sqlalchemy import create_engine
 import datetime
 import geopandas as gpd
+from shapely import wkb
+import pandas as pd
+from psycopg2.errors import NumericValueOutOfRange
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -80,29 +83,21 @@ def insert_simplified_trips(simplified_trip_df: gpd.GeoDataFrame, logger):
     simplified_trip_df.to_postgis("simplified_trip_dim",con=engine, if_exists='append')
     logger.info("Finished inserting simplified trips into 'simplified_trip_dim'")
 
+
+def convert_to_hex(row):
+    row['location'] = wkb.dumps(row['location'], hex=True, srid=3857)
+
 def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     # cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
-    # # Get the line string to start from
-    # cursor.execute("SELECT MAX(trip_id), MAX(simplified_trip_id) FROM trip_dim, simplified_trip_dim")
-    # result = cursor.fetchall()
-    # trip_id = result[0][0]
-    # simplified_trip_id = result[1][0]
+    # df[['rot','sog','cog','heading','draught']] = df[['rot','sog','cog','heading','draught']].apply(pd.to_numeric)
+    df = df.drop(columns=['geometry'])
 
-    # for row in result:
-    #     trip_id = row[0]
-    #     simplified_trip_id = row[1]
+    df = df.astype(object).where(pd.notnull(df),None)
 
-    # if trip_id is None:
-    #     trip_id = -1
-    # if simplified_trip_id is None:
-    #     simplified_trip_id = -1
-
-    # logger.info("Getting cleansed data from db")
-    # sql_query = "SELECT *, ST_SetSRID(ST_MakePoint(latitude,longitude),3857) AS location FROM cleansed"
     ais_source = PandasSource(df)
 
     date_dim = CachedDimension(
@@ -162,11 +157,10 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     #     lookupatts=['line_string']
     # )
 
-    fact_table = BatchFactTable(
+    fact_table = FactTable(
         name='data_fact',
         keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id'],
         measures=['location','rot','sog','cog','heading','draught','destination'],
-        batchsize=500000,
         targetconnection=conn_wrapper
     )
 
@@ -175,6 +169,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     print("Time begin: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
     for row in ais_source:
         convert_timestamp_to_time_and_date(row)
+        convert_to_hex(row)
 
         if row['date_id'] != date_dim.getbykey(row)['date_id']:
             date_dim.insert(row)
@@ -192,8 +187,10 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
         # if row['simplified_trip_id'] is not None:
         #     if row['simplified_trip_id'] != simplified_trip_dim.getbykey(row)['simplified_trip_id']:
         #         simplified_trip_dim.insert(row)
-
-        fact_table.insert(row)
+        try:
+            fact_table.insert(row)
+        except Exception as e:
+            print(f"Err: {e}\nRow: {row}")
 
     # time_end = datetime.datetime.now()
     # time_delta = time_end - time_begin

@@ -83,7 +83,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
     
 
-    linestring = f"{hexagon_query},                                                                              \
+    linestring_points_query = f"{hexagon_query},                                                                              \
                     points_in_linestring AS (                                                       \
                         SELECT                                                                      \
                             ST_PointN(                                                              \
@@ -103,7 +103,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             )                                                                       \
                     )"
 
-    point_exists_in_hexagon = f"{linestring}                                                                    \
+    point_exists_in_hexagon_query = f"{linestring_points_query}                                                                    \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
                                         ship_type_dim.ship_type                                                 \
@@ -127,7 +127,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     ORDER BY time_dim.time                                                      \
                                     LIMIT 1;"
 
-    create_point = f"hexagon_centroid AS (                                                           \
+    create_point_query = f"hexagon_centroid AS (                                                           \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                \
                                         ST_Centroid(hex1.geom) AS geom                                          \
@@ -140,7 +140,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.geom = data_fact.location                                           \
                                     LIMIT 1                                                                     \
                                 )"
-    for chunk in pd.read_sql_query(point_exists_in_hexagon, engine, chunksize=50000):
+    for chunk in pd.read_sql_query(point_exists_in_hexagon_query, engine, chunksize=50000):
         if len(chunk) != 0:
             print(chunk)
         else:

@@ -163,6 +163,10 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         print('ha')
     elif len(result) == 1:
         print('ha')
+    elif len(result) == 2:
+        print(result)
+    else:
+        print('shit went wrong with length of ' + len(result))
     
 
     return linestrings

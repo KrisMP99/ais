@@ -76,10 +76,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):
         if len(chunk) != 0:
-            print(chunk)
-            # for json in chunk['st_asgeojson']:
-            #     if json is not None:
-            #         linestrings.append(json['coordinates'])
+            for json in chunk['st_asgeojson']:
+                if json is not None:
+                    linestrings.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')

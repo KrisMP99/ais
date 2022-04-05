@@ -158,7 +158,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                             )"
 
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    test = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    result = test.to_json()
     if len(result) == 0:
         print('No points')
     elif len(result) == 1:

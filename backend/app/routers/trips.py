@@ -175,9 +175,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         if pointsInHex1 > pointsInHex2:
             latest_time_in_hex2 = hex2_df.time_id.iat[-1]
             hex1_df = hex1_df[(df['time_id'] < latest_time_in_hex2)]
+            if len(hex1_df) > len(hex2_df):
+                hex1_df = hex1_df[(df['time_id'] > latest_time_in_hex2)]
         else:
             latest_time_in_hex1 = hex1_df.time_id.iat[-1]
             hex2_df = hex2_df[(df['time_id'] < latest_time_in_hex1)]
+            if len(hex2_df) > len(hex1_df):
+                hex2_df = hex2_df[(df['time_id'] > latest_time_in_hex1)]
             
     print("Hex_df1: ", hex1_df.head())
     print("Hex_df2: ", hex2_df.head())

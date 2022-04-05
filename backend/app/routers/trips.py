@@ -160,11 +160,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    hexagon1 = df['hexageom'].values[0]
-    hexagon2 = df['hexageom'].values[1]
+    hexagon1 = df['hexgeom'].values[0]
+    hexagon2 = df['hexgeom'].values[1]
 
-    hex1_df = df[(df['hexageom'] == hexagon1)].reset_index()
-    hex2_df = df[(df['hexageom'] == hexagon2)].reset_index()
+    hex1_df = df[(df['hexgeom'] == hexagon1)].reset_index()
+    hex2_df = df[(df['hexgeom'] == hexagon2)].reset_index()
 
     countSeries = df['hexgeom'].value_counts()
 

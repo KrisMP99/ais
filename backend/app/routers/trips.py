@@ -5,6 +5,8 @@ from app.db.database import engine, Session
 from geojson import Point, Polygon
 import asyncio
 import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Polygon
 
 session = Session()
 logger = get_logger()
@@ -158,41 +160,48 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                             )"
 
     loop = asyncio.get_event_loop()
-    test = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    result = test.to_json()
-    if len(result) == 0:
-        print('No points')
-    elif len(result) == 1:
-        print('1 point')
-    elif len(result) == 2 and result[0]['hexgeom'] != result[1]['hexgeom']:
-        print('2 points and not in the same hexagon')
-        print(result)
-    elif len(result) == 2 and result[0]['hexgeom'] == result[1]['hexgeom']:
-        print('2 points and both points in the same hexagon')
-        print(result)
-    elif len(result) > 2:
-        print('More than 2 points')
-        known_hex = result[0]['hexgeom']
-        hex1 = { 'amount': 0, 'index': [] }
-        hex2 = { 'amount': 0, 'index': [] }
-        for hex in result:
-            if hex['hexgeom'] == known_hex:
-                hex1['amount'] += 1
-                hex1['index'].append(result.index(hex))
-            else: 
-                hex2 += 1
-                hex2['index'].append(result.index(hex))
-        if hex1['amount'] != hex2['amount']:
-            print('More than 2 points and not equally many in each hexagon')
-            dif = hex1['amount'] - hex2['amount']
-            if dif < 0:
-                for i in reversed(hex2['index']):
-                    if(len(hex2['index']) == len(hex1['index'])):
-                        break
-                    hex2['index'].pop()
-                    result.pop(hex2['index'].index(i))
-    else:
-        print('shit went wrong with length of ' + len(result))
+    df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    df = df.groupby(by=['hexgeom']).count()
+    print(df.columns)
+    print(df.head())
+    print(df.values)
+
+
+
+
+    # if len(result) == 0:
+    #     print('No points')
+    # elif len(result) == 1:
+    #     print('1 point')
+    # elif len(result) == 2 and result[0]['hexgeom'] != result[1]['hexgeom']:
+    #     print('2 points and not in the same hexagon')
+    #     print(result)
+    # elif len(result) == 2 and result[0]['hexgeom'] == result[1]['hexgeom']:
+    #     print('2 points and both points in the same hexagon')
+    #     print(result)
+    # elif len(result) > 2:
+    #     print('More than 2 points')
+    #     known_hex = result[0]['hexgeom']
+    #     hex1 = { 'amount': 0, 'index': [] }
+    #     hex2 = { 'amount': 0, 'index': [] }
+    #     for hex in result:
+    #         if hex['hexgeom'] == known_hex:
+    #             hex1['amount'] += 1
+    #             hex1['index'].append(result.index(hex))
+    #         else: 
+    #             hex2 += 1
+    #             hex2['index'].append(result.index(hex))
+    #     if hex1['amount'] != hex2['amount']:
+    #         print('More than 2 points and not equally many in each hexagon')
+    #         dif = hex1['amount'] - hex2['amount']
+    #         if dif < 0:
+    #             for i in reversed(hex2['index']):
+    #                 if(len(hex2['index']) == len(hex1['index'])):
+    #                     break
+    #                 hex2['index'].pop()
+    #                 result.pop(hex2['index'].index(i))
+    # else:
+    #     print('shit went wrong with length of ' + len(result))
     
 
     return linestrings

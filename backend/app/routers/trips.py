@@ -20,7 +20,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     gp1 = Point((p1.long, p1.lat))
     gp2 = Point((p2.long, p2.lat))
 
-    print('this is it')
     # First we select the two polygon where the points choosen reside
     polygon_query = f"WITH point1 AS (                                              \
                         SELECT                                                      \
@@ -38,7 +37,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                         ST_Intersects(h.geom, ST_SetSRID(point1.geom, 3857)) OR     \
                         ST_Intersects(h.geom, ST_SetSRID(point2.geom, 3857));"
 
-    print('about to make hexagons')
     polygons = []
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, pd.read_sql_query, polygon_query, engine)
@@ -47,7 +45,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         return []
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
-    print('got hexagons')
+
     
     hexagon_query = f"WITH hexagons AS (                                                     \
                             SELECT                                                              \
@@ -73,10 +71,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             );"
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
-    print('about to make linestrings')
+
     linestrings = []
     for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):
-        print(chunk)
         if len(chunk) != 0:
             for json in chunk['st_asgeojson']:
                 if json is not None:
@@ -105,7 +102,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 ST_SetSRID(hexagons.hex2, 3857)                                     \
                             )                                                                       \
                     )"
-    print("HERE M8")
+
     point_exists_in_hexagon_query = f"{linestring_points_query}                                                                    \
                                     SELECT                                                                      \
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
@@ -117,6 +114,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
                                         data_fact.date_id = date_dim.date_id AND                                \
                                         data_fact.time_id = time_dim.time_id AND                                \
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND                 \
                                         pil.geom = data_fact.location AND                                       \
                                         ST_Within(                                                              \
                                                     ST_FlipCoordinates(pil.geom),                               \
@@ -142,7 +140,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.geom = data_fact.location                                           \
                                     LIMIT 1                                                                     \
                                 )"
-    print('made it this far')
     for chunk in pd.read_sql_query(point_exists_in_hexagon_query, engine, chunksize=50000):
         if len(chunk) != 0:
             print(chunk)

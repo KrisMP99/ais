@@ -107,7 +107,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     point_exists_in_hexagon_query = f"{linestring_points_query}                                                 \
                                     SELECT                                                                      \
-                                        DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
+                                        DISTINCT date_dim.date_id, time_dim.time_id, data_fact.sog, pil.geom,      \
                                         ship_type_dim.ship_type,                                                \
                                         CASE                                                                    \
                                             WHEN                                                                \
@@ -174,9 +174,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     if pointsInHex1 != pointsInHex2:
         if pointsInHex1 > pointsInHex2:
-            hex1_df['diff'] = hex1_df['time'].apply(pd.Timestamp) - hex2_df['time'].apply(pd.Timestamp)
+            hex1_df['diff'] = hex1_df['time_id'] - hex2_df['time_id']
         else:
-            hex2_df['diff'] = hex2_df['time'].apply(pd.Timestamp) - hex1_df['time'].apply(pd.Timestamp)
+            hex2_df['diff'] = hex2_df['time_id'] - hex1_df['time_id']
             
     print("Hex_df1: ", hex1_df.head())
     print("Hex_df2: ", hex2_df.head())

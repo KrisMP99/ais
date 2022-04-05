@@ -8,7 +8,7 @@ import './Leaflet.css';
 
 interface AppStates {
   pointCoords: LatLng[];
-  shipType: string;
+  filterShipTypes: string[];
   mouseCoords: string[];
   polylines: LatLng[][];
 }
@@ -26,8 +26,8 @@ export class App extends React.Component<any, AppStates> {
       pointCoords: [],
       mouseCoords: [],
       polylines: [],
-      shipType: "",
-      
+      filterShipTypes: [],
+
     }
   }
 
@@ -64,6 +64,7 @@ export class App extends React.Component<any, AppStates> {
               </div>
               <PostButton
                 coordinates={this.state.pointCoords}
+                shipTypeArray={this.state.filterShipTypes}
                 getData={(data: LatLng[][]) => this.setState({ polylines: data })}
               />
             </div>
@@ -72,7 +73,17 @@ export class App extends React.Component<any, AppStates> {
               <p className='ship-type-header'>Ship type filter</p>
               <hr className='shorter-hr'></hr>
               <ShipTypeFilter
-                shipType={this.state.shipType}
+                returnShipType={(val) => {
+                  if (this.state.filterShipTypes.includes(val)) {
+                    this.state.filterShipTypes.splice(this.state.filterShipTypes.indexOf(val) + 1, 1)
+                    this.setState({ filterShipTypes: this.state.filterShipTypes })
+                    return;
+                  } else {
+                    this.state.filterShipTypes.push(val)
+                    this.setState({ filterShipTypes: this.state.filterShipTypes })
+                  }
+                }
+                }
               />
             </div>
           </div>

@@ -50,9 +50,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('got hexagons. Began getting linestrings')
     hexagon_query = f"SELECT                                                              \
                                 ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[0]}')) As hex1,              \
+                                    ST_GeomFromGeoJSON('{polygons[0]}')) AS hex1,              \
                                 ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[1]}')) As hex2);"
+                                    ST_GeomFromGeoJSON('{polygons[1]}')) AS hex2;"
 
     # Then we select all linestrings that intersect with the two polygons
     linestring_query = f"WITH hexagons AS (                                                     \

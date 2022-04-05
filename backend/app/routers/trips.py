@@ -109,7 +109,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         DISTINCT date_dim.date_id, time_dim.time, data_fact.sog, pil.geom,      \
                                         ship_type_dim.ship_type                                                 \
                                     FROM                                                                        \
-                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons    \
+                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons,   \
+                                        ship_type_dim                                                           \
                                     WHERE                                                                       \
                                         data_fact.simplified_trip_id = pil.simplified_trip_id AND               \
                                         data_fact.date_id = date_dim.date_id AND                                \

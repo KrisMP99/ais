@@ -160,6 +160,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    print(df['time_id'])
     hexagons_list = df['hexgeom'].unique().tolist()
     print(hexagons_list, len(hexagons_list))
     group = df.groupby(by=['hexgeom'])

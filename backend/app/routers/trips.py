@@ -114,7 +114,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
                                         data_fact.date_id = date_dim.date_id AND                                \
                                         data_fact.time_id = time_dim.time_id AND                                \
-                                        data_fact.ship_type_id = ship_type_dim.ship_type_id                     \
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND                 \
                                         pil.geom = data_fact.location AND                                       \
                                         ST_Within(                                                              \
                                                     ST_FlipCoordinates(pil.geom),                               \

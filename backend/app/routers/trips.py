@@ -4,7 +4,8 @@ from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.db.database import engine, Session
 from geojson import Point, Polygon
-import logging
+from pypika import Query
+from fastapi.encoders import jsonable_encoder
 import asyncio
 import pandas as pd
 

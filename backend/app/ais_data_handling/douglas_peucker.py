@@ -1,4 +1,3 @@
-
 from venv import create
 import pandas as pd
 import geopandas as gpd
@@ -10,11 +9,11 @@ COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi','latitude','longitude', 'naviga
 # Tolerance for Douglas Peucker algorithm
 TOLERANCE = 1000
 
-def create_trip_line_strings(df: gpd.GeoDataFrame, logger) -> gpd.GeoDataFrame:
-    logger.info("Creating line strings for trip_dim...")
-    trip_df = df.groupby(by=['trip_id'])['geometry'].apply(lambda x: LineString(x.tolist()))
-    trip_df = gpd.GeoDataFrame({'trip_id':trip_df.index, 'line_string':trip_df.values}, geometry='line_string', crs="EPSG:3857").set_index('trip_id')
-    return trip_df
+# def create_trip_line_strings(df: gpd.GeoDataFrame, logger) -> gpd.GeoDataFrame:
+#     logger.info("Creating line strings for trip_dim...")
+#     trip_df = df.groupby(by=['trip_id'])['geometry'].apply(lambda x: LineString(x.tolist()))
+#     trip_df = gpd.GeoDataFrame({'trip_id':trip_df.index, 'line_string':trip_df.values}, geometry='line_string', crs="EPSG:3857").set_index('trip_id')
+#     return trip_df
 
 def create_simplified_trip_line_strings(df: gpd.GeoDataFrame, logger) -> gpd.GeoDataFrame:
     sql = "SELECT MAX(simplified_trip_dim.simplified_trip_id) FROM simplified_trip_dim"
@@ -22,71 +21,51 @@ def create_simplified_trip_line_strings(df: gpd.GeoDataFrame, logger) -> gpd.Geo
     simplified_trip_PK_key = keys_df['max'].values[0]
 
     if simplified_trip_PK_key is None:
-        simplified_trip_PK_key = 0
+        simplified_trip_PK_key = 1
     else:
         simplified_trip_PK_key += 1
 
     logger.info("Creating line strings for simplified trip dim")
-    simplified_trip_df = df.groupby(by=['trip_id'])['geometry'].apply(lambda x: LineString(x.tolist()).simplify(tolerance=TOLERANCE,preserve_topology=False))
-    simplified_trip_df = gpd.GeoDataFrame({'line_string':simplified_trip_df.values}, geometry='line_string', crs="EPSG:3857")
+    df = df.sort_values(by=['timestamp'])
+
+    simplified_trip_df = df.groupby(by=['trip_id'], as_index=False)['geometry'].apply(lambda x: LineString(x.tolist()).simplify(tolerance=TOLERANCE,preserve_topology=False))
+    simplified_trip_df = gpd.GeoDataFrame(simplified_trip_df, geometry='geometry', crs="EPSG:3857")
     simplified_trip_df.insert(0,'simplified_trip_id',range(simplified_trip_PK_key, simplified_trip_PK_key + len(simplified_trip_df)))
-    simplified_trip_df = simplified_trip_df.set_index('simplified_trip_id')
+    simplified_trip_df = simplified_trip_df.rename_geometry('line_string')
+
     return simplified_trip_df
 
 
-def test(row, df: gpd.GeoDataFrame):
-    result = df.contains(row['geometry'])
-    result = result.to_numpy()
-    for i, result in enumerate(result):
-        if result:
-            return df.index.values[i]
-    return None
+def add_id(row, simplified_trip_df: gpd.GeoDataFrame):
+    trip_id = row['trip_id'].iloc[0]
+    result: gpd.GeoSeries
+    result = simplified_trip_df[(simplified_trip_df['simplified_trip_id'] == trip_id)]
+    coords = result['line_string'].iloc[0].xy
+
+    row['simplified_trip_id'] = None
+    for x, y in zip(coords[0], coords[1]):
+        for point in row.itertuples(name=None):
+            point_x_y = point[2].xy
+            if x == point_x_y[0][0] and y == point_x_y[1][0]:
+                row['simplified_trip_id'] = trip_id
+                break
+
+    return row
     
+# TODO: Change prints to logging    
 def add_simplified_trip_ids(df: gpd.GeoDataFrame, simplified_trip_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    df['simplified_trip_id'] = df.apply(lambda x: test(row=x, df=simplified_trip_df), axis=1)
+    df = df.groupby(by='trip_id', as_index=False)[['trip_id', 'geometry']].apply(lambda x: add_id(x, simplified_trip_df))
+
+    # df = df.drop(columns=['point'])
+    # data: gpd.GeoDataFrame
+    # data = gpd.sjoin(df, simplified_trip_df, how='left', predicate='touches')
+    # print(data)
+    # df['simplified_trip_id'] = data['index_right'] + 1
+
+    # print("Len of df:", len(df))
+    # print(data['index_right'].value_counts())
+    # print("Finished adding simplified trip ids")
     return df
-
-# def create_line_strings(trip_list: gpd.GeoDataFrame, logger):    
-
-#     total_trip_points = []
-
-#     # mmsi_line = []
-#     for trip in trip_list: 
-#         point_list = trip.get_points_in_trip()
-#         trip_point = []
-
-#         for p in point_list:
-#             trip_point.append([p.latitude, p.longitude])
-        
-#         df = pd.DataFrame(trip_point, columns=['latitude','longitude'])
-#         trip_point.clear()
-        
-#         coordinates = df[["latitude", "longitude"]].values
-
-#         line = LineString(coordinates)
-
-#         tolerance = 0.02
-
-#         simplified_line = line.simplify(tolerance, preserve_topology=False)
-
-
-#         # mmsi_line.append([trip.get_mmsi(), simplified_line])
-
-#         x_y_coords = simplified_line.xy
-        
-        
-#         for x, y in zip(x_y_coords[0], x_y_coords[1]):
-#             for p in point_list:
-#                 if x == p.latitude and y == p.longitude:
-#                     p.simplified_trip_id = trip.simplified_trip_id
-#                     break
-
-#     for trip in trip_list:
-#         for p in trip.get_points_in_trip():
-#             total_trip_points.append([p.timestamp, p.type_of_mobile, p.mmsi, p.latitude, p.longitude, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.trip_id, p.simplified_trip_id, None])
-
-#     df_all_points = pd.DataFrame(total_trip_points, columns=COLUMNS)
-#     return df_all_points
 
     # print(line.length, 'line length')
     # print(simplified_line.length, 'simplified line length')

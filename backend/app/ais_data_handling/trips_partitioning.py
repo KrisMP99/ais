@@ -109,6 +109,8 @@ def get_data_from_query(sql_query):
     return dataframe
 
 def get_trips(df: gpd.GeoDataFrame, logger):
+    df = df.sort_values(by="timestamp", ignore_index=True)
+
     trip_list = {}
     trip_list: list[Trip]
     for mmsi in df['mmsi'].drop_duplicates():

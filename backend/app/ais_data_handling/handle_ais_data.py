@@ -1,3 +1,4 @@
+import datetime
 from dotenv import load_dotenv
 import os
 import glob
@@ -9,7 +10,7 @@ import requests
 import zipfile, rarfile
 from douglas_peucker import add_simplified_trip_ids
 from data_insertion import insert_simplified_trips, insert_trips
-from douglas_peucker import create_simplified_trip_line_strings, create_trip_line_strings
+from douglas_peucker import create_simplified_trip_line_strings
 from data_insertion import insert_cleansed_data, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
@@ -214,7 +215,7 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     df.columns = map(str.lower, df.columns)
 
     # Maybe move this to trips_partitioning...
-    df = df.sort_values(by=['timestamp'], ignore_index=True)
+    # df = df.sort_values(by=['timestamp'], ignore_index=True)
 
     # Convert to geopandas dataframe
     # We use 'EPSG:4326' as this is what we recieve from the AIS site
@@ -305,16 +306,20 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     :param df: The dataframe to insert
     :param file_name: The .csv file name to add to the log.
     """
+    time_begin = datetime.datetime.now()
     df_cleansed = get_cleansed_data(df, logger)
-    trip_df = create_trip_line_strings(df_cleansed, logger)
     simplified_trip_df = create_simplified_trip_line_strings(df_cleansed, logger)
-    add_simplified_trip_ids(df_cleansed, simplified_trip_df)
+    df_cleansed = add_simplified_trip_ids(df_cleansed, simplified_trip_df)
+    logger.info("Converting line strings back to 4326...")
+    simplified_trip_df = simplified_trip_df.to_crs(epsg="4326")
+    logger.info("Finished converting cers to 4326!")
     insert_simplified_trips(simplified_trip_df, logger)
-    insert_trips(trip_df,logger)
-    # Convert back to regular dataframe
-    df_cleansed = df_cleansed.rename(columns={'point':'location'})
     insert_into_star(df_cleansed, logger)
-    add_new_file_to_log(file_name, logger=logger)
+    #add_new_file_to_log(file_name, logger=logger)
+    time_end = datetime.datetime.now()
+    time_delta = time_end - time_begin
+    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
+    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")
 
 def download_all_and_process_everything(logger):
     """

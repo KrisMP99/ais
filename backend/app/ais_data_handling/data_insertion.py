@@ -52,22 +52,28 @@ def insert_cleansed_data(df,logger):
         df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
     logger.info("Done inserting!")
 
-
-def convert_timestamp_to_date(row):
-    timestamp = str(row['timestamp'])
-    return (timestamp.split(' ')[0])
-
 def convert_timestamp_to_time_and_date(row):
     timestamp = str(row['timestamp'])
     
     time_split = timestamp.split(' ')
     row['date'] = time_split[0]
 
+    date_split = time_split[0].split('-')
+    row['year'] = date_split[0]
+    row['month'] = date_split[1]
+    row['day'] = date_split[2]
+
     seconds_elapsed = np.ceil((row['timestamp'] - row['timestamp'].replace(hour=0,minute=0,second=0,microsecond=0)).total_seconds())
+
+    row['hour'] = round((seconds_elapsed / 60) / 60)
+    row['quarter_hour'] = round((seconds_elapsed / 60) / 15)
+    row['five_minutes'] = round((seconds_elapsed / 60) / 5)
+
     row['time'] = datetime.timedelta(seconds=seconds_elapsed)
 
     row['date_id'] = int(time_split[0].replace('-',''))
     row['time_id'] = int(time_split[1].replace(':',''))
+
 
 def insert_trips(trip_df: gpd.GeoDataFrame, logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
@@ -80,7 +86,6 @@ def insert_simplified_trips(simplified_trip_df: gpd.GeoDataFrame, logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     engine = create_engine(db_string)
     simplified_trip_df = simplified_trip_df.drop(columns=['trip_id'])
-    print(simplified_trip_df.columns)
     logger.info("Inserting simplified trips into 'simplified_trip_dim'")
     simplified_trip_df.to_postgis("simplified_trip_dim",con=engine, if_exists='append')
     logger.info("Finished inserting simplified trips into 'simplified_trip_dim'")
@@ -102,17 +107,13 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     df = df.astype(object).where(pd.notnull(df),None)
     df['line_string'] = None
 
-    # print("In data_insertion")
-    # print(type(df))
-    # print(df.head())
-    # print(df.columns)
 
     ais_source = PandasSource(df)
 
     date_dim = CachedDimension(
         name='date_dim',
         key='date_id',
-        attributes=['date'],
+        attributes=['date','year','month','day'],
         lookupatts=['date'],
         cacheoninsert=True,
     )
@@ -147,7 +148,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     time_dim = CachedDimension(
         name='time_dim',
         key='time_id',
-        attributes=['time'],
+        attributes=['time','hour','quarter_hour','five_minutes'],
         lookupatts=['time'],
         cacheoninsert=True
     )

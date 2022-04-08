@@ -61,11 +61,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                         WHERE                                                                   \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_FlipCoordinates(%(hex1geom)s::geometry)              \
+                                %(hex1geom)s::geometry              \
                             ) AND                                                               \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_FlipCoordinates(%(hex2geom)s::geometry)                         \
+                                %(hex2geom)s::geometry                         \
                             );"""
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"

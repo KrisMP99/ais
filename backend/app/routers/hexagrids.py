@@ -18,16 +18,18 @@ router = APIRouter(
 @router.post('/hexagon')
 async def get_hexagon(p1: Coordinate):
     geomPoint = Point(p1.long, p1.lat)
-    query = """SELECT                                                   \
-                ST_AsGeoJSON(                                           \
-                    ST_FlipCoordinates(h.geom)                          \
-                )::json AS st_asgeojson                                 \
-            FROM                                                        \
-                hexagrid AS h                                           \
-            WHERE                                                       \
-                ST_Intersects(                                          \
-                    h.geom, ST_GeomFromWKB(%(geom)s::geometry, 3857)    \
-                );"""
+    query = '''
+                SELECT
+                    ST_AsGeoJSON(
+                        ST_FlipCoordinates(h.geom)
+                    )::json AS st_asgeojson
+                FROM
+                    hexagrid AS h
+                WHERE
+                    ST_Intersects(
+                        h.geom, ST_GeomFromWKB(%(geom)s::geometry, 3857)
+                    );
+            '''
 
     result = pd.read_sql_query(query, engine, params={'geom': geomPoint.wkb_hex})
 
@@ -40,20 +42,30 @@ async def get_hexagon(p1: Coordinate):
 
 @router.post('/hexagon-centroid')
 async def get_hexagon_centroid(p1: Coordinate):
-    gp1 = Point((p1.long, p1.lat))
-    query = f"WITH gp1 AS (\
-    SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom)\
-    SELECT ST_AsGeoJSON(ST_Centroid(ST_FlipCoordinates(h.geom)))::json AS st_asgeojson\
-    FROM hexagrid as h, gp1\
-    WHERE ST_Intersects(h.geom, ST_SetSRID(gp1.geom, 3857));"
+    geomPoint = Point(p1.long, p1.lat)
+    query = '''
+                SELECT 
+                    ST_AsGeoJSON(
+                        ST_Centroid(
+                            ST_FlipCoordinates(h.geom)
+                        )
+                    )::json AS st_asgeojson
+                FROM 
+                    hexagrid as h
+                WHERE 
+                    ST_Intersects(
+                        h.geom, ST_GeomFromWKB(%(geom)s::geometry, 3857)
+                    );
+            '''
 
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
+   
+    df = await pd.read_sql_query(query, engine,params={'geom': geomPoint.wkb_hex})
 
-    if len(result) == 0:
+    if len(df) == 0:
         logger.error('Could not find the given coordinates')
         raise HTTPException(status_code=404, detail='Could not find the given coordinates')
-    polygon = result['st_asgeojson'][0]['coordinates']
+        
+    polygon = df['st_asgeojson'][0]['coordinates']
     
     return polygon
 

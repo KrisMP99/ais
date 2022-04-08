@@ -122,16 +122,18 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.time_id = time_dim.time_id AND
                                         data_fact.location = pil.geom AND
                                         data_fact.ship_type_id = ship_type_dim.ship_type_id AND
-                                        (ST_Within(
-                                                    ST_FlipCoordinates(pil.geom),
-                                                    %(hex1geom)s::geometry
-                                        ) OR
-                                        ST_Within(
-                                                    ST_FlipCoordinates(pil.geom),
-                                                    %(hex2geom)s::geometry
-                                        ))
+
                                     ORDER BY time_dim.time_id
                                     """
+
+                                        # (ST_Within(
+                                        #             ST_FlipCoordinates(pil.geom),
+                                        #             %(hex1geom)s::geometry
+                                        # ) OR
+                                        # ST_Within(
+                                        #             ST_FlipCoordinates(pil.geom),
+                                        #             %(hex2geom)s::geometry
+                                        # ))
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \
@@ -158,8 +160,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         }
         )
     print(df)
-    #hexagons_list = df['hexgeomID'].unique().tolist()
-    #group = df.groupby(by=['hexgeomID'])
+    hexagons_list = df['hexgeomid'].unique().tolist()
+    group = df.groupby(by=['hexgeomid'])
     
     # if group.ngroups == 0: # find centroids for points closest to both hexagons
     #     print('heeej')

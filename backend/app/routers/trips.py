@@ -92,7 +92,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('got linestrings')
 
     linestring_points_query =   """
-                                WITH points_in_linestring AS (
+                                
                                     SELECT
                                         ST_PointN(
                                             std.line_string,
@@ -107,7 +107,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         ) AND
                                         h.hid = %(hex1hid)s OR
                                         h.hid = %(hex2hid)s
-                                )"""
+                                """
 
     point_exists_in_hexagon_query = f"""{linestring_points_query}
                                     SELECT
@@ -158,8 +158,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         }
         )
     print(df)
-    hexagons_list = df['hid'].unique().tolist()
-    group = df.groupby(by=['hid'])
+    # hexagons_list = df['hid'].unique().tolist()
+    # group = df.groupby(by=['hid'])
     
     # if group.ngroups == 0: # find centroids for points closest to both hexagons
     #     print('heeej')

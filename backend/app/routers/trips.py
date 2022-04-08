@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
+from app.models.hexagon import Hexagon
 from app.db.database import engine, Session
-from geojson import Point, Polygon
+from geojson import Point
+from shapely import wkb
 import asyncio
 import pandas as pd
 import numpy as np
@@ -22,7 +24,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     gp2 = Point((p2.long, p2.lat))
     print('start')
     # First we select the two polygon where the points choosen reside
-    polygon_query = f"WITH point1 AS (                                              \
+    hexagon_query = f"WITH point1 AS (                                              \
                         SELECT                                                      \
                             ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom),        \
                                                                                     \
@@ -39,43 +41,45 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                         ST_Intersects(h.geom, ST_SetSRID(point2.geom, 3857));"
 
     print('tried gettings hexagons')
-    polygons = []
+    hexagons = []
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, pd.read_sql_query, polygon_query, engine)
-    if len(result['st_asgeojson']) <= 1:
+    df = await loop.run_in_executor(None, pd.read_sql_query, hexagon_query, engine)
+    if len(df) < 2:
         logger.error('The two coordinates intersect with each other')
         return []
-    polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
-    polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
+    
+    for row in df.itertuples():
+        hexagons.append(Hexagon(hid=row.hid, geom=row.geom))
 
     print('Got hexagons. Began getting linestrings')
-    hexagon_query = f"hexagons AS (                                                             \
-                            SELECT                                                              \
-                                ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[0]}')) AS hex1,               \
-                                ST_AsText(                                                      \
-                                    ST_GeomFromGeoJSON('{polygons[1]}')) AS hex2) "
 
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = f"WITH {hexagon_query}                                                   \
-                        SELECT                                                                  \
+    linestring_query = """SELECT                                                                 \
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
                         FROM                                                                    \
-                            simplified_trip_dim AS std, hexagons                                \
+                            simplified_trip_dim AS std                                          \
                         WHERE                                                                   \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_SetSRID(hexagons.hex1, 3857)                                 \
+                                ST_FlipCoordinates(%(hex1geom)s::geometry)              \
                             ) AND                                                               \
                             ST_Intersects(                                                      \
                                 ST_FlipCoordinates(std.line_string),                            \
-                                ST_SetSRID(hexagons.hex2, 3857)                                 \
-                            );"
+                                ST_FlipCoordinates(%(hex2geom)s::geometry)                         \
+                            );"""
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     linestrings = []
-    for chunk in pd.read_sql_query(linestring_query, engine, chunksize=50000):
+    for chunk in pd.read_sql_query(
+                        linestring_query, 
+                        engine, 
+                        params=
+                        {
+                            "hex1geom": hexagons[0].geom, 
+                            "hex2geom": hexagons[1].geom
+                        }, 
+                        chunksize=50000):
         if len(chunk) != 0:
             for json in chunk['st_asgeojson']:
                 if json is not None:
@@ -158,33 +162,33 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                                 LIMIT 1                                                                     \
     #                             )"
 
-    loop = asyncio.get_event_loop()
-    df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    hexagons_list = df['hexgeom'].unique().tolist()
-    group = df.groupby(by=['hexgeom'])
+    # loop = asyncio.get_event_loop()
+    # df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
+    # hexagons_list = df['hexgeom'].unique().tolist()
+    # group = df.groupby(by=['hexgeom'])
     
-    if group.ngroups == 0: # find centroids for points closest to both hexagons
-        print('heeej')
-    elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
-        hex1_df = group.get_group(hexagons_list[0])
-    else:     
-        hex1_df = group.get_group(hexagons_list[0])
-        hex2_df = group.get_group(hexagons_list[1])
+    # if group.ngroups == 0: # find centroids for points closest to both hexagons
+    #     print('heeej')
+    # elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
+    #     hex1_df = group.get_group(hexagons_list[0])
+    # else:     
+    #     hex1_df = group.get_group(hexagons_list[0])
+    #     hex2_df = group.get_group(hexagons_list[1])
 
-        countSeries = df['hexgeom'].value_counts()
-        print('Prints in else')
-        pointsInHex1 = countSeries[0]
-        print(pointsInHex1)
-        pointsInHex2 = countSeries[1]
-        print(pointsInHex2)
-        print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
-        if pointsInHex1 != pointsInHex2:
-            if pointsInHex1 > pointsInHex2:
-                diff = pointsInHex1 - pointsInHex2
-                hex1_df = hex1_df.iloc[:-diff]
-            else:
-                diff = pointsInHex2 - pointsInHex1
-                hex2_df = hex2_df.iloc[:-diff]
+    #     countSeries = df['hexgeom'].value_counts()
+    #     print('Prints in else')
+    #     pointsInHex1 = countSeries[0]
+    #     print(pointsInHex1)
+    #     pointsInHex2 = countSeries[1]
+    #     print(pointsInHex2)
+    #     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
+    #     if pointsInHex1 != pointsInHex2:
+    #         if pointsInHex1 > pointsInHex2:
+    #             diff = pointsInHex1 - pointsInHex2
+    #             hex1_df = hex1_df.iloc[:-diff]
+    #         else:
+    #             diff = pointsInHex2 - pointsInHex1
+    #             hex2_df = hex2_df.iloc[:-diff]
         
 
 
@@ -223,8 +227,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     # else:
     #     print('shit went wrong with length of ' + len(result))
     
-
-    return linestrings
+    return []
+    #return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \
     #                                 DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
     #                                     CASE                                                                    \

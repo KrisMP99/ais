@@ -92,47 +92,49 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('got linestrings')
 
     linestring_points_query =   """
-                                SELECT DISTINCT
-                                    ST_PointN(
-                                        std.line_string,
-                                        generate_series(1, ST_NPoints(std.line_string))
-                                    ) AS geom, std.simplified_trip_id
-                                FROM
-                                    simplified_trip_dim AS std
-                                WHERE
-                                    ST_Intersects(
-                                        ST_FlipCoordinates(std.line_string),
-                                        %(hex1geom)s::geometry
-                                    ) AND
-                                    ST_Intersects(
-                                        ST_FlipCoordinates(std.line_string),
-                                        %(hex2geom)s::geometry
-                                    );
+                                points_in_linestring AS (
+                                    SELECT DISTINCT
+                                        ST_PointN(
+                                            std.line_string,
+                                            generate_series(1, ST_NPoints(std.line_string))
+                                        ) AS geom, std.simplified_trip_id
+                                    FROM
+                                        simplified_trip_dim AS std
+                                    WHERE
+                                        ST_Intersects(
+                                            ST_FlipCoordinates(std.line_string),
+                                            %(hex1geom)s::geometry
+                                        ) AND
+                                        ST_Intersects(
+                                            ST_FlipCoordinates(std.line_string),
+                                            %(hex2geom)s::geometry
+                                        )
+                                )
                                 """
 
-    # point_exists_in_hexagon_query = f"""{linestring_points_query}
-    #                                 SELECT
-    #                                     date_dim.date_id, time_dim.time_id,
-    #                                     data_fact.sog, pil.geom, ship_type_dim.ship_type
+    point_exists_in_hexagon_query = f"""{linestring_points_query}
+                                    SELECT
+                                        date_dim.date_id, time_dim.time_id,
+                                        data_fact.sog, pil.geom, ship_type_dim.ship_type
 
-    #                                 FROM
-    #                                     points_in_linestring AS pil, data_fact, date_dim, time_dim, ship_type_dim
-    #                                 WHERE
-    #                                     data_fact.simplified_trip_id = pil.simplified_trip_id AND
-    #                                     data_fact.date_id = date_dim.date_id AND
-    #                                     data_fact.time_id = time_dim.time_id AND
-    #                                     data_fact.location = pil.geom AND
-    #                                     data_fact.ship_type_id = ship_type_dim.ship_type_id AND
-    #                                     (ST_Within(
-    #                                                 ST_FlipCoordinates(pil.geom),
-    #                                                 %(hex1geom)s::geometry
-    #                                     ) OR
-    #                                     ST_Within(
-    #                                                 ST_FlipCoordinates(pil.geom),
-    #                                                 %(hex2geom)s::geometry
-    #                                     ))
-    #                                 ORDER BY time_dim.time_id
-    #                                 """
+                                    FROM
+                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, ship_type_dim
+                                    WHERE
+                                        data_fact.simplified_trip_id = pil.simplified_trip_id AND
+                                        data_fact.date_id = date_dim.date_id AND
+                                        data_fact.time_id = time_dim.time_id AND
+                                        data_fact.location = pil.geom AND
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND
+                                        (ST_Within(
+                                                    ST_FlipCoordinates(pil.geom),
+                                                    %(hex1geom)s::geometry
+                                        ) OR
+                                        ST_Within(
+                                                    ST_FlipCoordinates(pil.geom),
+                                                    %(hex2geom)s::geometry
+                                        ))
+                                    ORDER BY time_dim.time_id
+                                    """
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \
@@ -149,7 +151,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                             )"
 
     df = pd.read_sql_query( 
-        linestring_points_query, 
+        point_exists_in_hexagon_query, 
         engine,
         params={
             'hex1hid': hexagons[0].hid,

@@ -102,11 +102,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 WHERE
                                     ST_Intersects(
                                         ST_FlipCoordinates(std.line_string),
-                                        (hex1geom)s::geometry
+                                        %(hex1geom)s::geometry
                                     ) AND
                                     ST_Intersects(
                                         ST_FlipCoordinates(std.line_string),
-                                        (hex2geom)s::geometry
+                                        %(hex2geom)s::geometry
                                     );
                                 """
 

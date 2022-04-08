@@ -118,8 +118,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     point_exists_in_hexagon_query = f"""{linestring_points_query}
                                     SELECT
                                         date_dim.date_id, time_dim.time_id,
-                                        data_fact.sog, pil.geom, ship_type_dim.ship_type
-                                        hexagrid.hid
+                                        data_fact.sog, pil.geom, ship_type_dim.ship_type,
+                                        h.hid
 
                                     FROM
                                         hexagrid AS h, data_fact

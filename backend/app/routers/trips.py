@@ -175,19 +175,18 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     hexagons_list = df['hid'].unique().tolist()
     group = df.groupby(by=['hid'])
     
+    hex1_df = None
+    hex2_df = None
+    
     print('Number of groups ', group.ngroups)
 
     if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('heeej')
     elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
         # Find which hexagon has no points
-        hexagon_points_to_find = None
         for hex in hexagons:
             if hex.hid not in hexagons_list:
-                hexagon_points_to_find = hex
-        print('hexagon found ', hexagons_list)
-        print('hexagon we must find ', hexagon_points_to_find.hid)
-        #hex1_df = group.get_group(hexagons_list[0])
+                hexagon_to_find = hex
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])
     #     hex2_df = group.get_group(hexagons_list[1])

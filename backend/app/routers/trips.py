@@ -76,6 +76,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     linestrings = []
+    
+    # Fills the linestring array, so we can return linestrings to frontend
     for chunk in pd.read_sql_query(
                         linestring_query, 
                         engine, 
@@ -94,6 +96,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
     print('Got linestrings')
 
+    # Select all points in the linestrings insecting the hexagons
     linestring_points_query =   """
                                 WITH points_in_linestring AS (
                                     SELECT DISTINCT
@@ -114,7 +117,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         )
                                 )
                                 """
-
+    # Select points that intersect with either of the hexagons
     point_exists_in_hexagon_query = f"""{linestring_points_query}
                                     SELECT
                                         date_dim.date_id, time_dim.time_id,
@@ -160,25 +163,29 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                             )"
 
     df = pd.read_sql_query( 
-        point_exists_in_hexagon_query, 
-        engine,
-        params={
-            'hex1hid': hexagons[0].hid,
-            'hex1geom': hexagons[0].geom,
-            'hex2hid': hexagons[1].hid,
-            'hex2geom': hexagons[1].geom
-        }
+            point_exists_in_hexagon_query, 
+            engine,
+            params={
+                'hex1hid': hexagons[0].hid,
+                'hex1geom': hexagons[0].geom,
+                'hex2hid': hexagons[1].hid,
+                'hex2geom': hexagons[1].geom
+            }
         )
-    print(df, 'first df')
     hexagons_list = df['hid'].unique().tolist()
-    print(hexagons_list, 'second')
     group = df.groupby(by=['hid'])
-    print(group, 'third')
     
-    # if group.ngroups == 0: # find centroids for points closest to both hexagons
-    #     print('heeej')
-    # elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
-    #     hex1_df = group.get_group(hexagons_list[0])
+    if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
+        print('heeej')
+    elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
+        # Find which hexagon has no points
+        hexagon_points_to_find = None
+        for hex in hexagons['hid']:
+            if hex not in hexagons_list:
+                hexagon_points_to_find = hexagons.index(hex)
+                print('hexagon found ', hexagons_list)
+                print('hexagon we must find ', hexagon_points_to_find)
+        #hex1_df = group.get_group(hexagons_list[0])
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])
     #     hex2_df = group.get_group(hexagons_list[1])

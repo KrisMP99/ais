@@ -19,19 +19,21 @@ router = APIRouter(
 @router.post('/hexagon')
 async def get_hexagon(p1: Coordinate):
     gp1 = Point((p1.long, p1.lat))
-    query = f"WITH gp1 AS (\
-                SELECT ST_AsText(\
-                    ST_GeomFromGeoJSON('{gp1}')\
-                ) As geom\
-            )\
-                \
-            SELECT \
-                ST_AsGeoJSON(ST_FlipCoordinates(h.geom))::json AS st_asgeojson, h.hid\
-            FROM \
-                hexagrid as h, gp1\
-            WHERE \
-                ST_Intersects(\
-                    h.geom, ST_SetSRID(gp1.geom, 3857)\
+    query = f"WITH gp1 AS (                                                             \
+                SELECT ST_AsText(                                                       \
+                    ST_GeomFromGeoJSON('{gp1}')                                         \
+                ) As geom                                                               \
+            )                                                                           \
+                                                                                        \
+            SELECT                                                                      \
+                ST_AsGeoJSON(                                                           \
+                    ST_FlipCoordinates(h.geom)                                          \
+                )::json AS st_asgeojson, h.hid                                          \
+            FROM                                                                        \
+                hexagrid as h, gp1                                                      \
+            WHERE                                                                       \
+                ST_Intersects(                                                          \
+                    h.geom, ST_SetSRID(gp1.geom, 3857)                                  \
                 );"
 
     #     query = f"WITH gp1 AS (\

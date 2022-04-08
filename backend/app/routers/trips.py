@@ -168,7 +168,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     countSeries = df['hexgeom'].value_counts()
 
     pointsInHex1 = countSeries[0]
+    print(pointsInHex1)
     pointsInHex2 = countSeries[1]
+    print(pointsInHex2)
     print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
     if pointsInHex1 != pointsInHex2:
         if pointsInHex1 > pointsInHex2:

@@ -24,7 +24,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     geomp2 = Point(p2.long, p2.lat)
     print('start')
     # First we select the two polygon where the points choosen reside
-    hexagon_query = """                                                         
+    hexagon_query = '''                                                         
                         SELECT                                                          
                             h.hid, h.geom                                               
                         FROM                                                            
@@ -36,7 +36,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             ST_Intersects(
                                 h.geom, ST_GeomFromWKB(%(p2)s::geometry, 3857)
                             );
-                    """
+                    '''
 
     print('tried gettings hexagons')
     hexagons = []
@@ -57,7 +57,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('Got hexagons. Began getting linestrings')
 
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query =  """
+    linestring_query =  '''
                         SELECT
                             ST_AsGeoJSON(std.line_string)::json AS st_asgeojson
                         FROM
@@ -71,7 +71,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 ST_FlipCoordinates(std.line_string),
                                 %(hex2geom)s::geometry
                             );
-                        """
+                        '''
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
@@ -97,7 +97,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('Got linestrings')
 
     # Select all points in the linestrings insecting the hexagons
-    linestring_points_query =   """
+    linestring_points_query =   '''
                                 WITH points_in_linestring AS (
                                     SELECT DISTINCT
                                         ST_PointN(
@@ -116,9 +116,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                             %(hex2geom)s::geometry
                                         )
                                 )
-                                """
+                                '''
     # Select points that intersect with either of the hexagons
-    point_exists_in_hexagon_query = f"""{linestring_points_query}
+    point_exists_in_hexagon_query = f'''{linestring_points_query}
                                     SELECT
                                         date_dim.date_id, time_dim.time_id,
                                         data_fact.sog, pil.geom, ship_type_dim.ship_type,
@@ -146,7 +146,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                             h.hid = %(hex2hid)s)
                                         )
                                     ORDER BY time_dim.time_id
-                                    """
+                                    '''
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \
@@ -174,9 +174,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         )
     hexagons_list = df['hid'].unique().tolist()
     group = df.groupby(by=['hid'])
-    
-    hex1_df = None
-    hex2_df = None
     
     print('Number of groups ', group.ngroups)
 

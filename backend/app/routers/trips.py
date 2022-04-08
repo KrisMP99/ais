@@ -185,8 +185,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         for hex in hexagons:
             if hex.hid not in hexagons_list:
                 hexagon_points_to_find = hex
-                print('hexagon found ', hexagons_list)
-                print('hexagon we must find ', hexagon_points_to_find)
+        print('hexagon found ', hexagons_list)
+        print('hexagon we must find ', hexagon_points_to_find.hid)
         #hex1_df = group.get_group(hexagons_list[0])
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])

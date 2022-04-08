@@ -45,7 +45,7 @@ def add_id(row, simplified_trip_df: gpd.GeoDataFrame):
     row['simplified_trip_id'] = None
     for x, y in zip(coords[0], coords[1]):
         for point in row.itertuples(name=None):
-            point_x_y = point[2].xy
+            point_x_y = point[21].xy
             if x == point_x_y[0][0] and y == point_x_y[1][0]:
                 row['simplified_trip_id'] = trip_id
                 break
@@ -54,7 +54,8 @@ def add_id(row, simplified_trip_df: gpd.GeoDataFrame):
     
 # TODO: Change prints to logging    
 def add_simplified_trip_ids(df: gpd.GeoDataFrame, simplified_trip_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    df = df.groupby(by='trip_id', as_index=False)[['trip_id', 'geometry']].apply(lambda x: add_id(x, simplified_trip_df))
+    df = df.groupby(by='trip_id', as_index=False).apply(lambda x: add_id(x, simplified_trip_df))
+    # df = gpd.GeoDataFrame(df, geometry='geometry', crs="EPSG:3857")
 
     # df = df.drop(columns=['point'])
     # data: gpd.GeoDataFrame

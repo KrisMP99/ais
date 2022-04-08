@@ -167,10 +167,11 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     #     lookupatts=['line_string']
     # )
 
-    fact_table = FactTable(
+    fact_table = BatchFactTable(
         name='data_fact',
         keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id'],
         measures=['location','rot','sog','cog','heading','draught','destination'],
+        batchsize=500000,
         targetconnection=conn_wrapper
     )
 

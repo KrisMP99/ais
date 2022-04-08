@@ -129,14 +129,19 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         INNER JOIN points_in_linestring AS pil ON pil.simplified_trip_id = data_fact.simplified_trip_id
                                     WHERE
                                         data_fact.location = pil.geom AND
-                                        ((ST_Within(
+                                        (
+                                            (ST_Within(
                                                     ST_FlipCoordinates(pil.geom),
                                                     %(hex1geom)s::geometry
-                                        ) AND hexagrid.hid = %(hex1hid)s)  OR
-                                        (ST_Within(
+                                            ) AND 
+                                            hexagrid.hid = %(hex1hid)s) OR
+                                            
+                                            (ST_Within(
                                                     ST_FlipCoordinates(pil.geom),
                                                     %(hex2geom)s::geometry
-                                        ) AND hexagrid.hid = %(hex2hid)s))
+                                            ) AND 
+                                            hexagrid.hid = %(hex2hid)s)
+                                        )
                                     ORDER BY time_dim.time_id
                                     """
 

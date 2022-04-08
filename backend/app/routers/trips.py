@@ -92,7 +92,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('got linestrings')
 
     linestring_points_query =   """
-                                SELECT DISCTINCT
+                                SELECT DISTINCT
                                     ST_PointN(
                                         std.line_string,
                                         generate_series(1, ST_NPoints(std.line_string))

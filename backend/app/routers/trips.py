@@ -54,19 +54,21 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('Got hexagons. Began getting linestrings')
 
     # Then we select all linestrings that intersect with the two polygons
-    linestring_query = """SELECT                                                                 \
-                            ST_AsGeoJSON(std.line_string)::json AS st_asgeojson                 \
-                        FROM                                                                    \
-                            simplified_trip_dim AS std                                          \
-                        WHERE                                                                   \
-                            ST_Intersects(                                                      \
-                                ST_FlipCoordinates(std.line_string),                            \
-                                %(hex1geom)s::geometry              \
-                            ) AND                                                               \
-                            ST_Intersects(                                                      \
-                                ST_FlipCoordinates(std.line_string),                            \
-                                %(hex2geom)s::geometry                         \
-                            );"""
+    linestring_query =  """
+                        SELECT
+                            ST_AsGeoJSON(std.line_string)::json AS st_asgeojson
+                        FROM
+                            simplified_trip_dim AS std
+                        WHERE
+                            ST_Intersects(
+                                ST_FlipCoordinates(std.line_string),
+                                %(hex1geom)s::geometry
+                            ) AND
+                            ST_Intersects(
+                                ST_FlipCoordinates(std.line_string),
+                                %(hex2geom)s::geometry
+                            );
+                        """
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
@@ -89,64 +91,47 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
     print('got linestrings')
 
-    linestring_points_query = f"WITH {hexagon_query},                                                                              \
-                    points_in_linestring AS (                                                       \
-                        SELECT                                                                      \
-                            ST_PointN(                                                              \
-                                std.line_string,                                                    \
-                                generate_series(1, ST_NPoints(std.line_string))                     \
-                            ) AS geom, std.simplified_trip_id                                       \
-                        FROM                                                                        \
-                            simplified_trip_dim AS std, hexagons                                    \
-                        WHERE                                                                       \
-                            ST_Intersects(                                                          \
-                                ST_FlipCoordinates(std.line_string),                                \
-                                ST_SetSRID(hexagons.hex1, 3857)                                     \
-                            ) AND                                                                   \
-                            ST_Intersects(                                                          \
-                                ST_FlipCoordinates(std.line_string),                                \
-                                ST_SetSRID(hexagons.hex2, 3857)                                     \
-                            )                                                                       \
-                    )"
+    linestring_points_query =   """
+                                WITH points_in_linestring AS (
+                                    SELECT
+                                        ST_PointN(
+                                            std.line_string,
+                                            generate_series(1, ST_NPoints(std.line_string))
+                                        ) AS geom, std.simplified_trip_id, h.hid
+                                    FROM
+                                        simplified_trip_dim AS std, hexagrid AS h
+                                    WHERE
+                                        ST_Intersects(
+                                            ST_FlipCoordinates(std.line_string),
+                                            h.geom
+                                        ) AND
+                                        h.hid = %(hex1hid)s OR
+                                        h.hid = %(hex2hid)s
+                                )"""
 
-    point_exists_in_hexagon_query = f"{linestring_points_query}                                                 \
-                                    SELECT                                                                      \
-                                        DISTINCT date_dim.date_id, time_dim.time_id, data_fact.sog, pil.geom,      \
-                                        ship_type_dim.ship_type,                                                \
-                                        CASE                                                                    \
-                                            WHEN                                                                \
-                                                ST_Within(                                                      \
-                                                    ST_FlipCoordinates(pil.geom),                               \
-                                                    ST_SetSRID(hexagons.hex1, 3857))                            \
-                                                THEN (                                                          \
-                                                    SELECT                                                      \
-                                                        hexagons.hex1                                           \
-                                                    FROM hexagons                                               \
-                                                )                                                               \
-                                            ELSE (                                                              \
-                                                SELECT                                                          \
-                                                    hexagons.hex2                                               \
-                                                FROM hexagons                                                   \
-                                            )                                                                   \
-                                        END AS hexgeom                                                          \
-                                    FROM                                                                        \
-                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, hexagons,   \
-                                        ship_type_dim                                                           \
-                                    WHERE                                                                       \
-                                        data_fact.simplified_trip_id = pil.simplified_trip_id AND               \
-                                        data_fact.date_id = date_dim.date_id AND                                \
-                                        data_fact.time_id = time_dim.time_id AND                                \
-                                        data_fact.location = pil.geom AND                                       \
-                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND                 \
-                                        (ST_Within(                                                             \
-                                                    ST_FlipCoordinates(pil.geom),                               \
-                                                    ST_SetSRID(hexagons.hex1, 3857)                             \
-                                        ) OR                                                                    \
-                                        ST_Within(                                                              \
-                                                    ST_FlipCoordinates(pil.geom),                               \
-                                                    ST_SetSRID(hexagons.hex2, 3857)                             \
-                                        ))                                                                                                                            \
-                                    ORDER BY time_dim.time_id"
+    point_exists_in_hexagon_query = f"""{linestring_points_query}
+                                    SELECT
+                                        DISTINCT date_dim.date_id, time_dim.time_id,
+                                        data_fact.sog, pil.geom, ship_type_dim.ship_type, pil.hid AS hexgeomID
+
+                                    FROM
+                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, ship_type_dim
+                                    WHERE
+                                        data_fact.simplified_trip_id = pil.simplified_trip_id AND
+                                        data_fact.date_id = date_dim.date_id AND
+                                        data_fact.time_id = time_dim.time_id AND
+                                        data_fact.location = pil.geom AND
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND
+                                        (ST_Within(
+                                                    ST_FlipCoordinates(pil.geom),
+                                                    %(hex1hid)s
+                                        ) OR
+                                        ST_Within(
+                                                    ST_FlipCoordinates(pil.geom),
+                                                    %(hex2geom)s
+                                        ))
+                                    ORDER BY time_dim.time_id
+                                    """
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \
@@ -162,10 +147,18 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                                 LIMIT 1                                                                     \
     #                             )"
 
-    # loop = asyncio.get_event_loop()
-    # df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
-    # hexagons_list = df['hexgeom'].unique().tolist()
-    # group = df.groupby(by=['hexgeom'])
+    df = pd.read_sql_query( 
+        point_exists_in_hexagon_query, 
+        engine,
+        params={
+            'hex1hid': hexagons[0].hid,
+            'hex1geom': hexagons[0].geom,
+            'hex2hid': hexagons[1].hid,
+            'hex2geom': hexagons[1].geom
+        }
+        )
+    hexagons_list = df['hexgeom'].unique().tolist()
+    group = df.groupby(by=['hexgeom'])
     
     # if group.ngroups == 0: # find centroids for points closest to both hexagons
     #     print('heeej')

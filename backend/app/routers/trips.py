@@ -227,8 +227,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     # else:
     #     print('shit went wrong with length of ' + len(result))
     
-    return []
-    #return linestrings
+    return linestrings
     # linestring_query_hexagon = f"SELECT                                                                          \
     #                                 DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
     #                                     CASE                                                                    \

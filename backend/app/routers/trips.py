@@ -101,7 +101,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     simplified_trip_dim AS std, hexagrid AS h
                                 WHERE
                                     ST_Intersects(
-                                        ST_FlipCoordinates(std.line_string),
+                                        std.line_string,
                                         h.geom
                                     ) AND
                                     h.hid = %(hex1hid)s OR

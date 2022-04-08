@@ -124,11 +124,11 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.ship_type_id = ship_type_dim.ship_type_id AND
                                         (ST_Within(
                                                     ST_FlipCoordinates(pil.geom),
-                                                    %(hex1hid)s
+                                                    %(hex1geom)s::geometry
                                         ) OR
                                         ST_Within(
                                                     ST_FlipCoordinates(pil.geom),
-                                                    %(hex2geom)s
+                                                    %(hex2geom)s::geometry
                                         ))
                                     ORDER BY time_dim.time_id
                                     """

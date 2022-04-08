@@ -111,8 +111,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     point_exists_in_hexagon_query = f"""{linestring_points_query}
                                     SELECT
-                                        DISTINCT date_dim.date_id, time_dim.time_id,
-                                        data_fact.sog, pil.geom, ship_type_dim.ship_type, pil.hid AS hexgeomID
+                                        date_dim.date_id, time_dim.time_id,
+                                        data_fact.sog, pil.geom, ship_type_dim.ship_type, pil.hid
 
                                     FROM
                                         points_in_linestring AS pil, data_fact, date_dim, time_dim, ship_type_dim
@@ -158,8 +158,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         }
         )
     print(df)
-    hexagons_list = df['hexgeomid'].unique().tolist()
-    group = df.groupby(by=['hexgeomid'])
+    hexagons_list = df['hid'].unique().tolist()
+    group = df.groupby(by=['hid'])
     
     # if group.ngroups == 0: # find centroids for points closest to both hexagons
     #     print('heeej')

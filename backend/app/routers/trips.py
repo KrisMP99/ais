@@ -121,7 +121,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.date_id = date_dim.date_id AND
                                         data_fact.time_id = time_dim.time_id AND
                                         data_fact.location = pil.geom AND
-                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id
 
                                     ORDER BY time_dim.time_id
                                     """

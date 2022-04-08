@@ -3,6 +3,7 @@ from app.dependencies import get_token_header, get_logger
 from app.db.database import engine, Session
 from app.models.coordinate import Coordinate
 from geojson import Point
+from shapely.geometry import Polygon
 import asyncio
 import pandas as pd
 
@@ -19,18 +20,37 @@ router = APIRouter(
 async def get_hexagon(p1: Coordinate):
     gp1 = Point((p1.long, p1.lat))
     query = f"WITH gp1 AS (\
-    SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom)\
-    SELECT ST_AsGeoJSON(ST_FlipCoordinates(h.geom))::json AS st_asgeojson\
-    FROM hexagrid as h, gp1\
-    WHERE ST_Intersects(h.geom, ST_SetSRID(gp1.geom, 3857));"
+                SELECT ST_AsText(\
+                    ST_GeomFromGeoJSON('{gp1}')\
+                ) As geom\
+            )\
+                \
+            SELECT \
+                ST_AsGeoJSON(ST_FlipCoordinates(h.geom))::json AS st_asgeojson, h.hid\
+            FROM \
+                hexagrid as h, gp1\
+            WHERE \
+                ST_Intersects(\
+                    h.geom, ST_SetSRID(gp1.geom, 3857)\
+                );"
+
+    #     query = f"WITH gp1 AS (\
+    # SELECT ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom)\
+    # SELECT ST_AsGeoJSON(ST_FlipCoordinates(h.geom))::json AS st_asgeojson\
+    # FROM hexagrid as h, gp1\
+    # WHERE ST_Intersects(h.geom, ST_SetSRID(gp1.geom, 3857));"
 
     loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
+    df = await loop.run_in_executor(None, pd.read_sql_query, query, engine)
 
-    if len(result) == 0:
+    if len(df) == 0:
         logger.error('Could not find the given coordinates')
         raise HTTPException(status_code=404, detail='Could not find the given coordinates')
-    polygon = result['st_asgeojson'][0]['coordinates'][0]
+    
+    polygon = {
+        'hid': df['hid'].to_list()[0],
+        'geom': df['st_asgeojson'][0]['coordinates'][0]
+    } 
 
     return polygon
 

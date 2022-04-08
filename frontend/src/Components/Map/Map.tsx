@@ -1,7 +1,7 @@
 import React from 'react';
-import './Map.css';   
-import '../../Leaflet.css';
-import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
+import './Map.css';
+import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
+import '../../Leaflet.css'; 
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';
@@ -14,12 +14,20 @@ interface DKMapProps {
 
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
-    polylines: LatLng[];
+    polylines: LatLng[][];
 }
 
 interface DKMapStates {
     points: LatLng[];
     hexPolygons: L.Polygon[];
+}
+
+function getPolylineColor(){
+    return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
+}
+
+function createPolyline(polyline: LatLng[], key: number){
+    return <Polyline positions={polyline} key={key} color={getPolylineColor()} weight={5}/>
 }
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
@@ -80,6 +88,10 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         return null;
                     }}
                 </MapConsumer>
+                {this.props.polylines.map((polyline, key) => createPolyline(polyline, key))}
+                <Polyline
+                    positions={this.props.polylines}
+                />
                 <MapEvents 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}
@@ -114,7 +126,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
 
     protected async fetchHexagon(point: LatLng) {
         let styling = {
-
+            
         }
         const requestOptions = {
             method: 'POST',
@@ -132,18 +144,25 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 )
         };
         fetch('http://' + process.env.REACT_APP_API! + '/hexagrids/hexagon', requestOptions)
-        .then(response => response.json())
-        .then((data: L.LatLngExpression[][]) => {
-            let temp: L.Polygon[] = this.state.hexPolygons;         
-            temp.push(new L.Polygon(data, {
-                opacity: 0,
-                fillOpacity: 1,
-                fillColor: "#000000"
-            }));
-            if(temp.length == 1) {
-                temp[0].bindPopup("Choose a point further from your first point!");
+        .then((response) => {
+            if(!response.ok){
+                return null;
+            } 
+            else return response.json();
+        })
+        .then((data: L.LatLngExpression[][] | null) => {
+            if (data){
+                let temp: L.Polygon[] = this.state.hexPolygons;         
+                temp.push(new L.Polygon(data, {
+                    opacity: 0,
+                    fillOpacity: 1,
+                    fillColor: "#000000"
+                }));
+                if(temp.length === 1) {
+                    temp[0].bindPopup("Choose a point further from your first point!");
+                }
+                this.setState({hexPolygons: temp});
             }
-            this.setState({hexPolygons: temp});
         });
     }
 

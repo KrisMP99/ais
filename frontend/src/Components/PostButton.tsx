@@ -3,7 +3,8 @@ import { LatLng } from 'leaflet';
 
 interface PostButtonProps {
     coordinates: LatLng[];
-    getData: (data: LatLng[]) => void;
+    shipTypeArray: string[];
+    getData: (data: LatLng[][]) => void;
 }
 interface PostButtonStates {
 
@@ -49,8 +50,15 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
         };
     
         fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions)
-        .then(response => response.json())
-        .then(data => this.props.getData(data))
+        .then((response) => {
+            if(!response.ok){
+                return null;
+            } 
+            else return response.json();
+          })
+        .then((data) => {
+            if(data) return this.props.getData(data);
+        })
       };
 }
 

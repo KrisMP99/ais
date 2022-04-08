@@ -1,26 +1,33 @@
-import { LatLng } from 'leaflet';
-import React, { useState } from 'react';
+import { LatLng, LatLngBoundsExpression } from 'leaflet';
+import React from 'react';
 import './App.css';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
+import { ShipTypeFilter } from './Components/ShipTypeFilter';
 import './Leaflet.css';
 
-interface AppProps {
-
-}
 interface AppStates {
   pointCoords: LatLng[];
+  filterShipTypes: string[];
+  mouseCoords: string[];
+  polylines: LatLng[][];
 }
 
+export class App extends React.Component<any, AppStates> {
 
-export class App extends React.Component<AppProps, AppStates> {
-  // const [pointCoords, setPointCoords] = useState([])
-  // var pointCoords: LatLngExpression[];
-  constructor(props: AppProps) {
+  protected mapCenter: LatLng;
+  protected mapBoundaries: LatLngBoundsExpression;
+
+  constructor(props: any) {
     super(props);
-
+    this.mapCenter = new LatLng(55.8581, 9.8476);
+    this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
     this.state = {
-      pointCoords: []
+      pointCoords: [],
+      mouseCoords: [],
+      polylines: [],
+      filterShipTypes: [],
+
     }
   }
 
@@ -30,16 +37,73 @@ export class App extends React.Component<AppProps, AppStates> {
       <div className='main'>
         <div className="main-container">
           <DKMap
+            mapCenter={this.mapCenter}
+            mapBounds={this.mapBoundaries}
             retCoords={(points: LatLng[]) => {
-              this.setState({pointCoords: points});
+              this.setState({ pointCoords: points });
             }}
+            retMousePos={(pos: string[]) => { this.setState({ mouseCoords: pos }); }}
+            polylines={this.state.polylines}
           />
-          <PostButton 
-            coords={this.state.pointCoords}
-          />
+          <div className='right-side'>
+            <div className='positions-container'>
+              <p className='text-1'>Positions:</p>
+              <div>
+                <p className='text-2'>
+                  Current mouse location:<br />
+                  Lat: {this.textIsNotUndefined(0, true)} Lng: {this.textIsNotUndefined(0, false)}
+                </p>
+                <p className='text-2'>
+                  Point 1:<br />
+                  Lat: {this.textIsNotUndefined(1, true)} Lng: {this.textIsNotUndefined(1, false)}
+                </p>
+                <p className='text-2'>
+                  Point 2:<br />
+                  Lat: {this.textIsNotUndefined(2, true)} Lng: {this.textIsNotUndefined(2, false)}
+                </p>
+              </div>
+              <PostButton
+                coordinates={this.state.pointCoords}
+                shipTypeArray={this.state.filterShipTypes}
+                getData={(data: LatLng[][]) => this.setState({ polylines: data })}
+              />
+            </div>
+            <div className='filter-container'>
+              <hr></hr>
+              <p className='ship-type-header'>Ship type filter</p>
+              <hr className='shorter-hr'></hr>
+              <ShipTypeFilter
+                returnShipType={(val) => {
+                  if (this.state.filterShipTypes.includes(val)) {
+                    this.state.filterShipTypes.splice(this.state.filterShipTypes.indexOf(val) + 1, 1)
+                    this.setState({ filterShipTypes: this.state.filterShipTypes })
+                    return;
+                  } else {
+                    this.state.filterShipTypes.push(val)
+                    this.setState({ filterShipTypes: this.state.filterShipTypes })
+                  }
+                }
+                }
+              />
+            </div>
+          </div>
         </div>
+
       </div>
     );
+  }
+
+  protected textIsNotUndefined(index: number, lat: boolean): string {
+    if (this.state.mouseCoords && index == 0) {
+      return lat ? this.state.mouseCoords[0] : this.state.mouseCoords[1];
+    }
+    if (this.state.pointCoords.length >= 1 && index == 1) {
+      return lat ? this.state.pointCoords[0].lat.toFixed(4) : this.state.pointCoords[0].lng.toFixed(4);
+    }
+    else if (this.state.pointCoords.length == 2 && index == 2) {
+      return lat ? this.state.pointCoords[1].lat.toFixed(4) : this.state.pointCoords[1].lng.toFixed(4);
+    }
+    return "0";
   }
 }
 

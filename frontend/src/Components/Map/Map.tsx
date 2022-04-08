@@ -1,23 +1,34 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, useMap } from 'react-leaflet';    
-import '../../Leaflet.css';
+import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
+import '../../Leaflet.css'; 
 import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
-import ClickMap from './PlacePoint';
+import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
 
 interface DKMapProps {
+    mapBounds: LatLngBoundsExpression;
+    mapCenter: LatLng;
+
     retCoords: (coords: LatLng[]) => void;
+    retMousePos: (pos: string[]) => void;
+    polylines: LatLng[][];
 }
 
 interface DKMapStates {
     points: LatLng[];
+    hexPolygons: L.Polygon[];
 }
 
-const MAP_CENTER: LatLng = new LatLng(55.8581, 9.8476);
-const MAP_BOUNDS: LatLngBoundsExpression = [[58.5, 3.2], [53.5, 16.5]];
+function getPolylineColor(){
+    return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
+}
+
+function createPolyline(polyline: LatLng[], key: number){
+    return <Polyline positions={polyline} key={key} color={getPolylineColor()} weight={5}/>
+}
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
@@ -25,13 +36,15 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     protected markerLayer: L.LayerGroup;
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
-    protected ignoreCountires: L.Layer[];
+    protected ignoreCountries: L.Layer[];
+    protected hexagons: L.Polygon[];
 
     constructor(props: DKMapProps) {
         super(props);
 
-        this.ignoreCountires = [];
+        this.ignoreCountries = [];
         this.countriesAdded = false;
+        this.hexagons = [];
 
         this.markerLayer = L.layerGroup();
         this.markerIcon = L.icon({
@@ -42,7 +55,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         });
 
         this.state = {
-            points: []
+            points: [],
+            hexPolygons: []
         }
     }
 
@@ -51,17 +65,53 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             <MapContainer
                 id='map'
                 className="map-container"
-                center={MAP_CENTER}
-                bounds={MAP_BOUNDS}
+                center={this.props.mapCenter}
+                // bounds={MAP_BOUNDS}
                 zoom={7}
-                minZoom={7}
-                maxZoom={12}
+                minZoom={5}
+                maxZoom={14}
                 scrollWheelZoom={true}
+                maxBounds={this.props.mapBounds}
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    bounds={MAP_BOUNDS}
+                    // bounds={MAP_BOUNDS}
                 />
+                <MapConsumer>
+                    {(map) => {
+                        if(!this.countriesAdded) { 
+                            this.addCountryPolygons(map);                        
+                        }
+                        this.state.hexPolygons.map((poly) => {
+                            return poly.addTo(map); 
+                        })
+                        return null;
+                    }}
+                </MapConsumer>
+                {this.props.polylines.map((polyline, key) => createPolyline(polyline, key))}
+                <Polyline
+                    positions={this.props.polylines}
+                />
+                <MapEvents 
+                    ignoreLayers={this.ignoreCountries}
+                    layerGroup={this.markerLayer}
+                    markerIcon={this.markerIcon}
+                    points={this.state.points}
+                    fetchHexagon={(point) => this.fetchHexagon(point)}
+                    retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
+                    addPoint={(point) => {
+                        this.state.points.push(point);
+                        this.fetchHexagon(point);
+                        this.props.retCoords(this.state.points);
+                        this.setState({points: this.state.points});
+                        }}
+                    clearPoints={() => {
+                        this.state.hexPolygons.forEach((hex)=>{
+                            hex.remove();
+                        })
+                        this.setState({points: [], hexPolygons: []});
+                    }}
+                ></MapEvents>
                 <MapConsumer>
                     {(map) => {
                         if(!this.countriesAdded) { 
@@ -70,31 +120,50 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         return null;
                     }}
                 </MapConsumer>
-                <ClickMap 
-                    ignoreLayers={this.ignoreCountires}
-                    layerGroup={this.markerLayer}
-                    markerIcon={this.markerIcon}
-                    points={this.state.points}
-                    addPoint={(point) => {
-                            if(this.state.points) {
-                                this.state.points.push(point);
-                                this.props.retCoords(this.state.points);
-                                this.setState({points: this.state.points});
-                            }
-                            else {
-                                let temp: LatLng[] = [];
-                                temp.push(point);
-                                this.setState({points: temp})
-                            }
-                        }}
-                    clearPoints={() => {
-                        this.state.points.pop();
-                        this.state.points.pop();
-                        this.setState({points: this.state.points});
-                    }}
-                />
             </MapContainer>
         );
+    }
+
+    protected async fetchHexagon(point: LatLng) {
+        let styling = {
+            
+        }
+        const requestOptions = {
+            method: 'POST',
+            headers: { 
+                'Accept': 'application/json', 
+                'Content-Type': 'application/json',
+                'x-token':  process.env.REACT_APP_TOKEN!,
+            },
+            body: 
+                JSON.stringify(
+                    {
+                        "long": point.lng,
+                        "lat": point.lat
+                    }
+                )
+        };
+        fetch('http://' + process.env.REACT_APP_API! + '/hexagrids/hexagon', requestOptions)
+        .then((response) => {
+            if(!response.ok){
+                return null;
+            } 
+            else return response.json();
+        })
+        .then((data: L.LatLngExpression[][] | null) => {
+            if (data){
+                let temp: L.Polygon[] = this.state.hexPolygons;         
+                temp.push(new L.Polygon(data, {
+                    opacity: 0,
+                    fillOpacity: 1,
+                    fillColor: "#000000"
+                }));
+                if(temp.length === 1) {
+                    temp[0].bindPopup("Choose a point further from your first point!");
+                }
+                this.setState({hexPolygons: temp});
+            }
+        });
     }
 
     protected addCountryPolygons(map: L.Map) {
@@ -107,16 +176,19 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     fillColor: "#90959e"
                 }
             }).addTo(map);
+        if(this.state.hexPolygons.length === 1) {
+            layer.addData(this.state.hexPolygons[0] as unknown as GeoJsonObject)
+        }
         this.countriesAdded = true;
     }
 
     protected onEachFeature(feature: any, layer: L.Layer) {
-        if(this.ignoreCountires != undefined) {
-            this.ignoreCountires.push(layer);
+        if(this.ignoreCountries !== undefined) {
+            this.ignoreCountries.push(layer);
         }
         else {
-            this.ignoreCountires = [];
-            this.ignoreCountires.push(layer);
+            this.ignoreCountries = [];
+            this.ignoreCountries.push(layer);
         }
         layer.bindPopup("You have pressed: " + feature.properties.ADMIN + "<br>Press the water to place a point!");
     }

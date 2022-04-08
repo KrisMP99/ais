@@ -103,7 +103,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                     (h.hid = %(hex1hid)s OR
                                     h.hid = %(hex2hid)s) AND
                                     ST_Intersects(
-                                        std.line_string,
+                                        ST_FlipCoordinates(std.line_string),
                                         h.geom
                                     );
                                 """

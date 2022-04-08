@@ -98,20 +98,22 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         generate_series(1, ST_NPoints(std.line_string))
                                     ) AS geom, std.simplified_trip_id
                                 FROM
-                                    simplified_trip_dim AS std, hexagrid AS h
+                                    simplified_trip_dim AS std
                                 WHERE
-                                    (h.hid = %(hex1hid)s OR
-                                    h.hid = %(hex2hid)s) AND
                                     ST_Intersects(
                                         ST_FlipCoordinates(std.line_string),
-                                        h.geom
+                                        (hex1geom)s::geometry
+                                    ) AND
+                                    ST_Intersects(
+                                        ST_FlipCoordinates(std.line_string),
+                                        (hex2geom)s::geometry
                                     );
                                 """
 
     # point_exists_in_hexagon_query = f"""{linestring_points_query}
     #                                 SELECT
     #                                     date_dim.date_id, time_dim.time_id,
-    #                                     data_fact.sog, pil.geom, ship_type_dim.ship_type, pil.hid
+    #                                     data_fact.sog, pil.geom, ship_type_dim.ship_type
 
     #                                 FROM
     #                                     points_in_linestring AS pil, data_fact, date_dim, time_dim, ship_type_dim

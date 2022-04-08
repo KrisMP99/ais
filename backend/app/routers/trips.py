@@ -3,8 +3,8 @@ from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.models.hexagon import Hexagon
 from app.db.database import engine, Session
-from geojson import Point
 from shapely import wkb
+from shapely.geometry import Point
 import asyncio
 import pandas as pd
 import numpy as np
@@ -20,30 +20,33 @@ router = APIRouter(
 
 @router.post('/')
 async def get_trip(p1: Coordinate, p2: Coordinate): 
-    gp1 = Point((p1.long, p1.lat))
-    gp2 = Point((p2.long, p2.lat))
+    geomp1 = Point(p1.long, p1.lat)
+    geomp2 = Point(p2.long, p2.lat)
     print('start')
     # First we select the two polygon where the points choosen reside
-    hexagon_query = f"WITH point1 AS (                                              \
-                        SELECT                                                      \
-                            ST_AsText(ST_GeomFromGeoJSON('{gp1}')) As geom),        \
-                                                                                    \
-                    point2 AS (                                                     \
-                        SELECT                                                      \
-                            ST_AsText(ST_GeomFromGeoJSON('{gp2}')) As geom)         \
-                                                                                    \
-                    SELECT                                                          \
-                        h.hid, h.geom                                               \
-                    FROM                                                            \
-                        hexagrid as h, point1, point2                               \
-                    WHERE                                                           \
-                        ST_Intersects(h.geom, ST_SetSRID(point1.geom, 3857)) OR     \
-                        ST_Intersects(h.geom, ST_SetSRID(point2.geom, 3857));"
+    hexagon_query = """                                                         
+                        SELECT                                                          
+                            h.hid, h.geom                                               
+                        FROM                                                            
+                            hexagrid as h                           
+                        WHERE                                                           
+                            ST_Intersects(
+                                h.geom, ST_GeomFromWKB(%(p1)s::geometry, 3857)
+                            ) OR     
+                            ST_Intersects(
+                                h.geom, ST_GeomFromWKB(%(p2)s::geometry, 3857)
+                            );
+                    """
 
     print('tried gettings hexagons')
     hexagons = []
-    loop = asyncio.get_event_loop()
-    df = await loop.run_in_executor(None, pd.read_sql_query, hexagon_query, engine)
+
+    df = pd.read_sql_query(hexagon_query, 
+                          engine,
+                          params={
+                              "p1": geomp1.wkb_hex,
+                              "p2": geomp2.wkb_hex
+                          })
     if len(df) < 2:
         logger.error('The two coordinates intersect with each other')
         return []
@@ -89,7 +92,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
-    print('got linestrings')
+    print('Got linestrings')
 
     linestring_points_query =   """
                                 WITH points_in_linestring AS (
@@ -118,13 +121,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.sog, pil.geom, ship_type_dim.ship_type
 
                                     FROM
-                                        points_in_linestring AS pil, data_fact, date_dim, time_dim, ship_type_dim
+                                        data_fact
+                                        INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
+                                        INNER JOIN time_dim ON time_dim.time_id = data_fact.time_id
+                                        INNER JOIN ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id
+                                        INNER JOIN points_in_linestring AS pil ON pil.simplified_trip_id = data_fact.simplified_trip_id
                                     WHERE
-                                        data_fact.simplified_trip_id = pil.simplified_trip_id AND
-                                        data_fact.date_id = date_dim.date_id AND
-                                        data_fact.time_id = time_dim.time_id AND
                                         data_fact.location = pil.geom AND
-                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND
                                         (ST_Within(
                                                     ST_FlipCoordinates(pil.geom),
                                                     %(hex1geom)s::geometry

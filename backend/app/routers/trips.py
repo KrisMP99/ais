@@ -31,7 +31,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                             ST_AsText(ST_GeomFromGeoJSON('{gp2}')) As geom)         \
                                                                                     \
                     SELECT                                                          \
-                        ST_AsGeoJSON(h.geom)::json AS st_asgeojson                  \
+                        h.hid, h.geom                                               \
                     FROM                                                            \
                         hexagrid as h, point1, point2                               \
                     WHERE                                                           \
@@ -48,7 +48,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     polygons.append(Polygon([result['st_asgeojson'][0]['coordinates'][0]]))
     polygons.append(Polygon([result['st_asgeojson'][1]['coordinates'][0]]))
 
-    print('got hexagons. Began getting linestrings')
+    print('Got hexagons. Began getting linestrings')
     hexagon_query = f"hexagons AS (                                                             \
                             SELECT                                                              \
                                 ST_AsText(                                                      \
@@ -162,23 +162,29 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     df = await loop.run_in_executor(None, pd.read_sql_query, point_exists_in_hexagon_query, engine)
     hexagons_list = df['hexgeom'].unique().tolist()
     group = df.groupby(by=['hexgeom'])
-    hex1_df = group.get_group(hexagons_list[0])
-    hex2_df = group.get_group(hexagons_list[1])
+    
+    if group.ngroups == 0: # find centroids for points closest to both hexagons
+        print('heeej')
+    elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
+        hex1_df = group.get_group(hexagons_list[0])
+    else:     
+        hex1_df = group.get_group(hexagons_list[0])
+        hex2_df = group.get_group(hexagons_list[1])
 
-    countSeries = df['hexgeom'].value_counts()
-
-    pointsInHex1 = countSeries[0]
-    print(pointsInHex1)
-    pointsInHex2 = countSeries[1]
-    print(pointsInHex2)
-    print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
-    if pointsInHex1 != pointsInHex2:
-        if pointsInHex1 > pointsInHex2:
-            diff = pointsInHex1 - pointsInHex2
-            hex1_df = hex1_df.iloc[:-diff]
-        else:
-            diff = pointsInHex2 - pointsInHex1
-            hex2_df = hex2_df.iloc[:-diff]
+        countSeries = df['hexgeom'].value_counts()
+        print('Prints in else')
+        pointsInHex1 = countSeries[0]
+        print(pointsInHex1)
+        pointsInHex2 = countSeries[1]
+        print(pointsInHex2)
+        print(f"There are {pointsInHex1} points in the first hexagon, and {pointsInHex2} points in the second hexagon")
+        if pointsInHex1 != pointsInHex2:
+            if pointsInHex1 > pointsInHex2:
+                diff = pointsInHex1 - pointsInHex2
+                hex1_df = hex1_df.iloc[:-diff]
+            else:
+                diff = pointsInHex2 - pointsInHex1
+                hex2_df = hex2_df.iloc[:-diff]
         
 
 

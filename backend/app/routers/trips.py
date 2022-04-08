@@ -121,19 +121,17 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         data_fact.date_id = date_dim.date_id AND
                                         data_fact.time_id = time_dim.time_id AND
                                         data_fact.location = pil.geom AND
-                                        data_fact.ship_type_id = ship_type_dim.ship_type_id
-
+                                        data_fact.ship_type_id = ship_type_dim.ship_type_id AND
+                                        (ST_Within(
+                                                    ST_FlipCoordinates(pil.geom),
+                                                    %(hex1geom)s::geometry
+                                        ) OR
+                                        ST_Within(
+                                                    ST_FlipCoordinates(pil.geom),
+                                                    %(hex2geom)s::geometry
+                                        ))
                                     ORDER BY time_dim.time_id
                                     """
-
-                                        # (ST_Within(
-                                        #             ST_FlipCoordinates(pil.geom),
-                                        #             %(hex1geom)s::geometry
-                                        # ) OR
-                                        # ST_Within(
-                                        #             ST_FlipCoordinates(pil.geom),
-                                        #             %(hex2geom)s::geometry
-                                        # ))
 
     # create_point_query = f"hexagon_centroid AS (                                                           \
     #                                 SELECT                                                                      \

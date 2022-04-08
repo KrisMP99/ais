@@ -109,7 +109,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         h.hid = %(hex2hid)s
                                 )"""
 
-    point_exists_in_hexagon_query = """{linestring_points_query}
+    point_exists_in_hexagon_query = f"""{linestring_points_query}
                                     SELECT
                                         DISTINCT date_dim.date_id, time_dim.time_id,
                                         data_fact.sog, pil.geom, ship_type_dim.ship_type, pil.hid AS hexgeomID

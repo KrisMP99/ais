@@ -157,8 +157,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             'hex2geom': hexagons[1].geom
         }
         )
-    hexagons_list = df['hexgeom'].unique().tolist()
-    group = df.groupby(by=['hexgeom'])
+    hexagons_list = df['hexgeomID'].unique().tolist()
+    group = df.groupby(by=['hexgeomID'])
     
     # if group.ngroups == 0: # find centroids for points closest to both hexagons
     #     print('heeej')

@@ -122,7 +122,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                         hexagrid.hid
 
                                     FROM
-                                        hexagrid, data_fact
+                                        hexagrid AS h, data_fact
                                         INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
                                         INNER JOIN time_dim ON time_dim.time_id = data_fact.time_id
                                         INNER JOIN ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id
@@ -134,13 +134,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                                     ST_FlipCoordinates(pil.geom),
                                                     %(hex1geom)s::geometry
                                             ) AND 
-                                            hexagrid.hid = %(hex1hid)s) OR
+                                            h.hid = %(hex1hid)s) OR
                                             
                                             (ST_Within(
                                                     ST_FlipCoordinates(pil.geom),
                                                     %(hex2geom)s::geometry
                                             ) AND 
-                                            hexagrid.hid = %(hex2hid)s)
+                                            h.hid = %(hex2hid)s)
                                         )
                                     ORDER BY time_dim.time_id
                                     """

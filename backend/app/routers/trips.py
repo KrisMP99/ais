@@ -182,9 +182,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
         # Find which hexagon has no points
         hexagon_points_to_find = None
-        for hex in hexagons['hid']:
-            if hex not in hexagons_list:
-                hexagon_points_to_find = hexagons.index(hex)
+        for hex in hexagons:
+            if hex.hid not in hexagons_list:
+                hexagon_points_to_find = hex
                 print('hexagon found ', hexagons_list)
                 print('hexagon we must find ', hexagon_points_to_find)
         #hex1_df = group.get_group(hexagons_list[0])

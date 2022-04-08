@@ -175,6 +175,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     hexagons_list = df['hid'].unique().tolist()
     group = df.groupby(by=['hid'])
     
+    print('Number of groups ', group.ngroups)
+
     if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('heeej')
     elif group.ngroups == 1: # find centroid for points closest to the missing hexagon

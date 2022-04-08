@@ -3,12 +3,14 @@ import React from 'react';
 import './App.css';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
+import { ShipTypeFilter } from './Components/ShipTypeFilter';
 import './Leaflet.css';
 
 interface AppStates {
   pointCoords: LatLng[];
+  filterShipTypes: string[];
   mouseCoords: string[];
-  polylines: LatLng[];
+  polylines: LatLng[][];
 }
 
 export class App extends React.Component<any, AppStates> {
@@ -23,7 +25,9 @@ export class App extends React.Component<any, AppStates> {
     this.state = {
       pointCoords: [],
       mouseCoords: [],
-      polylines: []
+      polylines: [],
+      filterShipTypes: [],
+
     }
   }
 
@@ -60,13 +64,31 @@ export class App extends React.Component<any, AppStates> {
               </div>
               <PostButton
                 coordinates={this.state.pointCoords}
-                getData={(data: LatLng[]) => this.setState({ polylines: data })}
+                shipTypeArray={this.state.filterShipTypes}
+                getData={(data: LatLng[][]) => this.setState({ polylines: data })}
               />
             </div>
             <div className='filter-container'>
+              <hr></hr>
+              <p className='ship-type-header'>Ship type filter</p>
+              <hr className='shorter-hr'></hr>
+              <ShipTypeFilter
+                returnShipType={(val) => {
+                  if (this.state.filterShipTypes.includes(val)) {
+                    this.state.filterShipTypes.splice(this.state.filterShipTypes.indexOf(val) + 1, 1)
+                    this.setState({ filterShipTypes: this.state.filterShipTypes })
+                    return;
+                  } else {
+                    this.state.filterShipTypes.push(val)
+                    this.setState({ filterShipTypes: this.state.filterShipTypes })
+                  }
+                }
+                }
+              />
             </div>
           </div>
         </div>
+
       </div>
     );
   }

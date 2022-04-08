@@ -92,7 +92,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('got linestrings')
 
     linestring_points_query =   """
-                                SELECT DISTINCT
+                                SELECT
                                     ST_PointN(
                                         std.line_string,
                                         generate_series(1, ST_NPoints(std.line_string))
@@ -100,12 +100,12 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                                 FROM
                                     simplified_trip_dim AS std, hexagrid AS h
                                 WHERE
+                                    (h.hid = %(hex1hid)s OR
+                                    h.hid = %(hex2hid)s) AND
                                     ST_Intersects(
                                         std.line_string,
                                         h.geom
-                                    ) AND
-                                    h.hid = %(hex1hid)s OR
-                                    h.hid = %(hex2hid)s;
+                                    );
                                 """
 
     # point_exists_in_hexagon_query = f"""{linestring_points_query}

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import pygrametl
-from pygrametl.datasources import PandasSource
+from pygrametl.datasources import PandasSource, SQLSource
 from pygrametl.tables import CachedDimension, BatchFactTable, FactTable
 from sqlalchemy import create_engine
 import datetime
@@ -21,10 +21,18 @@ DB_NAME = os.getenv('DB_NAME')
 COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       timestamp TIMESTAMP WITHOUT TIME ZONE,\
+                      date DATE, \
+                      year INTEGER, \
+                      month INTEGER, \
+                      day INTEGER, \
+                      hour INTEGER, \
+                      quarter_hour INTEGER, \
+                      five_minutes INTEGER, \
+                      date_ind INTEGER, \
+                      time_id INTEGER, \
                       type_of_mobile VARCHAR,\
                       mmsi integer,\
-                      latitude real,\
-                      longitude real,\
+                      location GEOMETRY(point, 4326),\
                       navigational_status VARCHAR,\
                       rot numeric,\
                       sog numeric,\
@@ -43,13 +51,26 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       simplified_trip_id integer, \
                       line_string INTEGER)" 
 
-def insert_cleansed_data(df,logger):
+def insert_cleansed_data(df: gpd.GeoDataFrame,logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     logger.info("Inserting data into cleansed table...")
     engine = create_engine(db_string)
+
+    df = df.apply(lambda x: convert_timestamp_to_time_and_date(x), axis=1)
+    print("Line 60: ",type(df))
+    df = df.set_crs('EPSG:3857')
+    df = df.to_crs(epsg="4326")
+    df = df.rename_geometry('location')
+    print(df.crs)
+    # df = df.rename_geometry('location')
+    df = df.drop(['point'],axis=1, errors='ignore')
+    # df = df.astype(object).where(pd.notnull(df),None)
+    df['line_string'] = None
+    print("Line 66: ",type(df))
+    print(df.columns)
     with engine.connect() as conn:
         conn.execute(cleansed_table_sql)
-        df.to_sql('cleansed', conn, if_exists='append', index=False, chunksize=500000)
+        df.to_postgis('cleansed', conn, if_exists='append', index=False, chunksize=500000)
     logger.info("Done inserting!")
 
 def convert_timestamp_to_time_and_date(row):
@@ -74,6 +95,8 @@ def convert_timestamp_to_time_and_date(row):
     row['date_id'] = int(time_split[0].replace('-',''))
     row['time_id'] = int(time_split[1].replace(':',''))
 
+    return row
+
 
 def insert_trips(trip_df: gpd.GeoDataFrame, logger):
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
@@ -94,21 +117,15 @@ def insert_simplified_trips(simplified_trip_df: gpd.GeoDataFrame, logger):
 def convert_to_hex(row):
     row['location'] = wkb.dumps(row['location'], hex=True, srid=4326)
 
-def insert_into_star(df: gpd.GeoDataFrame, logger):
+def insert_into_star(trip_id, logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
     logger.info("Converting back to 4326")
 
-    df = df.to_crs(epsg="4326")
-    df = df.rename(columns={'geometry':'location'})
-    df = df.drop(['point'],axis=1, errors='ignore')
-    df = df.astype(object).where(pd.notnull(df),None)
-    df['line_string'] = None
-
-
-    ais_source = PandasSource(df)
+    sql_query = "SELECT * FROM cleansed"
+    ais_source = SQLSource(connection=conn, query=sql_query)
 
     date_dim = CachedDimension(
         name='date_dim',
@@ -178,9 +195,11 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     logger.info("Inserting rows into star schema")
     time_begin = datetime.datetime.now()
     print("Time begin: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
+
+
     for row in ais_source:
-        convert_timestamp_to_time_and_date(row)
-        convert_to_hex(row)
+        # convert_timestamp_to_time_and_date(row)
+        # convert_to_hex(row)
 
         if row['date_id'] != date_dim.getbykey(row)['date_id']:
             date_dim.insert(row)
@@ -208,8 +227,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     print(f"Took approx: {time_delta.total_seconds() / 60} minutes")
     logger.info("Done inserting into star schema")
     logger.info("Generating line strings...")
-
-    trip_id = df['trip_id'].min()
 
     # truncate table data_fact, date_dim, nav_dim, ship_dim, ship_type_dim, simplified_trip_dim, time_dim, trip_dim RESTART IDENTITY CASCADE
     sql_line_string_query = "WITH trip_list AS ( " \

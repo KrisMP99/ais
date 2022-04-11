@@ -1,5 +1,6 @@
 import React from "react"
 import '../App.css';
+import './ShipTypeFilter.css';
 
 interface ShipFilterProps {
     returnShipType: (shipType: string) => void;
@@ -10,24 +11,49 @@ interface ShipFilterStates {
 }
 
 export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterStates>{
-    protected s: number;
+    
+    protected fireOnce: boolean;
+    protected dividerIndex: number;
+
     constructor(props: ShipFilterProps) {
         super(props);
-        this.s = 0;
+        this.fireOnce = false;
+        this.dividerIndex = 0;
         this.state = {
             shipTypes: []
         }
     }
 
     render() {
-        if(!this.s) {
+        if(!this.fireOnce) {
             this.fetchShipTypes();
         }
         return (
             <div className="align-filter-options">
-                <ul>
+                <ul className="text-3">
                     {this.state.shipTypes.map((val, key) => {
-                        return <li key={key}>{val}<input type={"checkbox"} onClick={(e) => this.props.returnShipType(val)}></input></li>
+                        if(key > this.dividerIndex) {
+                            return;
+                        }
+                        return (
+                            <li key={key}>
+                                {val}
+                                <input className="checkbox" type={"checkbox"} onClick={(e) => this.props.returnShipType(val)}/>
+                            </li>
+                        )
+                    })}
+                </ul>
+                <ul className="text-3">
+                    {this.state.shipTypes.map((val, key) => {
+                        if(key <= this.dividerIndex) {
+                            return;
+                        }
+                        return (
+                            <li key={key}>
+                                {val}
+                                <input className="checkbox" type={"checkbox"} onClick={(e) => this.props.returnShipType(val)}/>
+                            </li>
+                        )
                     })}
                 </ul>
             </div>
@@ -50,9 +76,12 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 if (!response.ok) {
                     return null;
                 }
+                this.fireOnce = true;
+                this.dividerIndex = data.length;
+                console.log(this.dividerIndex);
                 return this.setState({ shipTypes: data })
-            })
-        this.s += 1;
+            });
+        
     };
 }
 

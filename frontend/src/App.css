@@ -28,6 +28,11 @@
   margin-top: 0;
 }
 
+.text-3 {
+  font-size: 12px;
+  font-weight: normal;
+}
+
 .ship-type-header {
   font-size: 22px;
   font-weight: bolder;
@@ -35,40 +40,4 @@
   padding-bottom: 0;
   margin-top: 0;
   text-align: center;
-}
-
-/* Below is ShipTypeFilter CSS */
-
-.shorter-hr {
-  width: 60%;
-}
-
-.align-filter-options {
-  display: flex;
-}
-
-.verticalLine {
-  border-left: 2px solid;
-  height: 250px;
-}
-
-.rightCheckBoxContainer {
-  width: 200px;
-}
-
-.leftCheckBoxContainer {
-  width: 150px;
-}
-
-.ul {
-  list-style-type: none;
-  padding-left: 5px;
-}
-
-.liRight {
-  text-align: right;
-}
-
-.liLeft {
-  text-align: left;
 }

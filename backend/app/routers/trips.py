@@ -233,7 +233,7 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
                         DISTINCT pil.geom
                     FROM
                         points_in_linestring AS pil
-                    WHERE ST_ClosestPoint(%(hex)s::geometry, pil.geom);
+                    WHERE EXISTS(ST_ClosestPoint(%(hex)s::geometry, pil.geom));
                 '''
     # Get the closest point to the hexagon, so we can use the data from that point.            
     # Calculate the distance from ST_ClosestPoint(ST_Centroid(hexagon), linestring) to the point found before.

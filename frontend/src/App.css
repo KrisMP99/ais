@@ -41,3 +41,23 @@
   margin-top: 0;
   text-align: center;
 }
+
+.post-button {
+  width: 180px;
+  height: 40px;
+  background-color: #4CAF50;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 15px;
+  align-self: center;
+  border: none;
+  cursor: pointer;
+}
+.post-button:hover {
+  background-color: #419844;
+}
+
+.positions-container {
+  display: flex;
+  flex-direction: column;
+}

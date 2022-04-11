@@ -15,6 +15,7 @@ from data_insertion import insert_cleansed_data, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
 import logging
+import numpy as np
 
 load_dotenv()
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
@@ -180,8 +181,37 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     :param file_name: File name to cleanse. Example: 'aisdk-2022-01-01.csv'
     :return: A cleansed geodataframe, sorted by timestamp (ascending)
     """
+
+    types = {
+        '# Timestamp': str,
+        'Type of mobile': str,
+        'MMSI': 'Int32',
+        'Latitude': 'Float64',
+        'Longitude': 'Float64',
+        'Navigational status': str,
+        'ROT': 'Float32',
+        'SOG': 'Float32',
+        'COG': 'Float32',
+        'Heading': 'Int16',
+        'IMO': 'Int32',
+        'Callsign': str,
+        'Name': str,
+        'Ship type': str,
+        'Cargo type': str,
+        'Width': 'Int32',
+        'Length': 'Int32',
+        'Type of position fixing device': str,
+        'Draught': 'Float32',
+        'Destination': str,
+        'ETA': str,
+        'Data source type': str,
+        'A': 'Float32',
+        'B': 'Float32',
+        'C': 'Float32',
+        'D': 'Float32'
+    }
     logger.info(f"Loading, converting and cleansing {file_name}")
-    df = pd.read_csv(CSV_FILES_PATH + file_name, na_values=['Unknown','Undefined'])
+    df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types, nrows=200000)
 
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
@@ -194,13 +224,13 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
             (df["MMSI"].notnull()) &
             (df['Latitude'] >=53.5) & (df['Latitude'] <=58.5) &
             (df['Longitude'] >= 3.2) & (df['Longitude'] <=16.5) &
-            (df['SOG'] >= 0) & (df['SOG'] <=102)
+            (df['SOG'] >= 0.1) & (df['SOG'] <=102)
            ].reset_index()
     # We round the lat and longs as we do not need 15 decimals of precision
     # This will save some computation time later.
     df['Latitude'] = df['Latitude'].round(4)
     df['Longitude'] = df['Longitude'].round(4)
-    df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S")
+    #df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S")
 
     # Rename the columns
     df = df.rename(columns={

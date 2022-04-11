@@ -4,14 +4,13 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import pygrametl
-from pygrametl.datasources import PandasSource, SQLSource
+from pygrametl.datasources import SQLSource
 from pygrametl.tables import CachedDimension, BatchFactTable, FactTable
 from sqlalchemy import create_engine
 import datetime
 import geopandas as gpd
 from shapely import wkb
 import pandas as pd
-from psycopg2.errors import NumericValueOutOfRange
 
 load_dotenv()
 USER = os.getenv('POSTGRES_USER')
@@ -21,6 +20,7 @@ DB_NAME = os.getenv('DB_NAME')
 COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi', 'location','latitude','longitude', 'navigational_status', 'rot', 'sog', 'cog', 'heading', 'imo', 'callsign', 'name', 'ship_type', 'width', 'length', 'type_of_position_fixing_device', 'draught', 'destination', 'trip_id', 'simplified_trip_id']
 cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       timestamp TIMESTAMP WITHOUT TIME ZONE,\
+                      time TIME WITHOUT TIME ZONE, \
                       date DATE, \
                       year INTEGER, \
                       month INTEGER, \
@@ -28,7 +28,7 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       hour INTEGER, \
                       quarter_hour INTEGER, \
                       five_minutes INTEGER, \
-                      date_ind INTEGER, \
+                      date_id INTEGER, \
                       time_id INTEGER, \
                       type_of_mobile VARCHAR,\
                       mmsi integer,\
@@ -56,17 +56,27 @@ def insert_cleansed_data(df: gpd.GeoDataFrame,logger):
     logger.info("Inserting data into cleansed table...")
     engine = create_engine(db_string)
 
-    df = df.apply(lambda x: convert_timestamp_to_time_and_date(x), axis=1)
+    # df = df.apply(lambda x: convert_timestamp_to_time_and_date(x), axis=1)
+    #df['timestamp'] = pd.to_datetime(df['timestamp'], format="%d/%m/%Y %H:%M:%S")
+    df['date'] = df['timestamp'].dt.date
+    df['year'] = df['timestamp'].dt.year
+    df['month'] = df['timestamp'].dt.month
+    df['day'] = df['timestamp'].dt.day
+    df['date_id'] = int(str(df['timestamp'].dt.date) + str(df['timestamp'].dt.year) + str(df['month'].dt.month) + str(df['day'].dt.day))
+    
+    print(df.head(), df['date_id'])
+    quit()
+
+
     print("Line 60: ",type(df))
-    df = df.set_crs('EPSG:3857')
+    df = df.set_crs("EPSG:3857")
     df = df.to_crs(epsg="4326")
     df = df.rename_geometry('location')
-    print(df.crs)
-    # df = df.rename_geometry('location')
     df = df.drop(['point'],axis=1, errors='ignore')
+    # df['mmsi'] = df['mmsi'].astype('int32', errors='ignore')
+    df[['heading', 'width','length']] = df[['heading', 'width','length']].astype('Int16', errors='ignore')
     # df = df.astype(object).where(pd.notnull(df),None)
     df['line_string'] = None
-    print("Line 66: ",type(df))
     print(df.columns)
     with engine.connect() as conn:
         conn.execute(cleansed_table_sql)
@@ -86,11 +96,18 @@ def convert_timestamp_to_time_and_date(row):
 
     seconds_elapsed = np.ceil((row['timestamp'] - row['timestamp'].replace(hour=0,minute=0,second=0,microsecond=0)).total_seconds())
 
-    row['hour'] = round((seconds_elapsed / 60) / 60)
-    row['quarter_hour'] = round((seconds_elapsed / 60) / 15)
-    row['five_minutes'] = round((seconds_elapsed / 60) / 5)
+    hours = round((seconds_elapsed / 60) / 60)
+    quarter_hours = round((seconds_elapsed / 60) / 15)
+    five_minutes = round((seconds_elapsed / 60) / 5)
+    row['hour'] = hours
+    row['quarter_hour'] = quarter_hours
+    row['five_minutes'] = five_minutes
 
-    row['time'] = datetime.timedelta(seconds=seconds_elapsed)
+    hours_time = int((seconds_elapsed / 60) / 60)
+    minutes = int((seconds_elapsed % 3600) / 60)
+    seconds = int((seconds_elapsed % 3600) % 60)
+
+    row['time'] = datetime.time(hours_time, minutes, seconds)
 
     row['date_id'] = int(time_split[0].replace('-',''))
     row['time_id'] = int(time_split[1].replace(':',''))
@@ -256,7 +273,7 @@ def insert_into_star(trip_id, logger):
 
     logger.info("Generated and updated all line strings. Commiting data...")
 
-    # cursor.execute("DROP TABLE cleansed, raw_data")
+    cursor.execute("DROP TABLE cleansed")
 
     conn_wrapper.commit()
     conn_wrapper.close()

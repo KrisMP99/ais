@@ -17,8 +17,10 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     constructor(props: ShipFilterProps) {
         super(props);
+        
         this.fireOnce = false;
         this.dividerIndex = 0;
+
         this.state = {
             shipTypes: []
         }
@@ -77,7 +79,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                     return null;
                 }
                 this.dividerIndex = Math.floor(data.length * 0.5);
-                console.log(this.dividerIndex);
                 return this.setState({ shipTypes: data })
             });
         this.fireOnce = true;   

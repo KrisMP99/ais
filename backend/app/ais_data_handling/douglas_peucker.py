@@ -19,6 +19,7 @@ def create_simplified_trip_line_strings(df: gpd.GeoDataFrame, logger) -> gpd.Geo
     sql = "SELECT MAX(simplified_trip_dim.simplified_trip_id) FROM simplified_trip_dim"
     keys_df = get_data_from_query(sql)
     simplified_trip_PK_key = keys_df['max'].values[0]
+    print("Key:", simplified_trip_PK_key)
 
     if simplified_trip_PK_key is None:
         simplified_trip_PK_key = 1

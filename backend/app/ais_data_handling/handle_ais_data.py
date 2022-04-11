@@ -314,7 +314,8 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     simplified_trip_df = simplified_trip_df.to_crs(epsg="4326")
     logger.info("Finished converting cers to 4326!")
     insert_simplified_trips(simplified_trip_df, logger)
-    insert_into_star(df_cleansed, logger)
+    insert_cleansed_data(df_cleansed, logger)
+    insert_into_star(df_cleansed['trip_id'].min(), logger)
     #add_new_file_to_log(file_name, logger=logger)
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin

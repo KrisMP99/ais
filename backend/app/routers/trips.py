@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
@@ -178,12 +179,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     print('Number of groups ', group.ngroups)
 
     if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
-        print('heeej')
+        print('No points in either hexagons')
+        for hex in hexagons:
+            create_point(hex, linestring_points_query) 
     elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
         # Find which hexagon has no points
         for hex in hexagons:
             if hex.hid not in hexagons_list:
-                hexagon_to_find = hex
+                create_point(hex, linestring_points_query)
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])
     #     hex2_df = group.get_group(hexagons_list[1])
@@ -204,55 +207,68 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #             hex2_df = hex2_df.iloc[:-diff]
         
 
-
-
-    # if len(result) == 0:
-    #     print('No points')
-    # elif len(result) == 1:
-    #     print('1 point')
-    # elif len(result) == 2 and result[0]['hexgeom'] != result[1]['hexgeom']:
-    #     print('2 points and not in the same hexagon')
-    #     print(result)
-    # elif len(result) == 2 and result[0]['hexgeom'] == result[1]['hexgeom']:
-    #     print('2 points and both points in the same hexagon')
-    #     print(result)
-    # elif len(result) > 2:
-    #     print('More than 2 points')
-    #     known_hex = result[0]['hexgeom']
-    #     hex1 = { 'amount': 0, 'index': [] }
-    #     hex2 = { 'amount': 0, 'index': [] }
-    #     for hex in result:
-    #         if hex['hexgeom'] == known_hex:
-    #             hex1['amount'] += 1
-    #             hex1['index'].append(result.index(hex))
-    #         else: 
-    #             hex2 += 1
-    #             hex2['index'].append(result.index(hex))
-    #     if hex1['amount'] != hex2['amount']:
-    #         print('More than 2 points and not equally many in each hexagon')
-    #         dif = hex1['amount'] - hex2['amount']
-    #         if dif < 0:
-    #             for i in reversed(hex2['index']):
-    #                 if(len(hex2['index']) == len(hex1['index'])):
-    #                     break
-    #                 hex2['index'].pop()
-    #                 result.pop(hex2['index'].index(i))
-    # else:
-    #     print('shit went wrong with length of ' + len(result))
-    
     return linestrings
-    # linestring_query_hexagon = f"SELECT                                                                          \
-    #                                 DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                    \
-    #                                     CASE                                                                    \
-    #                                         WHEN EXISTS(SELECT point_in_hexagon.geom FROM point_in_hexagon)     \
-    #                                             THEN point_in_hexagon.geom                                      \
-    #                                         ELSE (SELECT hexagon_centroid.geom FROM hexagon_centroid)           \
-    #                                     END AS geom                                                             \
-    #                                 FROM                                                                        \
-    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim, \
-    #                                     point_in_hexagon, hexagon_centroid                                      \
-    #                                 WHERE                                                                       \
-    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
-    #                                     data_fact.date_id = date_dim.date_id AND                                \
-    #                                     data_fact.time_id = time_dim.time_id AND                                \
-    #                                     pil.geom = data_fact.location;"
+
+def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
+    # point_query =   f'''{linestring}
+    #                 WITH nearest_point AS (
+    #                     SELECT 
+    #                         ST_ClosestPoint(%(hex)s::geometry, pil.geom) AS geom
+    #                     FROM
+    #                         points_in_linestring AS pil
+    #                     WHERE
+    #                         ST_Intersects(
+    #                             ST_FlipCoordinates(std.line_string),
+    #                             %(hex1geom)s::geometry
+    #                         ) AND
+    #                         ST_Intersects(
+    #                             ST_FlipCoordinates(std.line_string),
+    #                             %(hex2geom)s::geometry
+    #                         )     
+    #                 )
+    #                 '''
+    point_query =   f'''{linestring}
+                
+                    SELECT 
+                        ST_ClosestPoint(%(hex)s::geometry, pil.geom) AS geom
+                    FROM
+                        points_in_linestring AS pil
+                    WHERE
+                        ST_Intersects(
+                            ST_FlipCoordinates(std.line_string),
+                            %(hex1geom)s::geometry
+                        ) AND
+                        ST_Intersects(
+                            ST_FlipCoordinates(std.line_string),
+                            %(hex2geom)s::geometry
+                        )   ;  
+                
+                '''
+    # Get the closest point to the hexagon, so we can use the data from that point.            
+    # Calculate the distance from ST_ClosestPoint(ST_Centroid(hexagon), linestring) to the point found before.
+    # Then we can use SOG of the point in the linestring, and the distance to calculate a timestamp.
+    # query = f'''{linestring}
+    #             SELECT 
+    #                 date_dim.date_id, data_fact.sog, pil.geom, ship_type_dim.ship_type, h.hid
+    #             FROM 
+    #                 data_fact
+    #                 INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
+    #                 INNER JOIN time_dim ON time_dim.time_id = data_fact.time_id
+    #                 INNER JOIN ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id
+    #                 INNER JOIN points_in_linestring AS pil ON pil.simplified_trip_id = data_fact.simplified_trip_id
+    #             WHERE
+    #                 ST_ClosestPoint(%(hex)s::geometry, )
+    # '''
+    df = pd.read_sql_query( 
+            point_query, 
+            engine,
+            params={
+                'hex1hid': hexagons[0].hid,
+                'hex1geom': hexagons[0].geom,
+                'hex2hid': hexagons[1].hid,
+                'hex2geom': hexagons[1].geom,
+                'hex': hexagon.geom 
+            }
+        )
+    print(df)
+    return []

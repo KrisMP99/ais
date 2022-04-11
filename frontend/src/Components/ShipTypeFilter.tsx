@@ -76,11 +76,11 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 if (!response.ok) {
                     return null;
                 }
-                this.fireOnce = true;
-                this.dividerIndex = data.length;
+                this.dividerIndex = Math.floor(data.length * 0.5);
                 console.log(this.dividerIndex);
                 return this.setState({ shipTypes: data })
             });
+        this.fireOnce = true;
         
     };
 }

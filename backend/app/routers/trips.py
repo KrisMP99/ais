@@ -181,12 +181,12 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('No points in either hexagons')
         for hex in hexagons:
-            create_point(hex, linestring_points_query) 
+            create_point(hex, linestring_points_query, hexagons) 
     elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
         # Find which hexagon has no points
         for hex in hexagons:
             if hex.hid not in hexagons_list:
-                create_point(hex, linestring_points_query)
+                create_point(hex, linestring_points_query, hexagons)
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])
     #     hex2_df = group.get_group(hexagons_list[1])

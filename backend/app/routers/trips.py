@@ -230,7 +230,7 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     point_query =   f'''{linestring}
                 
                     SELECT 
-                        ST_ClosestPoint(%(hex)s::geometry, pil.geom) AS geom
+                        DISTINCT ST_ClosestPoint(%(hex)s::geometry, pil.geom) AS geom
                     FROM
                         points_in_linestring AS pil;
                 '''

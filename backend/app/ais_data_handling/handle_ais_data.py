@@ -8,10 +8,10 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import requests
 import zipfile, rarfile
-from douglas_peucker import add_simplified_trip_ids
-from data_insertion import insert_simplified_trips, insert_trips
+from douglas_peucker import add_simplified_trip_ids, add_hex_ids
+from data_insertion import insert_simplified_trips
 from douglas_peucker import create_simplified_trip_line_strings
-from data_insertion import insert_cleansed_data, insert_into_star
+from data_insertion import calculate_date_tim_dim_and_hex, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
 import logging
@@ -186,12 +186,9 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
         '# Timestamp': str,
         'Type of mobile': str,
         'MMSI': 'Int32',
-        'Latitude': 'Float64',
-        'Longitude': 'Float64',
+        # 'Latitude': 'Float64',
+        # 'Longitude': 'Float64',
         'Navigational status': str,
-        'ROT': 'Float32',
-        'SOG': 'Float32',
-        'COG': 'Float32',
         'Heading': 'Int16',
         'IMO': 'Int32',
         'Callsign': str,
@@ -201,36 +198,38 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
         'Width': 'Int32',
         'Length': 'Int32',
         'Type of position fixing device': str,
-        'Draught': 'Float32',
         'Destination': str,
         'ETA': str,
         'Data source type': str,
-        'A': 'Float32',
-        'B': 'Float32',
-        'C': 'Float32',
-        'D': 'Float32'
     }
     logger.info(f"Loading, converting and cleansing {file_name}")
-    df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types, nrows=200000)
+    df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types)
 
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
     
+    df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")
+
     # Remove all the rows which does not satisfy our conditions
     df = df[
             (df["Type of mobile"] != "Class B") &
             (df["MMSI"].notna()) &
             (df["MMSI"].notnull()) &
+            (df['# Timestamp'].notnull()) &
             (df['Latitude'] >=53.5) & (df['Latitude'] <=58.5) &
             (df['Longitude'] >= 3.2) & (df['Longitude'] <=16.5) &
             (df['SOG'] >= 0.1) & (df['SOG'] <=102)
            ].reset_index()
+
     # We round the lat and longs as we do not need 15 decimals of precision
     # This will save some computation time later.
-    df['Latitude'] = df['Latitude'].round(4)
-    df['Longitude'] = df['Longitude'].round(4)
-    #df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S")
+    # We also round rot, sog and cog, as we do not need a lot of decimal precision here
+    df['Latitude'] = np.round(df['Latitude'], decimals=4)
+    df['Longitude'] = np.round(df['Longitude'], decimals=4)
+    df['ROT'] = np.round(df['ROT'], decimals=2)
+    df['SOG'] = np.round(df['SOG'], decimals=2)
+    df['COG'] = np.round(df['COG'], decimals=2)
 
     # Rename the columns
     df = df.rename(columns={
@@ -344,9 +343,14 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     simplified_trip_df = simplified_trip_df.to_crs(epsg="4326")
     logger.info("Finished converting cers to 4326!")
     insert_simplified_trips(simplified_trip_df, logger)
-    insert_cleansed_data(df_cleansed, logger)
-    insert_into_star(df_cleansed['trip_id'].min(), logger)
-    #add_new_file_to_log(file_name, logger=logger)
+    df_cleansed = df_cleansed.set_crs("EPSG:3857")
+    df_cleansed = df_cleansed.to_crs(epsg="4326")
+    df_cleansed = df_cleansed.rename_geometry('location')
+    df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
+    df_cleansed = add_hex_ids(df_cleansed, logger)
+    df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
+    insert_into_star(df_cleansed['trip_id'].min(), df_cleansed, logger)
+    add_new_file_to_log(file_name, logger=logger)
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin
     print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))

@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import psycopg2
 import os
 import pygrametl
-from pygrametl.datasources import SQLSource
+from pygrametl.datasources import SQLSource, PandasSource
 from pygrametl.tables import CachedDimension, BatchFactTable, FactTable
 from sqlalchemy import create_engine
 import datetime
@@ -51,37 +51,35 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       simplified_trip_id integer, \
                       line_string INTEGER)" 
 
-def insert_cleansed_data(df: gpd.GeoDataFrame,logger):
-    db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
-    logger.info("Inserting data into cleansed table...")
-    engine = create_engine(db_string)
+def calculate_date_tim_dim_and_hex(df: gpd.GeoDataFrame,logger):
+    logger.info("Calculating attributes for date_dim and time_dim...")
 
-    # df = df.apply(lambda x: convert_timestamp_to_time_and_date(x), axis=1)
-    #df['timestamp'] = pd.to_datetime(df['timestamp'], format="%d/%m/%Y %H:%M:%S")
+    # Calculations for date_dim
     df['date'] = df['timestamp'].dt.date
     df['year'] = df['timestamp'].dt.year
     df['month'] = df['timestamp'].dt.month
     df['day'] = df['timestamp'].dt.day
-    df['date_id'] = int(str(df['timestamp'].dt.date) + str(df['timestamp'].dt.year) + str(df['month'].dt.month) + str(df['day'].dt.day))
-    
-    print(df.head(), df['date_id'])
-    quit()
+    df['date_id'] = df['timestamp'].dt.strftime('%Y%m%d').astype(int)
 
 
-    print("Line 60: ",type(df))
-    df = df.set_crs("EPSG:3857")
-    df = df.to_crs(epsg="4326")
-    df = df.rename_geometry('location')
-    df = df.drop(['point'],axis=1, errors='ignore')
-    # df['mmsi'] = df['mmsi'].astype('int32', errors='ignore')
+    # Calculations for time_dim
+    df['time_id'] = df['timestamp'].dt.strftime('%H%M%S').astype(int)
+    df['time'] = df['timestamp'].dt.time
+    df['hour'] = df['timestamp'].dt.hour
+    df['quarter_hour'] = ((df['timestamp'] - df['timestamp'].dt.normalize()) / pd.Timedelta('15Min')).astype(int)
+    df['five_minutes'] = ((df['timestamp'] - df['timestamp'].dt.normalize()) / pd.Timedelta('5Min')).astype(int)
+
+    logger.info("Converting back to 4326...")
+  
     df[['heading', 'width','length']] = df[['heading', 'width','length']].astype('Int16', errors='ignore')
-    # df = df.astype(object).where(pd.notnull(df),None)
+
+    logger.info("Converting to hex...")
+    df['location'] = df['location'].apply(lambda x: wkb.dumps(x, hex=True, srid=4326))
+    
     df['line_string'] = None
-    print(df.columns)
-    with engine.connect() as conn:
-        conn.execute(cleansed_table_sql)
-        df.to_postgis('cleansed', conn, if_exists='append', index=False, chunksize=500000)
-    logger.info("Done inserting!")
+
+    return df
+
 
 def convert_timestamp_to_time_and_date(row):
     timestamp = str(row['timestamp'])
@@ -134,15 +132,16 @@ def insert_simplified_trips(simplified_trip_df: gpd.GeoDataFrame, logger):
 def convert_to_hex(row):
     row['location'] = wkb.dumps(row['location'], hex=True, srid=4326)
 
-def insert_into_star(trip_id, logger):
+def insert_into_star(trip_id, df: gpd.GeoDataFrame, logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
     logger.info("Converting back to 4326")
 
-    sql_query = "SELECT * FROM cleansed"
-    ais_source = SQLSource(connection=conn, query=sql_query)
+    df = df.astype(object).where(pd.notnull(df),None)
+
+    ais_source = PandasSource(df)
 
     date_dim = CachedDimension(
         name='date_dim',
@@ -194,16 +193,9 @@ def insert_into_star(trip_id, logger):
         lookupatts=['line_string']
     )
 
-    # simplified_trip_dim = CachedDimension (
-    #     name='simplified_trip_dim',
-    #     key='simplified_trip_id',
-    #     attributes=['line_string'],
-    #     lookupatts=['line_string']
-    # )
-
     fact_table = BatchFactTable(
         name='data_fact',
-        keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id'],
+        keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id', 'hex_id'],
         measures=['location','rot','sog','cog','heading','draught','destination'],
         batchsize=500000,
         targetconnection=conn_wrapper
@@ -215,8 +207,6 @@ def insert_into_star(trip_id, logger):
 
 
     for row in ais_source:
-        # convert_timestamp_to_time_and_date(row)
-        # convert_to_hex(row)
 
         if row['date_id'] != date_dim.getbykey(row)['date_id']:
             date_dim.insert(row)
@@ -231,10 +221,6 @@ def insert_into_star(trip_id, logger):
         if row['trip_id'] != trip_dim.getbykey(row)['trip_id']:
             trip_dim.insert(row)
 
-        # if row['simplified_trip_id'] is not None:
-        #     if row['simplified_trip_id'] != simplified_trip_dim.getbykey(row)['simplified_trip_id']:
-        #         simplified_trip_dim.insert(row)
-
         fact_table.insert(row)
 
 
@@ -245,37 +231,27 @@ def insert_into_star(trip_id, logger):
     logger.info("Done inserting into star schema")
     logger.info("Generating line strings...")
 
+    print(f"Trip id key: {trip_id}")
     # truncate table data_fact, date_dim, nav_dim, ship_dim, ship_type_dim, simplified_trip_dim, time_dim, trip_dim RESTART IDENTITY CASCADE
-    sql_line_string_query = "WITH trip_list AS ( " \
-                                "SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
-                                "FROM data_fact " \
-                                f"WHERE trip_id >= {trip_id} " \
-                                "GROUP BY trip_id) " \
-                            "UPDATE trip_dim " \
-                                "SET line_string = ( " \
-	                                "SELECT line " \
-	                                "FROM trip_list " \
-	                            "WHERE trip_list.trip_id = trip_dim.trip_id)"
-
-    # sql_simplified_line_query = "WITH trip_list AS ( " \
-    #                             "SELECT simplified_trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line " \
-    #                             "FROM data_fact " \
-    #                             f"WHERE simplified_trip_id > {simplified_trip_id} " \
-    #                             "GROUP BY simplified_trip_id) " \
-    #                         "UPDATE simplified_trip_dim " \
-    #                             "SET line_string = ( " \
-	#                                 "SELECT line " \
-	#                                 "FROM trip_list " \
-	#                             "WHERE trip_list.simplified_trip_id = simplified_trip_dim.simplified_trip_id)"
-
-    cursor.execute(sql_line_string_query)
-    # cursor.execute(sql_simplified_line_query)
-
+    sql_line_string_query = f'''WITH trip_list AS ( 
+                                SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line 
+                                FROM data_fact 
+                                WHERE trip_id >= {trip_id} 
+                                GROUP BY trip_id) 
+                            UPDATE trip_dim 
+                                SET line_string = ( 
+	                                SELECT line 
+	                                FROM trip_list 
+	                            WHERE trip_list.trip_id = trip_dim.trip_id)'''
+    
+   
     logger.info("Generated and updated all line strings. Commiting data...")
 
-    cursor.execute("DROP TABLE cleansed")
 
     conn_wrapper.commit()
+    cursor.execute(sql_line_string_query)
+    conn.commit()
+
     conn_wrapper.close()
     conn.close()
     

@@ -1,14 +1,13 @@
-from typing import List
+from lib2to3.pgen2.pgen import DFAState
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.models.hexagon import Hexagon
+from app.models.line_string import Linestring
 from app.db.database import engine, Session
-from shapely import wkb
+from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons
 from shapely.geometry import Point
-import asyncio
 import pandas as pd
-import numpy as np
 
 session = Session()
 logger = get_logger()
@@ -21,66 +20,37 @@ router = APIRouter(
 
 @router.post('/')
 async def get_trip(p1: Coordinate, p2: Coordinate): 
-    geomp1 = Point(p1.long, p1.lat)
-    geomp2 = Point(p2.long, p2.lat)
-    print('start')
-    # First we select the two polygon where the points choosen reside
-    hexagon_query = '''                                                         
-                        SELECT                                                          
-                            h.hid, h.geom                                               
-                        FROM                                                            
-                            hexagrid as h                           
-                        WHERE                                                           
-                            ST_Intersects(
-                                h.geom, ST_GeomFromWKB(%(p1)s::geometry, 3857)
-                            ) OR     
-                            ST_Intersects(
-                                h.geom, ST_GeomFromWKB(%(p2)s::geometry, 3857)
-                            );
-                    '''
+    p1 = Point(p1.long, p1.lat)
+    p2 = Point(p2.long, p2.lat)
 
-    print('tried gettings hexagons')
-    hexagons = []
+    # First we fetch the hexagons for where two points can be found inside
+    logger.info('Fetching hexagon!')
+    hex_df = get_hexagons(query_fetch_hexagons_given_two_points(), p1, p2)
 
-    df = pd.read_sql_query(hexagon_query, 
-                          engine,
-                          params={
-                              "p1": geomp1.wkb_hex,
-                              "p2": geomp2.wkb_hex
-                          })
-    if len(df) < 2:
+    if len(hex_df) < 2:
         logger.error('The two coordinates intersect with each other')
         return []
     
-    for row in df.itertuples():
-        hexagons.append(Hexagon(hid=row.hid, geom=row.geom))
+    logger.info('Hexagons fetched!')
+    
+    # We add the hexagons to a list, so that we can access these values later
+    hexagons = add_hexagons_to_list(hex_df)
 
-    print('Got hexagons. Began getting linestrings')
-
-    # Then we select all linestrings that intersect with the two polygons
-    linestring_query =  '''
-                        SELECT
-                            ST_AsGeoJSON(std.line_string)::json AS st_asgeojson
-                        FROM
-                            simplified_trip_dim AS std
-                        WHERE
-                            ST_Intersects(
-                                ST_FlipCoordinates(std.line_string),
-                                %(hex1geom)s::geometry
-                            ) AND
-                            ST_Intersects(
-                                ST_FlipCoordinates(std.line_string),
-                                %(hex2geom)s::geometry
-                            );
-                        '''
 
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
-    linestrings = []
-    
+    logger.info('Fetching line strings')
+    line_string_df = get_line_strings(query_fetch_line_strings_given_hexagons, hex1=hexagons[0], hex2=hexagons[1])
+    line_strings = add_line_strings_to_list(line_string_df)
+    logger.info('Line Strings fetched!')
+
+
+    line_string_to_return = [l.points for l in line_strings]
+    return [line_string_to_return]
+
     # Fills the linestring array, so we can return linestrings to frontend
     for chunk in pd.read_sql_query(
-                        linestring_query, 
+                        query_fetch_line_strings_given_hexagons, 
                         engine, 
                         params=
                         {
@@ -91,7 +61,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         if len(chunk) != 0:
             for json in chunk['st_asgeojson']:
                 if json is not None:
-                    linestrings.append(json['coordinates'])
+                    line_strings_to_frontend.append(json['coordinates'])
         else:
             logger.warning('No trips were found for the selected coordinates')
             raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
@@ -207,7 +177,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #             hex2_df = hex2_df.iloc[:-diff]
         
 
-    return linestrings
+    return line_strings_to_frontend
 
 def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     # point_query =   f'''{linestring}
@@ -262,3 +232,47 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
         )
     print(df)
     return []
+
+def add_line_strings_to_list(df: pd.DataFrame) -> list[Linestring]:
+    line_strings = []
+    for row in df.itertuples():
+        if row is not None:
+            line_string = Linestring(
+                                trip_id=row.trip_id, 
+                                simplified_trip_id=row.simplified_trip_id,
+                                line_string=row.line_string
+                            )
+            line_strings.append(line_string)
+    return line_strings
+
+def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:    
+    df = pd.read_sql_query(
+            query_fetch_line_strings_given_hexagons, 
+            engine, 
+            params=
+            {
+                "hex1geom": hex1.geom, 
+                "hex2geom": hex2.geom
+            }
+        )
+    return df
+
+def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
+    hexagons = []
+    
+    for table_row in df.itertuples():
+        hexagons.append(Hexagon(column=table_row.column, row=table_row.row, geom=table_row.geom))
+    
+    return hexagons
+
+def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
+    '''Returns the hexagons where p1 and p2 can be found within'''
+    df = pd.read_sql_query(
+            query_fetch_hexagons_given_two_points(), 
+            engine,
+            params={
+                "p1": p1.wkb_hex,
+                "p2": p2.wkb_hex
+            }
+        )
+    return df

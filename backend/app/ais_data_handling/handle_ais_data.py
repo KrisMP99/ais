@@ -8,10 +8,8 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import requests
 import zipfile, rarfile
-from douglas_peucker import add_simplified_trip_ids, add_hex_ids
-from data_insertion import insert_simplified_trips
-from douglas_peucker import create_simplified_trip_line_strings
-from data_insertion import calculate_date_tim_dim_and_hex, insert_into_star
+from douglas_peucker import add_simplified_trip_ids, add_hex_ids, create_simplified_trip_line_strings
+from data_insertion import insert_simplified_trips, calculate_date_tim_dim_and_hex, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
 import logging
@@ -347,9 +345,9 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     df_cleansed = df_cleansed.to_crs(epsg="4326")
     df_cleansed = df_cleansed.rename_geometry('location')
     df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
-    df_cleansed = add_hex_ids(df_cleansed, logger)
+    # df_cleansed = add_hex_ids(df_cleansed, logger)
     df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
-    insert_into_star(df_cleansed['trip_id'].min(), df_cleansed, logger)
+    insert_into_star(df_cleansed['trip_id'].min(), simplified_trip_df['simplified_trip_id'].min(), df_cleansed, logger)
     add_new_file_to_log(file_name, logger=logger)
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin

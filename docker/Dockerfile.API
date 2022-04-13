@@ -2,9 +2,16 @@
 FROM python:latest
 WORKDIR /srv/data/ais/backend
 
+RUN apt-get update
+
+RUN apt install -y gdal-bin libgdal-dev
+
 RUN python -m venv /opt/venv
 # Enable venv
 ENV PATH="/opt/venv/bin:$PATH"
+
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
 
 COPY backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt

@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "sadasd",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args": [
+                "-f", "True",
+            ],
+            "console": "integratedTerminal",
+            "cwd":"C:\\Users\\Krist\\Desktop\\ais\\backend\\app\\ais_data_handling\\"
+        },
+        {
+            "name": "Python: Current File with my args",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args": [
+                "-f", "True",
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}

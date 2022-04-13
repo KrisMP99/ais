@@ -69,17 +69,18 @@ CREATE TABLE hex_10000_dim (hex_10000_row INTEGER, hex_10000_column INTEGER, PRI
 INSERT INTO hex_500_dim(hex_500_row, hex_500_column, hexagon)
 SELECT hexes.j, hexes.i, hexes.geom  
 FROM ST_HexagonGrid(500, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
-INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom)
+INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom);
 ```
 ``` SQL
 INSERT INTO hex_10000_dim(hex_10000_row, hex_10000_column, hexagon)
 SELECT hexes.j, hexes.i, hexes.geom  
 FROM ST_HexagonGrid(10000, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
-INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom)
+INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom);
 ```
 1. Convert back to 4326:
  ```SQL
- ALTER TABLE hex_500_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) USING ST_Transform(hexagon, 4326);
+ ALTER TABLE hex_500_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) 
+ USING ST_Transform(hexagon, 4326);
  ```
 ```SQL
  ALTER TABLE hex_10000_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) USING ST_Transform(hexagon, 4326);

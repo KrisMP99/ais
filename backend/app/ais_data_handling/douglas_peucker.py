@@ -19,30 +19,72 @@ COLUMNS = ['timestamp', 'type_of_mobile', 'mmsi','latitude','longitude', 'naviga
 # Tolerance for Douglas Peucker algorithm
 TOLERANCE = 1000
 
-def get_hex_id(row, hex_dim: gpd.GeoDataFrame):
-    
-    for hex_row in hex_dim.itertuples(name=None):
-        if row.location.within(hex_row[2]):
-            row['hex_id'] = hex_row[1]
+def get_hex_id(row, hex_10000_dim: gpd.GeoDataFrame, hex_500_dim: gpd.GeoDataFrame):
+    hex_10000_geom = None
+    time_begin = datetime.datetime.now()
+
+    # First we add the (col,row) for the hex_10000_dim
+    # for hex_10000_row in hex_10000_dim.itertuples(name=None):
+    #     if row.location.within(hex_10000_row[3]):
+    #         row['hex_10000_column'] = hex_10000_row[2]
+    #         row['hex_10000_row'] = hex_10000_row[1]
+    #         hex_10000_geom = hex_10000_row[3]
+    #         break
+
+    hex_10000_geom = hex_10000_dim[(hex_10000_dim['geom'].contains(row.location))]['geom'].iloc[0]
+
+    # Now we find the (col,row) for the hex_500_dim
+    # Because it contains a lot of cells (approx 1.8 million)
+    # We limit our search space, by only searching within those hexagons
+    # That intersects with the large hexagon found above
+    # That way, we reduce our search from approx 1.8 million, to around 5.000.
+
+    # hexagons_500 =  hex_500_dim[(hex_500_dim['geom'].intersects(hex_10000_geom))]
+
+    mask = hex_500_dim.intersects(hex_10000_geom)
+    hexagons_500 = hex_500_dim.loc[mask]
+
+    for hex_500_row in hexagons_500.itertuples():
+        if row.location.within(hex_500_row[3]):
+            row['hex_500_column'] = hex_500_row[2]
+            row['hex_500_row'] = hex_500_row[1]
             break
+
+    time_end = datetime.datetime.now()
+    time_delta = time_end - time_begin
+    print(f"Took approx: {time_delta.total_seconds()} seconds")
+
+    print(hexagons_500.head())
+    quit()
+
+
+    # for hex_row in hex_dim.itertuples(name=None):
+    #     if row.location.within(hex_row[2]):
+    #         row['hex_id'] = hex_row[1]
+    #         break
     
     return row
 
 def add_hex_ids(df: gpd.GeoDataFrame, logger) -> gpd.GeoDataFrame:
-    logger.info("Adding hex ids...")
+
+    df[['hex_500_column', 'hex_500_row', 'hex_10000_column', 'hex_10000_row']] = None
+    return df
 
     db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
     engine = create_engine(db_string)
 
-    sql_query = "SELECT * FROM hex_dim"
-    hex_dim = gpd.read_postgis(sql=sql_query, con=engine, geom_col='geom', crs=4326)
+    sql_query_500 = "SELECT * FROM hex_500_dim"
+    sql_query_10000 = "SELECT * FROM hex_10000_dim"
+    hex_500_dim = gpd.read_postgis(sql=sql_query_500, con=engine, geom_col='geom', crs=4326)
+    hex_10000_dim = gpd.read_postgis(sql=sql_query_10000, con=engine, geom_col='geom', crs=4326)
 
     df_simplified = df[(df['simplified_trip_id'].notnull())]
 
     time_begin = datetime.datetime.now()
     print("Time begin for adding hex ids: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
 
-    df_simplified = df_simplified.apply(lambda x: get_hex_id(x, hex_dim), axis=1)
+    
+    df_simplified = df_simplified.apply(lambda x: get_hex_id(x, hex_10000_dim, hex_500_dim), axis=1)
     df = pd.merge(left=df, right=df_simplified[['hex_id', 'simplified_trip_id']], on='simplified_trip_id', how='left')
 
     time_end = datetime.datetime.now()

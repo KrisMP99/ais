@@ -255,7 +255,7 @@ def insert_into_star(trip_id, simplified_trip_id, df: gpd.GeoDataFrame, logger):
                             WITH hexes as (
                                 SELECT hex_10000_dim.hex_10000_row as hex10row, hex_10000_dim.hex_10000_column as hex10col, data_fact.simplified_trip_id as data_id
                                 FROM hex_10000_dim, data_fact
-                                WHERE ST_Within(data_fact.location, hex_10000_dim.hexagon) AND (data_id >= {simplified_trip_id})
+                                WHERE ST_Within(data_fact.location, hex_10000_dim.hexagon) AND (data_fact.simplified_trip_id >= {simplified_trip_id})
                             )
 
                             UPDATE data_fact

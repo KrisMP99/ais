@@ -51,7 +51,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             className: 'marker',
             iconUrl: iconUrl,
             iconSize: [20,20],
-            iconAnchor: [12,20]
+            iconAnchor: [10,10]
         });
 
         this.state = {

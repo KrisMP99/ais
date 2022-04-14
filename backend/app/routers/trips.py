@@ -5,8 +5,9 @@ from app.models.coordinate import Coordinate
 from app.models.hexagon import Hexagon
 from app.models.line_string import Linestring
 from app.db.database import engine, Session
-from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons
+from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
+import geopandas as gpd
 import pandas as pd
 
 session = Session()
@@ -20,143 +21,86 @@ router = APIRouter(
 
 @router.post('/')
 async def get_trip(p1: Coordinate, p2: Coordinate): 
-    p1 = Point(p1.long, p1.lat)
-    p2 = Point(p2.long, p2.lat)
+    gp1 = Point(p1.long, p1.lat)
+    gp2 = Point(p2.long, p2.lat)
 
     # First we fetch the hexagons for where two points can be found inside
     logger.info('Fetching hexagon!')
-    hex_df = get_hexagons(query_fetch_hexagons_given_two_points(), p1, p2)
+    hex_df = get_hexagons(query_fetch_hexagons_given_two_points(), gp1, gp2)
 
     if len(hex_df) < 2:
         logger.error('The two coordinates intersect with each other')
         return []
     
-    logger.info('Hexagons fetched!')
-    
     # We add the hexagons to a list, so that we can access these values later
     hexagons = add_hexagons_to_list(hex_df)
 
-
+    logger.info('Hexagons fetched!')
+    
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     logger.info('Fetching line strings')
-    line_string_df = get_line_strings(query_fetch_line_strings_given_hexagons, hex1=hexagons[0], hex2=hexagons[1])
+    line_string_df = get_line_strings(query_fetch_line_strings_given_hexagons(), hex1=hexagons[0], hex2=hexagons[1])
+    
+    if len(line_string_df) == 0:
+        logger.warning('No trips were found for the selected coordinates')
+        raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
+        return []
+
     line_strings = add_line_strings_to_list(line_string_df)
     logger.info('Line Strings fetched!')
 
+    line_string_to_return_to_frontend = [list(l.points) for l in line_strings]
 
-    line_string_to_return = [l.points for l in line_strings]
-    return [line_string_to_return]
-
-    # Fills the linestring array, so we can return linestrings to frontend
-    for chunk in pd.read_sql_query(
-                        query_fetch_line_strings_given_hexagons, 
-                        engine, 
-                        params=
-                        {
-                            "hex1geom": hexagons[0].geom, 
-                            "hex2geom": hexagons[1].geom
-                        }, 
-                        chunksize=50000):
-        if len(chunk) != 0:
-            for json in chunk['st_asgeojson']:
-                if json is not None:
-                    line_strings_to_frontend.append(json['coordinates'])
-        else:
-            logger.warning('No trips were found for the selected coordinates')
-            raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
     print('Got linestrings')
+    
+    # Select points that intersect with either of the hexagons **OBS RETURNERE MÅSKE iKKE NOGET LIGE NU**
 
-    # Select all points in the linestrings insecting the hexagons
-    linestring_points_query =   '''
-                                WITH points_in_linestring AS (
-                                    SELECT DISTINCT
-                                        ST_PointN(
-                                            std.line_string,
-                                            generate_series(1, ST_NPoints(std.line_string))
-                                        ) AS geom, std.simplified_trip_id
-                                    FROM
-                                        simplified_trip_dim AS std
-                                    WHERE
-                                        ST_Intersects(
-                                            ST_FlipCoordinates(std.line_string),
-                                            %(hex1geom)s::geometry
-                                        ) AND
-                                        ST_Intersects(
-                                            ST_FlipCoordinates(std.line_string),
-                                            %(hex2geom)s::geometry
-                                        )
-                                )
-                                '''
-    # Select points that intersect with either of the hexagons
-    point_exists_in_hexagon_query = f'''{linestring_points_query}
-                                    SELECT
-                                        date_dim.date_id, time_dim.time_id,
-                                        data_fact.sog, pil.geom, ship_type_dim.ship_type,
-                                        h.hid
+    # create_point_query = f'''hexagon_centroid AS (
+    #                                 SELECT
+    #                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,
+    #                                     ST_Centroid(hex1.geom) AS geom
+    #                                 FROM
+    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim
+    #                                 WHERE
+    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND
+    #                                     data_fact.date_id = date_dim.date_id AND
+    #                                     data_fact.time_id = time_dim.time_id AND
+    #                                     pil.geom = data_fact.location
+    #                                 LIMIT 1
+    #                          )'''
 
-                                    FROM
-                                        hexagrid AS h, data_fact
-                                        INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
-                                        INNER JOIN time_dim ON time_dim.time_id = data_fact.time_id
-                                        INNER JOIN ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id
-                                        INNER JOIN points_in_linestring AS pil ON pil.simplified_trip_id = data_fact.simplified_trip_id
-                                    WHERE
-                                        data_fact.location = pil.geom AND
-                                        (
-                                            (ST_Within(
-                                                    ST_FlipCoordinates(pil.geom),
-                                                    %(hex1geom)s::geometry
-                                            ) AND 
-                                            h.hid = %(hex1hid)s) OR
-                                            
-                                            (ST_Within(
-                                                    ST_FlipCoordinates(pil.geom),
-                                                    %(hex2geom)s::geometry
-                                            ) AND 
-                                            h.hid = %(hex2hid)s)
-                                        )
-                                    ORDER BY time_dim.time_id
-                                    '''
-
-    # create_point_query = f"hexagon_centroid AS (                                                           \
-    #                                 SELECT                                                                      \
-    #                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,                \
-    #                                     ST_Centroid(hex1.geom) AS geom                                          \
-    #                                 FROM                                                                        \
-    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim  \
-    #                                 WHERE                                                                       \
-    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND               \
-    #                                     data_fact.date_id = date_dim.date_id AND                                \
-    #                                     data_fact.time_id = time_dim.time_id AND                                \
-    #                                     pil.geom = data_fact.location                                           \
-    #                                 LIMIT 1                                                                     \
-    #                             )"
-
-    df = pd.read_sql_query( 
-            point_exists_in_hexagon_query, 
+    df = gpd.read_postgis( 
+            query_point_exists_in_hexagon(), 
             engine,
             params={
-                'hex1hid': hexagons[0].hid,
-                'hex1geom': hexagons[0].geom,
-                'hex2hid': hexagons[1].hid,
-                'hex2geom': hexagons[1].geom
-            }
+                'hex1row': hexagons[0].row,
+                'hex1column': hexagons[0].column,
+                'hex1hex': hexagons[0].hexagon.wkb_hex,
+                'hex2row': hexagons[1].row,
+                'hex2column': hexagons[1].column,
+                'hex2hex': hexagons[1].hexagon.wkb_hex,
+            },
+            geom_col='geom'
         )
-    hexagons_list = df['hid'].unique().tolist()
-    group = df.groupby(by=['hid'])
+
+    print(df)
+
+    hexagons_list = pd.unique(df[['hex_500_row', 'hex_500_column']].values.ravel('K')).tolist()
+
+    group = df.groupby(by=['hex_500_row', 'hex_500_column'])
     
     print('Number of groups ', group.ngroups)
 
     if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('No points in either hexagons')
         for hex in hexagons:
-            create_point(hex, linestring_points_query, hexagons) 
+            create_point(hex, query_get_points_in_line_string(), hexagons) 
     elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
         # Find which hexagon has no points
         for hex in hexagons:
-            if hex.hid not in hexagons_list:
-                create_point(hex, linestring_points_query, hexagons)
+            if hex.row not in hexagons_list and hex.column not in hexagons_list:
+                create_point(hex, query_get_points_in_line_string(), hexagons)
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])
     #     hex2_df = group.get_group(hexagons_list[1])
@@ -177,7 +121,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #             hex2_df = hex2_df.iloc[:-diff]
         
 
-    return line_strings_to_frontend
+    return line_string_to_return_to_frontend
 
 def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     # point_query =   f'''{linestring}
@@ -198,18 +142,17 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     #                 )
     #                 '''
     point_query =   f'''{linestring}
-                
                     SELECT 
                         DISTINCT ST_ClosestPoint(%(hex)s::geometry, pil.geom) AS geom
                     FROM
                         points_in_linestring AS pil;
-                '''
+                    '''
     # Get the closest point to the hexagon, so we can use the data from that point.            
     # Calculate the distance from ST_ClosestPoint(ST_Centroid(hexagon), linestring) to the point found before.
     # Then we can use SOG of the point in the linestring, and the distance to calculate a timestamp.
     # query = f'''{linestring}
     #             SELECT 
-    #                 date_dim.date_id, data_fact.sog, pil.geom, ship_type_dim.ship_type, h.hid
+    #                 date_dim.date_id, data_fact.sog, pil.geom, ship_type_dim.ship_type, h.hex_500_row, h.hex_500_column
     #             FROM 
     #                 data_fact
     #                 INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
@@ -223,11 +166,13 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
             point_query, 
             engine,
             params={
-                'hex1hid': hexagons[0].hid,
-                'hex1geom': hexagons[0].geom,
-                'hex2hid': hexagons[1].hid,
-                'hex2geom': hexagons[1].geom,
-                'hex': hexagon.geom 
+                'hex1row': hexagons[0].row,
+                'hex1column': hexagons[0].column,
+                'hex1hex': hexagons[0].hexagon.wkb_hex,
+                'hex2row': hexagons[1].row,
+                'hex2column': hexagons[1].column,
+                'hex2hex': hexagons[1].hexagon.wkb_hex,
+                'hex': hexagon.hexagon.wkb_hex 
             }
         )
     print(df)
@@ -246,14 +191,15 @@ def add_line_strings_to_list(df: pd.DataFrame) -> list[Linestring]:
     return line_strings
 
 def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:    
-    df = pd.read_sql_query(
-            query_fetch_line_strings_given_hexagons, 
+    df = gpd.read_postgis(
+            query_fetch_line_strings_given_hexagons(), 
             engine, 
             params=
             {
-                "hex1geom": hex1.geom, 
-                "hex2geom": hex2.geom
-            }
+                "hex1": hex1.hexagon.wkb_hex, 
+                "hex2": hex2.hexagon.wkb_hex
+            },
+            geom_col='line_string'
         )
     return df
 
@@ -261,18 +207,19 @@ def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
     hexagons = []
     
     for table_row in df.itertuples():
-        hexagons.append(Hexagon(column=table_row.column, row=table_row.row, geom=table_row.geom))
+        hexagons.append(Hexagon(column=table_row.hex_500_column, row=table_row.hex_500_row, hexagon=table_row.hexagon))
     
     return hexagons
 
 def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
     '''Returns the hexagons where p1 and p2 can be found within'''
-    df = pd.read_sql_query(
+    df = gpd.read_postgis(
             query_fetch_hexagons_given_two_points(), 
             engine,
             params={
                 "p1": p1.wkb_hex,
                 "p2": p2.wkb_hex
-            }
+            },
+            geom_col='hexagon'
         )
     return df

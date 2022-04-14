@@ -253,22 +253,22 @@ def insert_into_star(trip_id, simplified_trip_id, df: gpd.GeoDataFrame, logger):
     # Hexagons
     sql_hexagon_query = f'''
                             WITH hexes as (
-                                SELECT hex_10000_dim.hex_10000_row as hex10row, hex_10000_dim.hex_10000_column as hex10col, data_fact.simplified_trip_id as data_id
-                                FROM hex_10000_dim, data_fact
-                                WHERE ST_Within(data_fact.location, hex_10000_dim.hexagon) AND (data_fact.simplified_trip_id >= 1)
+                                SELECT hex_10000_dim.hex_10000_row as hex10row, hex_10000_dim.hex_10000_column as hex10col, data_fact.simplified_trip_id as simplified_trip_id, data_fact.data_fact_id as data_fact_id
+                                FROM hex_10000_dim JOIN data_fact 
+                                ON ST_Contains(data_fact.location, hex_10000_dim.hexagon) AND (data_fact.simplified_trip_id >= {simplified_trip_id})
                             )
 
                             UPDATE data_fact
-                            SET hex_10000_row = (
-                                SELECT hexes.hex10row
-                                FROM hexes
-                                WHERE hexes.data_id = data_fact.simplified_trip_id
-                            ),
-                            hex_10000_column = (
-                                SELECT hexes.hex10col
-                                FROM hexes
-                                WHERE hexes.data_id = data_fact.simplified_trip_id
-                            )
+                                SET hex_10000_row = (
+                                    SELECT hexes.hex10row
+                                    FROM hexes
+                                    WHERE (hexes.data_fact_id = data_fact.data_fact_id) AND (hexes.simplified_trip_id = data_fact.simplified_trip_id)
+                                ),
+                                hex_10000_column = (
+                                    SELECT hexes.hex10col
+                                    FROM hexes
+                                    WHERE (hexes.data_fact_id = data_fact.data_fact_id) AND (hexes.simplified_trip_id = data_fact.simplified_trip_id)
+                            );
                         '''
     cursor.execute(sql_hexagon_query)
     conn.commit()

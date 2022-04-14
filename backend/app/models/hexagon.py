@@ -1,7 +1,7 @@
 from shapely.geometry import Polygon
 
 class Hexagon:
-    def __init__(self, column:int, row:int, geom:Polygon):
-        self.column = column
+    def __init__(self, row:int, column:int, hexagon:Polygon):
         self.row = row
-        self.geom = geom
+        self.column = column
+        self.hexagon = hexagon

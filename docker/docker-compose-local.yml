@@ -37,3 +37,16 @@ services:
     restart: always
     ports:
       - 3000:3000
+    
+  cleansing:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.Cleansing
+    tty: true
+    image: ais_cleansing
+    container_name: ais_cleansing
+    volumes:
+      - type: bind
+        source: ../backend/app/ais_data_handling
+        target: /srv/data/ais/backend/app/ais_data_handling
+    restart: always

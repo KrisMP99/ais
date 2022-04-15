@@ -46,24 +46,41 @@
   margin-top: 0;
   text-align: center;
 }
-
-.post-button {
-  width: 290px;
-  height: 35px;
-  background-color: #4CAF50;
-  color: #fff;
-  border-radius: 6px;
-  font-size: 15px;
-  align-self: center;
-  border: none;
-  cursor: pointer;
-}
-.post-button:hover {
-  background-color: #419844;
+.footer {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
 }
 
 .positions-container {
   position: relative;
   display: flex;
   flex-direction: column;
+}
+
+.button {
+  height: 35px;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+}
+.btn-find-route {
+  width: 130px;
+  background-color: #4CAF50;
+}
+.btn-find-route:hover {
+  background-color: #419844;
+}
+.btn-clear {
+  width: 100px;
+  background-color: #af4c4c;
+}
+.btn-clear:hover {
+  background-color: #984141;
+}
+.btn-clear:disabled {
+  background-color: #d0d0d0;
+  opacity: 0.6;
 }

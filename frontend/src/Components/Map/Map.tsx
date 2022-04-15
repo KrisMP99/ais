@@ -1,7 +1,7 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
 import '../../Leaflet.css'; 
+import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
 import L, { LatLngBoundsExpression, LatLng, marker } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';

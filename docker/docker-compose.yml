@@ -56,8 +56,8 @@ services:
     container_name: ais_cleansing
     volumes:
       - type: bind
-        source: ../backend/app/ais_data_handling
-        target: /srv/data/ais/backend/app/ais_data_handling
+        source: ../
+        target: /srv/data/ais
       - type: bind
         source: /srv/data/csv
         target: /srv/data/csv

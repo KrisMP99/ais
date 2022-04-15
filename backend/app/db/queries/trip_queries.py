@@ -2,9 +2,9 @@ def query_fetch_hexagons_given_two_points() -> str:
     '''We find all hexagons where the points are found in'''
     return '''                                                         
                 SELECT                                                          
-                    h.hex_500_column, h.hex_500_row, h.hexagon                                          
+                    h.hex_10000_column, h.hex_10000_row, h.hexagon                                          
                 FROM                                                            
-                    hex_500_dim as h                           
+                    hex_10000_dim as h                           
                 WHERE                                                           
                     ST_Within(
                         ST_GeomFromWKB(%(p1)s::geometry, 4326), h.hexagon
@@ -59,10 +59,10 @@ def query_point_exists_in_hexagon() -> str:
             SELECT
                 date_dim.date_id, time_dim.time_id,
                 data_fact.sog, pil.geom, ship_type_dim.ship_type,
-                h.hex_500_row, h.hex_500_column
+                h.hex_10000_row, h.hex_10000_column
 
             FROM
-                hex_500_dim AS h, data_fact
+                hex_10000_dim AS h, data_fact
                 INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
                 INNER JOIN time_dim ON time_dim.time_id = data_fact.time_id
                 INNER JOIN ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id
@@ -74,15 +74,15 @@ def query_point_exists_in_hexagon() -> str:
                             ST_FlipCoordinates(pil.geom),
                             ST_GeomFromWKB(%(hex1hex)s::geometry, 4326)
                     ) AND 
-                    h.hex_500_row = %(hex1row)s AND 
-                    h.hex_500_column = %(hex1column)s) OR
+                    h.hex_10000_row = %(hex1row)s AND 
+                    h.hex_10000_column = %(hex1column)s) OR
                     
                     (ST_Within(
                             ST_FlipCoordinates(pil.geom),
                             ST_GeomFromWKB(%(hex2hex)s::geometry, 4326)
                     ) AND 
-                    h.hex_500_row = %(hex2row)s AND 
-                    h.hex_500_column = %(hex2column)s)
+                    h.hex_10000_row = %(hex2row)s AND 
+                    h.hex_10000_column = %(hex2column)s)
                 )
             ORDER BY time_dim.time_id
             '''

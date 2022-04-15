@@ -86,9 +86,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     print(df)
 
-    hexagons_list = pd.unique(df[['hex_500_row', 'hex_500_column']].values.ravel('K')).tolist()
+    hexagons_list = pd.unique(df[['hex_10000_row', 'hex_10000_column']].values.ravel('K')).tolist()
 
-    group = df.groupby(by=['hex_500_row', 'hex_500_column'])
+    group = df.groupby(by=['hex_10000_row', 'hex_10000_column'])
     
     print('Number of groups ', group.ngroups)
 
@@ -152,7 +152,7 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     # Then we can use SOG of the point in the linestring, and the distance to calculate a timestamp.
     # query = f'''{linestring}
     #             SELECT 
-    #                 date_dim.date_id, data_fact.sog, pil.geom, ship_type_dim.ship_type, h.hex_500_row, h.hex_500_column
+    #                 date_dim.date_id, data_fact.sog, pil.geom, ship_type_dim.ship_type, h.hex_10000_row, h.hex_10000_column
     #             FROM 
     #                 data_fact
     #                 INNER JOIN date_dim ON date_dim.date_id = data_fact.date_id 
@@ -207,7 +207,7 @@ def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
     hexagons = []
     
     for table_row in df.itertuples():
-        hexagons.append(Hexagon(column=table_row.hex_500_column, row=table_row.hex_500_row, hexagon=table_row.hexagon))
+        hexagons.append(Hexagon(column=table_row.hex_10000_column, row=table_row.hex_10000_row, hexagon=table_row.hexagon))
     
     return hexagons
 

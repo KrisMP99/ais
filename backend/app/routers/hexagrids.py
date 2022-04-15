@@ -24,11 +24,11 @@ async def get_hexagon(p1: Coordinate):
     gp1 = Point(p1.long, p1.lat)
     query = '''
                 SELECT
-                    h.hex_500_row, 
-                    h.hex_500_column, 
+                    h.hex_10000_row, 
+                    h.hex_10000_column, 
                     ST_FlipCoordinates(h.hexagon) AS hexagon
                 FROM
-                    hex_500_dim AS h
+                    hex_10000_dim AS h
                 WHERE
                     ST_Within(
                         ST_GeomFromWKB(%(hexagon)s::geometry, 4326),
@@ -44,7 +44,7 @@ async def get_hexagon(p1: Coordinate):
 
 
     hex = Hexagon(
-                row=df.hex_500_row.iloc[0], 
-                column=df.hex_500_column.iloc[0], 
+                row=df.hex_10000_row.iloc[0], 
+                column=df.hex_10000_column.iloc[0], 
                 hexagon=df.hexagon.iloc[0])
     return list(hex.hexagon.exterior.coords)

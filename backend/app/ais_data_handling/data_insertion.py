@@ -132,12 +132,14 @@ def insert_simplified_trips(simplified_trip_df: gpd.GeoDataFrame, logger):
 def convert_to_hex(row):
     row['location'] = wkb.dumps(row['location'], hex=True, srid=4326)
 
-def insert_into_star(trip_id, df: gpd.GeoDataFrame, logger):
+def insert_into_star(trip_id, simplified_trip_id, df: gpd.GeoDataFrame, logger):
     # Establish db connection
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
     cursor = conn.cursor()
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
     logger.info("Converting back to 4326")
+
+    df[['hex_500_column', 'hex_500_row', 'hex_10000_column', 'hex_10000_row']] = None
 
     df = df.astype(object).where(pd.notnull(df),None)
 
@@ -195,7 +197,7 @@ def insert_into_star(trip_id, df: gpd.GeoDataFrame, logger):
 
     fact_table = BatchFactTable(
         name='data_fact',
-        keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id', 'hex_id'],
+        keyrefs=['date_id','time_id','ship_type_id','ship_id','nav_id','trip_id','simplified_trip_id','hex_500_row', 'hex_500_column', 'hex_10000_column', 'hex_10000_row'],
         measures=['location','rot','sog','cog','heading','draught','destination'],
         batchsize=500000,
         targetconnection=conn_wrapper
@@ -231,7 +233,6 @@ def insert_into_star(trip_id, df: gpd.GeoDataFrame, logger):
     logger.info("Done inserting into star schema")
     logger.info("Generating line strings...")
 
-    print(f"Trip id key: {trip_id}")
     # truncate table data_fact, date_dim, nav_dim, ship_dim, ship_type_dim, simplified_trip_dim, time_dim, trip_dim RESTART IDENTITY CASCADE
     sql_line_string_query = f'''WITH trip_list AS ( 
                                 SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line 
@@ -243,14 +244,36 @@ def insert_into_star(trip_id, df: gpd.GeoDataFrame, logger):
 	                                SELECT line 
 	                                FROM trip_list 
 	                            WHERE trip_list.trip_id = trip_dim.trip_id)'''
-    
-   
-    logger.info("Generated and updated all line strings. Commiting data...")
-
 
     conn_wrapper.commit()
     cursor.execute(sql_line_string_query)
     conn.commit()
+
+    logger.info("Done with line strings, adding (col,row) on data_fact for hex_10000_dim...")
+    # Hexagons
+    sql_hexagon_query = f'''
+                            WITH hexes as (
+                                SELECT hex_10000_dim.hex_10000_row as hex10row, hex_10000_dim.hex_10000_column as hex10col, data_fact.simplified_trip_id as simplified_trip_id, data_fact.data_fact_id as data_fact_id
+                                FROM hex_10000_dim JOIN data_fact 
+                                ON ST_Contains(data_fact.location, hex_10000_dim.hexagon) AND (data_fact.simplified_trip_id >= {simplified_trip_id})
+                            )
+
+                            UPDATE data_fact
+                                SET hex_10000_row = (
+                                    SELECT hexes.hex10row
+                                    FROM hexes
+                                    WHERE (hexes.data_fact_id = data_fact.data_fact_id) AND (hexes.simplified_trip_id = data_fact.simplified_trip_id)
+                                ),
+                                hex_10000_column = (
+                                    SELECT hexes.hex10col
+                                    FROM hexes
+                                    WHERE (hexes.data_fact_id = data_fact.data_fact_id) AND (hexes.simplified_trip_id = data_fact.simplified_trip_id)
+                            );
+                        '''
+    cursor.execute(sql_hexagon_query)
+    conn.commit()
+    logger.info("Adding hex ids finished!")
+    logger.info("Commiting data...")
 
     conn_wrapper.close()
     conn.close()

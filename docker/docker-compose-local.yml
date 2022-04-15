@@ -16,7 +16,6 @@ services:
       dockerfile: ./docker/Dockerfile.API
     image: ais_api
     container_name: ais_api
-    command: uvicorn app.main:app --host 0.0.0.0 --reload
     volumes:
       - type: bind
         source: ../
@@ -26,6 +25,7 @@ services:
       - 8080:8000
     environment:
       - TZ=Europe/Copenhagen
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
       
   client:
     build:
@@ -33,7 +33,6 @@ services:
       dockerfile: ./docker/Dockerfile.Client
     image: ais_client
     container_name: ais_client
-    command: npm start
     volumes:
       - type: bind
         source: ../
@@ -43,6 +42,7 @@ services:
       - 3000:3000
     environment:
       - TZ=Europe/Copenhagen
+    command: npm start
     
   cleansing:
     build:

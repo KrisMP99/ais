@@ -7,6 +7,8 @@ services:
       - '5431:5431'
     env_file: ../.env
     restart: always
+    environment:
+      - TZ=Europe/Copenhagen
     
   api:
     build:
@@ -22,6 +24,8 @@ services:
     restart: always
     ports:
       - 8080:8000
+    environment:
+      - TZ=Europe/Copenhagen
       
   client:
     build:
@@ -37,6 +41,8 @@ services:
     restart: always
     ports:
       - 3000:3000
+    environment:
+      - TZ=Europe/Copenhagen
     
   cleansing:
     build:
@@ -50,3 +56,5 @@ services:
         source: ../backend/app/ais_data_handling
         target: /srv/data/ais/backend/app/ais_data_handling
     restart: always
+    environment:
+      - TZ=Europe/Copenhagen

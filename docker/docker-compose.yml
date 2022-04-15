@@ -13,6 +13,8 @@ services:
       - '5432:5432'
     env_file: ../.env
     restart: always
+    environment:
+      - TZ=Europe/Copenhagen
     
   api:
     build:
@@ -31,6 +33,8 @@ services:
     restart: always
     ports:
       - 8080:8000
+    environment:
+      - TZ=Europe/Copenhagen
     
   client:
     build:
@@ -46,6 +50,8 @@ services:
     restart: always
     ports:
       - 3000:3000
+    environment:
+      - TZ=Europe/Copenhagen
 
   cleansing:
     cpu_count: 16
@@ -64,3 +70,5 @@ services:
         source: /srv/data/csv
         target: /srv/data/csv
     restart: always
+    environment:
+      - TZ=Europe/Copenhagen

@@ -3,9 +3,10 @@ FROM python:3.10-slim-buster
 WORKDIR /srv/data/ais/backend
 
 RUN apt-get update
-RUN add-apt-repository ppa:ubuntugis/ppa &&  apt-get update
 
-RUN apt install -y gdal-bin libgdal-dev
+RUN apt install -y tzdata libgdal-dev gdal-bin 
+
+RUN pip install --upgrade pip
 
 RUN python -m venv /opt/venv
 # Enable venv

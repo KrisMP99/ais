@@ -19,6 +19,9 @@ Access react client with:
 Access cleansing container with:
 ```sudo docker exec -ti ais_cleansing bash```
 
+To execute cleansing without entering the container:
+```sudo docker exec -d ais_cleansing python main.py -f True```
+
 ## Running Docker locally
 Build both images and containers with ```sudo docker-compose -f ./docker/docker-compose-local.yml up -d``` in the ais folder from the project
 

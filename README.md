@@ -70,7 +70,7 @@ To exit the container, ```\q```
     ```
     sudo docker exec -ti postgres_db psql -U ais
     ```
-    1. The container will then open. Create the database with ```CREATE DATABASE aisdb```
+    1. The container will then open. Create the database with ```CREATE DATABASE aisdb;```
 
     1. Then ```\q```
     1. Then 

@@ -14,7 +14,7 @@ dnspython==2.2.0
 fastapi==0.74.1
 filelock==3.3.0
 Fiona==1.8.21
-GDAL==3.4.2
+GDAL==3.2.2.1
 geopandas==0.10.2
 greenlet==1.1.2
 h11==0.13.0

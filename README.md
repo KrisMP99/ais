@@ -57,11 +57,25 @@ On windows with ```.\backend\env\Scripts\activate```
 
 ## Database setup map-bounds and hexagrid
 ### Initial setup
-1. Create table ```CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON, 4326));```
+1. Create table 
+```SQL
+CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON, 4326));
+```
+
 1. Insert the boundaries, covering the area of concern (in our case, it's Denmarks waters + a little extra)
-```INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');```
-1. Convert the table to SRID 3857 ```ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(Polygon, 3857) USING ST_Transform(geom, 3857); ```
-1. Analayze the table ```ANALYZE map_bounds;```
+```SQL
+INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');
+```
+
+1. Convert the table to SRID 3857 
+```SQL
+ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(Polygon, 3857) USING ST_Transform(geom, 3857); 
+```
+
+1. Analayze the table 
+```SQL
+ANALYZE map_bounds;
+```
 
 ### Tables for hexagons
 We create two hexagon tables, one with radius = 500 meters, and the other with radius = 10.000 meters.
@@ -70,6 +84,7 @@ We create two hexagon tables, one with radius = 500 meters, and the other with r
 CREATE TABLE hex_500_dim (hex_500_row INTEGER, hex_500_column INTEGER, PRIMARY KEY(hex_500_row, hex_500_column), hexagon geometry);
 CREATE TABLE hex_10000_dim (hex_10000_row INTEGER, hex_10000_column INTEGER, PRIMARY KEY(hex_10000_row, hex_10000_column), hexagon geometry);
 ```
+
 1. Fill the two tables by running the two queries below:
 ``` SQL
 INSERT INTO hex_500_dim(hex_500_row, hex_500_column, hexagon)
@@ -77,6 +92,7 @@ SELECT hexes.j, hexes.i, hexes.geom
 FROM ST_HexagonGrid(500, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
 INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom);
 ```
+
 ``` SQL
 INSERT INTO hex_10000_dim(hex_10000_row, hex_10000_column, hexagon)
 SELECT hexes.j, hexes.i, hexes.geom  
@@ -88,6 +104,7 @@ INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom);
  ALTER TABLE hex_500_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) 
  USING ST_Transform(hexagon, 4326);
  ```
+ 
 ```SQL
  ALTER TABLE hex_10000_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) USING ST_Transform(hexagon, 4326);
  ```

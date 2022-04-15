@@ -19,7 +19,7 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
     
     render() {
         return (
-            <button className="post-button" onClick={(e) => this.postCoordinates(this.props.coordinates)}>
+            <button className="button btn-find-route" onClick={(e) => this.postCoordinates(this.props.coordinates)}>
                 Find route
             </button>
         )

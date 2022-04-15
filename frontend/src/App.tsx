@@ -5,12 +5,13 @@ import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
 import { ShipTypeFilter } from './Components/ShipTypeFilter/ShipTypeFilter';
-import './Leaflet.css';
 
-export interface ETA {
+export interface Trip {
 	tripId: number;
+	tripPolyline?: LatLng[][]
 	color: string;
 	totalTime: string;
+	shipType?: string;
 }
 
 interface AppStates {
@@ -18,6 +19,7 @@ interface AppStates {
 	filterShipTypes: string[];
 	mouseCoords: string[];
 	polylines: LatLng[][];
+	trips: Trip[];
 	clear: boolean;
 }
 
@@ -25,7 +27,7 @@ export class App extends React.Component<any, AppStates> {
 
 	protected mapCenter: LatLng;
 	protected mapBoundaries: LatLngBoundsExpression;
-	protected temporaryTrips: ETA[];
+	protected temporaryTrips: Trip[];
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
 
@@ -37,11 +39,12 @@ export class App extends React.Component<any, AppStates> {
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
 		this.temporaryTrips = [];
 		for (let i = 0; i < 7; i++) {
-            this.temporaryTrips.push({color: 'red', totalTime: '30min', tripId: i});   
+            this.temporaryTrips.push({color: 'red', totalTime: '30min', tripId: i});   //DUMMY DATA
         }
 		this.state = {
 			pointCoords: [],
 			mouseCoords: [],
+			trips: [],
 			polylines: [],
 			filterShipTypes: [],
 			clear: false,
@@ -67,16 +70,7 @@ export class App extends React.Component<any, AppStates> {
 					<div className='right-side'>
 						<ETATrips 
 							ref={this.ETATripsRef}
-							tripETAs={this.temporaryTrips}
-							findRouteClicked={true}
-							clearClicked={() => {
-								this.DKMapRef.current?.clear();
-								this.setState({
-									pointCoords: [],
-									mouseCoords: [],
-									polylines: [],
-								});
-							}}
+							trips={this.temporaryTrips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
 						/>
 						<div className='positions-container'>
 							<p className='text-1'>Positions:</p>
@@ -94,11 +88,20 @@ export class App extends React.Component<any, AppStates> {
 									Lat: {this.textIsNotUndefined(2, true)} Lng: {this.textIsNotUndefined(2, false)}
 								</p>
 							</div>
-							<PostButton
-								coordinates={this.state.pointCoords}
-								shipTypeArray={this.state.filterShipTypes}
-								getData={(data: LatLng[][]) => this.setState({ polylines: data })}
-							/>
+							<div className='footer'>
+								<PostButton
+									coordinates={this.state.pointCoords}
+									shipTypeArray={this.state.filterShipTypes}
+									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
+								/>
+								<button
+									className={'button btn-clear'}
+									disabled={this.state.pointCoords.length <= 0}
+									onClick={() => this.clearPoints()}
+								>
+									Clear
+								</button>
+							</div>
 						</div>
 						<div className='filter-container'>
 							<hr></hr>
@@ -114,8 +117,7 @@ export class App extends React.Component<any, AppStates> {
 										this.state.filterShipTypes.push(val)
 										this.setState({ filterShipTypes: this.state.filterShipTypes })
 									}
-								}
-								}
+								}}
 							/>
 						</div>
 					</div>
@@ -123,6 +125,15 @@ export class App extends React.Component<any, AppStates> {
 
 			</div>
 		);
+	}
+
+	protected clearPoints() {
+		this.DKMapRef.current?.clear();
+		this.setState({ 
+			pointCoords: [],
+			mouseCoords: [],
+			polylines: [],
+		});
 	}
 
 	protected textIsNotUndefined(index: number, lat: boolean): string {

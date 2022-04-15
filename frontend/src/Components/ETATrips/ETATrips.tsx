@@ -1,17 +1,14 @@
 import React from 'react';
 import './ETATrips.css';
-import { ETA } from '../../App';
+import { Trip } from '../../App';
 
 
 interface ETATripsProps {
-    tripETAs: ETA[];
-    findRouteClicked: boolean;
-    clearClicked: () => void;
+    trips: Trip[];
 }
  
 interface ETATripsState {
-    tripChosen: ETA | null;
-    cleared: boolean;
+    tripChosen: Trip | null;
 }
  
 export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
@@ -22,28 +19,16 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
 
     constructor(props: ETATripsProps) {
         super(props);
-        this.dividerIndex = Math.floor(this.props.tripETAs.length * 0.5);
+        this.dividerIndex = Math.max(Math.floor(this.props.trips.length * 0.5), 20); //Handles so that it shows maximum 20 in each column
         this.fillColumns();
         this.state = {
-            tripChosen: null,
-            cleared: false,
+            tripChosen: null
         }
     }
 
     render() { 
-        // let backButton = null;
-        // if(this.state.tripChosen) {
-        //     backButton = (
-        //         <button
-        //             className='eta-button eta-button-back'
-        //             onClick={() => {
-        //                 this.setState({tripChosen: null});
-        //             }}
-        //         >
-        //             Back
-        //         </button>
-        //     );
-        // }
+        let tripLengthCheck: boolean = this.props.trips.length === 0;
+
         let body = null;
         if(!this.state.tripChosen) {
             body = (
@@ -67,22 +52,13 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
 
         return (
             <div 
-                className={this.state.cleared ? "eta-container" : "eta-container-open"}
+                className={tripLengthCheck ? "eta-container" : "eta-container-open"}
             >
                 <div className='eta-header'>
                     <p className='text-1'>{this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "Trips found:"}</p>
                 </div>
                 {body}
                 <div className='eta-footer'>
-                    <button
-                        className='eta-button'
-                        onClick={() => {
-                            this.props.clearClicked();
-                            this.setState({cleared: !this.state.cleared});
-                        }}
-                    >
-                        Clear
-                    </button>
                     <button
                         className='eta-button eta-button-back'
                         style={{display: (this.state.tripChosen ? '' : 'none')}}
@@ -99,7 +75,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
 
 
     protected fillColumns() {
-        this.tripsCol1 = this.props.tripETAs.map((trip, key) => {
+        this.tripsCol1 = this.props.trips.map((trip, key) => {
             if(key > this.dividerIndex) {
                 return;
             }
@@ -125,8 +101,11 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 </button>
             );
         });
-        this.tripsCol2 = this.props.tripETAs.map((trip, key) => {
+        this.tripsCol2 = this.props.trips.map((trip, key) => {
             if(key <= this.dividerIndex) {
+                return;
+            }
+            else if (key > this.dividerIndex*2) {
                 return;
             }
             return (

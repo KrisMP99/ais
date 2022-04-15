@@ -8,9 +8,7 @@ from app.routers import trips, hexagrids
 
 load_dotenv()
 TESTSERVER = os.getenv('TEST_SERVER')
-TESTSERVERNOPORT = os.getenv('TEST_SERVER_NO_PORT')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
-PRODSERVERNOPORT = os.getenv('PRODUCTION_SERVER_NO_PORT')
 
 origins = [
     'http://localhost:3000',

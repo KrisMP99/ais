@@ -8,7 +8,6 @@ from app.models.hexagon import Hexagon
 import shapely.wkb as wkb
 import pandas as pd
 import geopandas as gpd
-import asyncio
 
 session = Session()
 logger = get_logger()

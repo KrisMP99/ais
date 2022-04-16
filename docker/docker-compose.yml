@@ -64,6 +64,7 @@ services:
       context: ../
       dockerfile: ./docker/Dockerfile.Cleansing
     tty: true
+    command: python main.py -f True
     image: ais_cleansing
     container_name: ais_cleansing
     volumes:

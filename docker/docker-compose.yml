@@ -4,7 +4,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '16'
+          cpus: '8'
     image: postgis/postgis
     container_name: postgres_db
     volumes:
@@ -59,7 +59,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '16'
+          cpus: '8'
     build:
       context: ../
       dockerfile: ./docker/Dockerfile.Cleansing

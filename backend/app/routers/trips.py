@@ -55,6 +55,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     logger.info('Line Strings fetched!')
 
     line_string_to_return_to_frontend = [list(l.points) for l in line_strings]
+    print(line_string_to_return_to_frontend)
 
     print('Got linestrings')
     
@@ -74,6 +75,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     #                                 LIMIT 1
     #                          )'''
 
+    return line_string_to_return_to_frontend
+    
     df = gpd.read_postgis( 
             query_point_exists_in_hexagon(), 
             engine,

@@ -291,8 +291,13 @@ def continue_from_log(logger):
     files_to_download = files_on_server[latest_file_index + 1: -1]
     logger.info(f"There are {len(files_to_download)} compressed files to download.")
 
+    file: str
     for file in files_to_download:
-        download_cleanse_insert(file, logger=logger)
+        if ".zip" in file: 
+            file_name = file.split('.zip')[0]
+        else:
+            file_name = file.split('.rar')[0]
+        download_cleanse_insert(file_name=file_name, logger=logger)
 
 def does_file_contain_whole_month(file_name: str):
     """
@@ -417,16 +422,3 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
         download_cleanse_insert(file_to_download, logger)
     elif only_from_folder is not None:
         check_if_csv_is_in_log(logger)
-
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
-
-    logger = logging.getLogger()
-    return logger

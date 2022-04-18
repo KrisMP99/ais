@@ -20,6 +20,9 @@ services:
       - type: bind
         source: ../
         target: /srv/data/ais
+      - type: bind
+        source: 'C:\\Users\\Krist\\Desktop\\data_ais\\'
+        target: /srv/data/csv/
     restart: always
     ports:
       - 8080:8000
@@ -51,10 +54,14 @@ services:
     tty: true
     image: ais_cleansing
     container_name: ais_cleansing
+    env_file: ../.env
     volumes:
       - type: bind
-        source: ../backend/app/ais_data_handling
-        target: /srv/data/ais/backend/app/ais_data_handling
+        source: ../
+        target: /srv/data/ais/
+      - type: bind
+        source: 'C:\\Users\\Krist\\Desktop\\data_ais\\'
+        target: /srv/data/csv/
     restart: always
     environment:
       - TZ=Europe/Copenhagen

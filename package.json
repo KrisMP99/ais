@@ -1,0 +1,19 @@
+{
+  "name": "ais",
+  "version": "1.0.0",
+  "description": "Docker is already installed on the server\r If it is not running, run: \r ```\r sudo systemctl start docker\r ```",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AIS-p6/ais.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AIS-p6/ais/issues"
+  },
+  "homepage": "https://github.com/AIS-p6/ais#readme"
+}

@@ -303,7 +303,8 @@ def does_file_contain_whole_month(file_name: str):
     """
     # This should probably be done with strftime instead
     # See https://www.programiz.com/python-programming/datetime/strftime
-    if(len(file_name.split('-')) <= 3):
+    length_split = len(file_name.split('-'))
+    if(length_split <= 3):
         return True
     else:
         return False
@@ -316,7 +317,7 @@ def download_cleanse_insert(file_name: str, logger):
     """
     download_file_from_ais_web_server(file_name, logger)
 
-    if(does_file_contain_whole_month):
+    if(does_file_contain_whole_month(file_name)):
         files_to_insert = get_downloaded_csv_files_from_folder(file_name, logger=logger)
 
     if len(files_to_insert) <= 0:
@@ -345,7 +346,7 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     df_cleansed = df_cleansed.to_crs(epsg="4326")
     df_cleansed = df_cleansed.rename_geometry('location')
     df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
-    # df_cleansed = add_hex_ids(df_cleansed, logger)
+    df_cleansed = add_hex_ids(df_cleansed, logger)
     df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
     insert_into_star(df_cleansed['trip_id'].min(), simplified_trip_df['simplified_trip_id'].min(), df_cleansed, logger)
     add_new_file_to_log(file_name, logger=logger)
@@ -372,13 +373,17 @@ def download_interval(interval: str, logger):
     """
     dates = interval.split('::')
     csv_files_on_server = connect_to_to_ais_web_server_and_get_data(logger)
+    begin_index = None
+    end_index = None
 
     for csv_file in csv_files_on_server:
-        if dates[0] in csv_file:
-            begin_index = csv_files_on_server.index(csv_file)
-            continue
-        if dates[1] in csv_file:
-            end_index = csv_files_on_server.index(csv_file)
+        if begin_index is None:
+            if dates[0] in csv_file:
+                begin_index = csv_files_on_server.index(csv_file)
+                continue
+        if end_index is None:
+            if dates[1] in csv_file:
+                end_index = csv_files_on_server.index(csv_file)
     
     if begin_index is None or end_index is None:
         logger.critical("The files on the webserver does not contain the interval you're trying to download. Qutting.")
@@ -412,3 +417,15 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
     elif only_from_folder is not None:
         check_if_csv_is_in_log(logger)
 
+def get_logger():
+    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
+    logging.basicConfig(format = Log_Format,
+                        force = True,
+                        handlers = [
+                            logging.FileHandler(ERROR_LOG_FILE_PATH),
+                            logging.StreamHandler()
+                        ],
+                        level = logging.INFO)
+
+    logger = logging.getLogger()
+    return logger

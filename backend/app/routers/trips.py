@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.models.hexagon import Hexagon
-from app.models.line_string import Linestring
+from app.models.line_string import SimplifiedLinestring
 from app.db.database import engine, Session
 from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
@@ -43,8 +43,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     logger.info('Fetching line strings')
     query_line_strings_for_hexagons = query_fetch_line_strings_given_hexagons()
-    print("Hexagons head:", hexagons)
-    print("Query:", query_line_strings_for_hexagons)
+    
     line_string_df = get_line_strings(query_line_strings_for_hexagons, hex1=hexagons[0], hex2=hexagons[1])
     
     if len(line_string_df) == 0:
@@ -183,12 +182,11 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     print(df)
     return []
 
-def add_line_strings_to_list(df: pd.DataFrame) -> list[Linestring]:
+def add_line_strings_to_list(df: pd.DataFrame) -> list[SimplifiedLinestring]:
     line_strings = []
     for row in df.itertuples():
         if row is not None:
-            line_string = Linestring(
-                                trip_id=row.trip_id, 
+            line_string = SimplifiedLinestring(
                                 simplified_trip_id=row.simplified_trip_id,
                                 line_string=row.line_string
                             )

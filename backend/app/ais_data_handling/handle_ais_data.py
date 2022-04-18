@@ -326,7 +326,12 @@ def download_cleanse_insert(file_name: str, logger):
         files_to_insert.append(file_name)
     
     for file in files_to_insert:
-        df = cleanse_csv_file_and_convert_to_df(file, logger=logger)
+        file_name = file
+        if ".zip" in file: 
+            file_name = file.replace('.zip', '.csv')
+        else:
+            file_name = file.replace('.rar', '.csv')
+        df = cleanse_csv_file_and_convert_to_df(file_name=file_name, logger=logger)
         partition_trips_and_insert(file, df, logger)
 
 def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
@@ -397,11 +402,7 @@ def download_interval(interval: str, logger):
 
     file: str
     for file in files_to_download:
-        if ".zip" in file: 
-            file_name = file.replace('.zip', '.csv')
-        else:
-            file_name = file.replace('.rar', '.csv')
-        download_cleanse_insert(file_name=file_name, logger=logger)
+        download_cleanse_insert(file_name=file, logger=logger)
 
 def start(logger, interval_to_download = None, file_to_download = None, all = False, cont = False, only_from_folder = False):
     """

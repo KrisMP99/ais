@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import trips, hexagrids
+from app.routers import trips, hexagrids, ship_attributes
 
 load_dotenv()
 TESTSERVER = os.getenv('TEST_SERVER')
@@ -30,3 +30,4 @@ middleware = [
 app = FastAPI(middleware=middleware)
 app.include_router(trips.router)
 app.include_router(hexagrids.router)
+app.include_router(ship_attributes.router)

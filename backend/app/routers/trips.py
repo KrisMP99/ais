@@ -204,6 +204,9 @@ def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
             },
             geom_col='line_string'
         )
+    print(df.head())
+    print(df.columns)
+    quit()
     return df
 
 def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:

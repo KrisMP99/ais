@@ -23,9 +23,6 @@ export default function MapEvents(props: MapEventsProps) {
             if (props.points.length < 2 && props.ignoreLayers.length < 1) {
                 addMarker(event);
             }
-            else {
-                clearMarkers();
-            }
         }
     });
 
@@ -37,11 +34,6 @@ export default function MapEvents(props: MapEventsProps) {
         let position: LatLng = new LatLng(e.latlng.lat, e.latlng.lng);
         props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat.toFixed(4) + " Lng: " + position.lng.toFixed(4)));
         props.addPoint(position);
-    }
-
-    function clearMarkers() {
-        props.layerGroup.clearLayers();
-        props.clearPoints();
     }
     return null;
 }

@@ -54,14 +54,14 @@ services:
     tty: true
     image: ais_cleansing
     container_name: ais_cleansing
-    env_file: ../.env
+    command: python main.py -f True
     volumes:
       - type: bind
         source: ../
-        target: /srv/data/ais/
+        target: /srv/data/ais
       - type: bind
-        source: 'C:\\Users\\Krist\\Desktop\\data_ais\\'
-        target: /srv/data/csv/
+        source: ../csv
+        target: /srv/data/csv
     restart: always
     environment:
       - TZ=Europe/Copenhagen

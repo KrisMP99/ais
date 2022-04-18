@@ -1,0 +1,55 @@
+.eta-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.eta-container-open {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: 300ms;
+}
+
+.text-oneline {
+    display: flex;
+    justify-content: space-around;
+    margin-right: 15px;
+}
+.filter-text {
+    margin: 10px 0px;
+}
+
+.eta-body {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.trip-button {
+    background-color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 48%;
+}
+.trip-button:hover {
+    background-color: rgb(228, 227, 227);
+}
+
+.button-back {
+    background-color: #a4a4a4;
+    width: 100px;
+}
+.button-back:hover {
+    background-color: #848484;
+}
+
+.button-shift {
+    width: 40%;
+    padding: 2px 0;
+    background-color: #a4a4a4;
+    margin: 4px 0;
+}
+.button-shift:hover:enabled {
+    background-color: #848484;
+}

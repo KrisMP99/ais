@@ -320,6 +320,7 @@ def download_cleanse_insert(file_name: str, logger):
     if(does_file_contain_whole_month(file_name)):
         files_to_insert = get_downloaded_csv_files_from_folder(file_name, logger=logger)
 
+    files_to_insert = []
     if len(files_to_insert) <= 0:
         files_to_insert.append(file_name)
     

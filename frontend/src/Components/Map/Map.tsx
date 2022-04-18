@@ -1,8 +1,8 @@
 import React from 'react';
 import './Map.css';
-import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
 import '../../Leaflet.css'; 
-import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
+import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
+import L, { LatLngBoundsExpression, LatLng, marker } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';
 import countries from './countries';
@@ -11,7 +11,6 @@ import { GeoJsonObject } from 'geojson';
 interface DKMapProps {
     mapBounds: LatLngBoundsExpression;
     mapCenter: LatLng;
-
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
     polylines: LatLng[][];
@@ -32,7 +31,6 @@ function createPolyline(polyline: LatLng[], key: number){
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
-    protected gridJSON: any;
     protected markerLayer: L.LayerGroup;
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
@@ -51,12 +49,12 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             className: 'marker',
             iconUrl: iconUrl,
             iconSize: [20,20],
-            iconAnchor: [12,20]
+            iconAnchor: [10,10]
         });
 
         this.state = {
             points: [],
-            hexPolygons: []
+            hexPolygons: [],
         }
     }
 
@@ -105,12 +103,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         this.props.retCoords(this.state.points);
                         this.setState({points: this.state.points});
                         }}
-                    clearPoints={() => {
-                        this.state.hexPolygons.forEach((hex)=>{
-                            hex.remove();
-                        })
-                        this.setState({points: [], hexPolygons: []});
-                    }}
+                    clearPoints={() => this.clear}
                 ></MapEvents>
                 <MapConsumer>
                     {(map) => {
@@ -124,10 +117,16 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         );
     }
 
-    protected async fetchHexagon(point: LatLng) {
-        let styling = {
+    public clear() {
+        this.state.hexPolygons.forEach((hex)=>{
+            hex.remove();
+        });
+        this.markerLayer.clearLayers();
+        this.setState({points: [], hexPolygons: []});
+    }
 
-        }
+    protected async fetchHexagon(point: LatLng) {
+
         const requestOptions = {
             method: 'POST',
             headers: { 

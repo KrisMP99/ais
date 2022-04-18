@@ -23,11 +23,11 @@ def query_fetch_line_strings_given_hexagons() -> str:
                 simplified_trip_dim AS std
             WHERE
                 ST_Intersects(
-                    ST_FlipCoordinates(std.line_string),
+                    std.line_string,
                     %(hex1)s::geometry
                 ) AND
                 ST_Intersects(
-                    ST_FlipCoordinates(std.line_string),
+                    std.line_string,
                     %(hex2)s::geometry
                 );
             '''

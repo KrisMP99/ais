@@ -18,7 +18,7 @@ def query_fetch_line_strings_given_hexagons() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
             SELECT
-                std.line_string
+                std.line_string, std.simplified_trip_id
             FROM
                 simplified_trip_dim AS std
             WHERE

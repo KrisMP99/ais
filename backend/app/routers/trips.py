@@ -43,7 +43,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     logger.info('Fetching line strings')
     query_line_strings_for_hexagons = query_fetch_line_strings_given_hexagons()
-    
+
     line_string_df = get_line_strings(query_line_strings_for_hexagons, hex1=hexagons[0], hex2=hexagons[1])
     
     if len(line_string_df) == 0:
@@ -182,7 +182,7 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     print(df)
     return []
 
-def add_line_strings_to_list(df: pd.DataFrame) -> list[SimplifiedLinestring]:
+def add_line_strings_to_list(df: gpd.GeoDataFrame) -> list[SimplifiedLinestring]:
     line_strings = []
     for row in df.itertuples():
         if row is not None:

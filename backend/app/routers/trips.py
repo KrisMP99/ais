@@ -7,6 +7,7 @@ from app.models.line_string import Linestring
 from app.db.database import engine, Session
 from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
+import shapely.wkb as wkb
 import geopandas as gpd
 import pandas as pd
 
@@ -168,11 +169,11 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
             params={
                 'hex1row': hexagons[0].row,
                 'hex1column': hexagons[0].column,
-                'hex1hex': hexagons[0].hexagon.wkb_hex,
+                'hex1hex': wkb.dumps(hexagons[0].hexagon, hex=True, srid=4326),
                 'hex2row': hexagons[1].row,
                 'hex2column': hexagons[1].column,
-                'hex2hex': hexagons[1].hexagon.wkb_hex,
-                'hex': hexagon.hexagon.wkb_hex 
+                'hex2hex': wkb.dumps(hexagons[1].hexagon, hex=True, srid=4326),
+                'hex': wkb.dumps(hexagon.hexagon, hex=True, srid=4326) 
             }
         )
     print(df)
@@ -196,8 +197,8 @@ def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
             engine, 
             params=
             {
-                "hex1": hex1.hexagon.wkb_hex, 
-                "hex2": hex2.hexagon.wkb_hex
+                "hex1": wkb.dumps(hex1.hexagon, hex=True, srid=4326), 
+                "hex2": wkb.dumps(hex2.hexagon, hex=True, srid=4326)
             },
             geom_col='line_string'
         )
@@ -217,8 +218,8 @@ def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
             query_fetch_hexagons_given_two_points(), 
             engine,
             params={
-                "p1": p1.wkb_hex,
-                "p2": p2.wkb_hex
+                "p1": wkb.dumps(p1, hex=True, srid=4326),
+                "p2": wkb.dumps(p2, hex=True, srid=4326)
             },
             geom_col='hexagon'
         )

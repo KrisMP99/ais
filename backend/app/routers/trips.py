@@ -27,7 +27,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     # First we fetch the hexagons for where two points can be found inside
     logger.info('Fetching hexagon!')
-    hex_df = get_hexagons(query_fetch_hexagons_given_two_points(), gp1, gp2)
+    query_hexagons = query_fetch_hexagons_given_two_points()
+    hex_df = get_hexagons(query_hexagons, gp1, gp2)
 
     if len(hex_df) < 2:
         logger.error('The two coordinates intersect with each other')
@@ -41,7 +42,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     logger.info('Fetching line strings')
-    line_string_df = get_line_strings(query_fetch_line_strings_given_hexagons(), hex1=hexagons[0], hex2=hexagons[1])
+    query_line_strings_for_hexagons = query_fetch_line_strings_given_hexagons()
+    print("Hexagons head:", hexagons)
+    line_string_df = get_line_strings(query_line_strings_for_hexagons, hex1=hexagons[0], hex2=hexagons[1])
     
     if len(line_string_df) == 0:
         logger.warning('No trips were found for the selected coordinates')
@@ -191,9 +194,11 @@ def add_line_strings_to_list(df: pd.DataFrame) -> list[Linestring]:
             line_strings.append(line_string)
     return line_strings
 
-def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:    
+def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
+    print("Hex 1:", hex1)
+    print("Hex 2:", hex2)  
     df = gpd.read_postgis(
-            query_fetch_line_strings_given_hexagons(), 
+            query, 
             engine, 
             params=
             {

@@ -108,7 +108,7 @@ export class App extends React.Component<any, AppStates> {
 						<hr />
 						<ETATrips
 							ref={this.ETATripsRef}
-							trips={this.temporaryTrips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
+							trips={this.state.trips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
 							tripsShown={16}
 						/>
 						<hr />

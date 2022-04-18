@@ -1,11 +1,11 @@
 .eta-container {
-    display: none;
-    transition: 300ms;
+    position: relative;
+    display: flex;
+    flex-direction: column;
 }
 .eta-container-open {
     position: relative;
     display: flex;
-    flex-grow: 1;
     flex-direction: column;
     transition: 300ms;
 }
@@ -15,10 +15,14 @@
     justify-content: space-around;
     margin-right: 15px;
 }
+.filter-text {
+    margin: 10px 0px;
+}
 
 .eta-body {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
 }
 
 .trip-button {
@@ -26,32 +30,26 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    width: 48%;
 }
 .trip-button:hover {
     background-color: rgb(228, 227, 227);
 }
 
-.eta-footer {
-    display: flex;
-    justify-content: space-evenly;
+.button-back {
+    background-color: #a4a4a4;
+    width: 100px;
+}
+.button-back:hover {
+    background-color: #848484;
 }
 
-.eta-button {
-    width: 100px;
-    height: 35px;
-    background-color: #af4c4c;
-    color: #fff;
-    border-radius: 6px;
-    font-size: 15px;
-    border: none;
-    cursor: pointer;
-}
-.eta-button:hover {
-    background-color: #984141;
-}
-.eta-button-back {
+.button-shift {
+    width: 40%;
+    padding: 2px 0;
     background-color: #a4a4a4;
+    margin: 4px 0;
 }
-.eta-button-back:hover {
+.button-shift:hover:enabled {
     background-color: #848484;
 }

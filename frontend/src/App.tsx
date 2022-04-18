@@ -20,7 +20,6 @@ interface AppStates {
 	mouseCoords: string[];
 	polylines: LatLng[][];
 	trips: Trip[];
-	clear: boolean;
 }
 
 export class App extends React.Component<any, AppStates> {
@@ -30,29 +29,32 @@ export class App extends React.Component<any, AppStates> {
 	protected temporaryTrips: Trip[];
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
+	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
 
 	constructor(props: any) {
 		super(props);
+		
 		this.ETATripsRef = React.createRef();
 		this.DKMapRef = React.createRef();
+		this.mousePosRef = React.createRef();
+
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
 		this.temporaryTrips = [];
-		for (let i = 0; i < 7; i++) {
-            this.temporaryTrips.push({color: 'red', totalTime: '30min', tripId: i});   //DUMMY DATA
-        }
+		for (let i = 0; i < 130; i++) {
+			this.temporaryTrips.push({ color: 'red', totalTime: '30min', tripId: i });   //DUMMY DATA
+		}
 		this.state = {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
 			polylines: [],
 			filterShipTypes: [],
-			clear: false,
 		}
 	}
 
 	render() {
-
+		console.count('App render count: ')
 		return (
 			<div className='main'>
 				<div className="main-container">
@@ -63,21 +65,21 @@ export class App extends React.Component<any, AppStates> {
 						retCoords={(points: LatLng[]) => {
 							this.setState({ pointCoords: points });
 						}}
-						retMousePos={(pos: string[]) => { this.setState({ mouseCoords: pos }); }}
+						retMousePos={(pos: string[]) => { 
+							if(this.mousePosRef.current) {
+								this.mousePosRef.current.innerText = 
+								"Current mouse location:\nLat: " + this.textIsNotUndefined(0, true, pos) + " Lng: " + this.textIsNotUndefined(0, false, pos); 
+							}
+						}}
 						polylines={this.state.polylines}
-						clear={this.state.clear}
 					/>
 					<div className='right-side'>
-						<ETATrips 
-							ref={this.ETATripsRef}
-							trips={this.temporaryTrips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
-						/>
 						<div className='positions-container'>
 							<p className='text-1'>Positions:</p>
 							<div>
-								<p className='text-2'>
+								<p ref={this.mousePosRef} className='text-2'>
 									Current mouse location:<br />
-									Lat: {this.textIsNotUndefined(0, true)} Lng: {this.textIsNotUndefined(0, false)}
+									Lat: 0.0000 Lng: 0.0000
 								</p>
 								<p className='text-2'>
 									Point 1:<br />
@@ -103,23 +105,19 @@ export class App extends React.Component<any, AppStates> {
 								</button>
 							</div>
 						</div>
-						<div className='filter-container'>
-							<hr></hr>
-							<p className='ship-type-header'>Ship type filter</p>
-							<hr className='shorter-hr'></hr>
-							<ShipTypeFilter
-								returnShipType={(val) => {
-									if (this.state.filterShipTypes.includes(val)) {
-										this.state.filterShipTypes.splice(this.state.filterShipTypes.indexOf(val) + 1, 1)
-										this.setState({ filterShipTypes: this.state.filterShipTypes })
-										return;
-									} else {
-										this.state.filterShipTypes.push(val)
-										this.setState({ filterShipTypes: this.state.filterShipTypes })
-									}
-								}}
-							/>
-						</div>
+						<hr />
+						<ETATrips
+							ref={this.ETATripsRef}
+							trips={this.temporaryTrips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
+							tripsShown={16}
+						/>
+						<hr />
+						<ShipTypeFilter
+							shipTypes={this.state.filterShipTypes}
+							returnShipType={(shipTypes: string[]) => {
+								this.setState({filterShipTypes: shipTypes});
+							}}
+						/>
 					</div>
 				</div>
 
@@ -127,18 +125,22 @@ export class App extends React.Component<any, AppStates> {
 		);
 	}
 
+	componentDidMount() {
+		this.fetchShipTypes();
+	}
+
 	protected clearPoints() {
 		this.DKMapRef.current?.clear();
-		this.setState({ 
+		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
 			polylines: [],
 		});
 	}
 
-	protected textIsNotUndefined(index: number, lat: boolean): string {
-		if (this.state.mouseCoords && index === 0) {
-			return lat ? this.state.mouseCoords[0] : this.state.mouseCoords[1];
+	protected textIsNotUndefined(index: number, lat: boolean, pos?: string[]): string {
+		if (this.state.mouseCoords && index === 0 && pos) {
+			return lat ? pos[0] : pos[1];
 		}
 		if (this.state.pointCoords.length >= 1 && index === 1) {
 			return lat ? this.state.pointCoords[0].lat.toFixed(4) : this.state.pointCoords[0].lng.toFixed(4);
@@ -146,8 +148,28 @@ export class App extends React.Component<any, AppStates> {
 		else if (this.state.pointCoords.length === 2 && index === 2) {
 			return lat ? this.state.pointCoords[1].lat.toFixed(4) : this.state.pointCoords[1].lng.toFixed(4);
 		}
-		return "0";
+		return "0.0000";
 	}
+
+	protected async fetchShipTypes() {
+        const requestOptions = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'x-token': process.env.REACT_APP_TOKEN!,
+            }
+        };
+
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    return null;
+                }
+                return this.setState({ filterShipTypes: data });
+            });
+    }
 }
 
 export default App;

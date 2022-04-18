@@ -14,8 +14,6 @@ interface DKMapProps {
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
     polylines: LatLng[][];
-
-    clear: boolean;
 }
 
 interface DKMapStates {
@@ -61,9 +59,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     }
 
     render() {
-        if(this.props.clear) {
-            
-        }
         return (
             <MapContainer
                 id='map'

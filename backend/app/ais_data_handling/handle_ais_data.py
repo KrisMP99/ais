@@ -294,9 +294,9 @@ def continue_from_log(logger):
     file: str
     for file in files_to_download:
         if ".zip" in file: 
-            file_name = file.split('.zip')[0]
+            file_name = file.replace('.zip', '.csv')
         else:
-            file_name = file.split('.rar')[0]
+            file_name = file.replace('.rar', '.csv')
         download_cleanse_insert(file_name=file_name, logger=logger)
 
 def does_file_contain_whole_month(file_name: str):

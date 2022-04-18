@@ -1,8 +1,10 @@
 import React from 'react';
 import { LatLng } from 'leaflet';
+import '../App.css';
 
 interface PostButtonProps {
     coordinates: LatLng[];
+    shipTypeArray: string[];
     getData: (data: LatLng[][]) => void;
 }
 interface PostButtonStates {
@@ -17,9 +19,13 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
     
     render() {
         return (
-            <div>
-                <button onClick={(e) => this.postCoordinates(this.props.coordinates)}>Find route</button>
-            </div>
+            <button 
+                className="button btn-find-route" 
+                disabled={this.props.coordinates.length < 2}
+                onClick={(e) => this.postCoordinates(this.props.coordinates)}
+            >
+                Find route
+            </button>
         )
     }
 

@@ -293,11 +293,7 @@ def continue_from_log(logger):
 
     file: str
     for file in files_to_download:
-        if ".zip" in file: 
-            file_name = file.replace('.zip', '.csv')
-        else:
-            file_name = file.replace('.rar', '.csv')
-        download_cleanse_insert(file_name=file_name, logger=logger)
+        download_cleanse_insert(file_name=file, logger=logger)
 
 def does_file_contain_whole_month(file_name: str):
     """
@@ -399,8 +395,13 @@ def download_interval(interval: str, logger):
 
     logger.info(f"There are in total {len(files_to_download)} compressed files to download and process.")
 
+    file: str
     for file in files_to_download:
-        download_cleanse_insert(file, logger)
+        if ".zip" in file: 
+            file_name = file.replace('.zip', '.csv')
+        else:
+            file_name = file.replace('.rar', '.csv')
+        download_cleanse_insert(file_name=file_name, logger=logger)
 
 def start(logger, interval_to_download = None, file_to_download = None, all = False, cont = False, only_from_folder = False):
     """

@@ -7,10 +7,10 @@ def query_fetch_hexagons_given_two_points() -> str:
                     hex_10000_dim as h                           
                 WHERE                                                           
                     ST_Within(
-                        ST_GeomFromWKB(%(p1)s::geometry, 4326), h.hexagon
+                        %(p1)s::geometry, h.hexagon
                     ) OR     
                     ST_Within(
-                        ST_GeomFromWKB(%(p2)s::geometry, 4326), h.hexagon
+                        %(p2)s::geometry, h.hexagon
                     );
             '''
 

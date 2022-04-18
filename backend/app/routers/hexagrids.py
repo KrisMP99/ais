@@ -30,12 +30,12 @@ async def get_hexagon(p1: Coordinate):
                     hex_10000_dim AS h
                 WHERE
                     ST_Within(
-                        ST_GeomFromWKB(%(hexagon)s::geometry, 4326),
+                        %(hexagon)s::geometry,
                         h.hexagon
                     );
             '''
 
-    df = gpd.read_postgis(query, engine, params={'hexagon': gp1.wkb_hex}, geom_col='hexagon')
+    df = gpd.read_postgis(query, engine, params={'hexagon': wkb.dumps(gp1, hex=True, srid=4326)}, geom_col='hexagon')
 
     if len(df) == 0:
         logger.error('Could not find the given coordinates')

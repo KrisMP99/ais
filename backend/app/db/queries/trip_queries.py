@@ -15,7 +15,7 @@ def query_fetch_hexagons_given_two_points() -> str:
             '''
 
 def query_fetch_line_strings_given_hexagons() -> str:
-    '''We select all line strings that intersect with the two hexagons'''
+    # We select all line strings that intersect with the two hexagons
     return '''
             SELECT
                 std.line_string

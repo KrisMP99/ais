@@ -230,7 +230,7 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
         line = SimplifiedLineString(simplified_trip_id=simplified_trip_id, line_string=line_string, locations=[])
         simplified_line_strings_list[simplified_trip_id] = line
 
-    for hex_10000_row, hex_10000_column, location, simplified_trip_id, date_id, time_id, ship_type, sog in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id):
+    for hex_10000_row, hex_10000_column, location, simplified_trip_id, date_id, time_id, name, sog in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id):
         line_class = simplified_line_strings_list.get(simplified_trip_id)
         line_class: SimplifiedLineString
         line_class.locations.append(
@@ -240,7 +240,7 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
                 location=location, 
                 date_id=date_id, 
                 time_id=time_id, 
-                ship_type=ship_type, 
+                ship_type=name, 
                 sog=sog)
             )
 

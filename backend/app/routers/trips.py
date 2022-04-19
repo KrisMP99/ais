@@ -63,7 +63,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     line_string_to_return_to_frontend = list[SimplifiedLineString]
     for l_key in line_strings.copy():
         line_string = line_strings[l_key]
-        line_string_to_return_to_frontend.append(line_string.location)
+        line_string_to_return_to_frontend.append(line_string.locations)
 
     print('Got linestrings')
     
@@ -190,7 +190,6 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
                 'hex': wkb.dumps(hexagon.hexagon, hex=True, srid=4326) 
             }
         )
-    print(df)
     return []
 
 def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:

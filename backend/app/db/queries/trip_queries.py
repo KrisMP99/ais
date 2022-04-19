@@ -46,11 +46,11 @@ def query_get_points_in_line_string() -> str:
             WHERE
                 ST_Intersects(
                     std.line_string,
-                    %(hex1hex)s::geometry
+                    %(hex1)s::geometry
                 ) AND
                 ST_Intersects(
                     std.line_string),
-                    %(hex2hex)s::geometry, 4326
+                    %(hex2)s::geometry
                 )
             GROUP BY 
                 std.simplified_trip_id;

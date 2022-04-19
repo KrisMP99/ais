@@ -14,6 +14,8 @@ def query_fetch_hexagons_given_two_points() -> str:
                     );
             '''
 
+
+
 def query_fetch_line_strings_given_hexagons() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
@@ -33,25 +35,25 @@ def query_fetch_line_strings_given_hexagons() -> str:
             '''
 def query_get_points_in_line_string() -> str: 
     '''Select all points in the linestrings insecting the hexagons'''
-    return  '''
-            WITH points_in_linestring AS (
-                SELECT DISTINCT
-                    ST_PointN(
-                        std.line_string,
-                        generate_series(1, ST_NPoints(std.line_string))
-                    ) AS geom, std.simplified_trip_id
-                FROM
-                    simplified_trip_dim AS std
-                WHERE
-                    ST_Intersects(
-                        ST_FlipCoordinates(std.line_string),
-                        ST_GeomFromWKB(%(hex1hex)s::geometry, 4326)
-                    ) AND
-                    ST_Intersects(
-                        ST_FlipCoordinates(std.line_string),
-                        ST_GeomFromWKB(%(hex2hex)s::geometry, 4326)
-                    )
-            )
+    return  '''    
+            SELECT
+                std.simplified_trip_id, data_fact.hex_10000_row, 
+                data_fact.hex_10000_column, data_fact.location
+            FROM
+                data_fact
+                INNER JOIN 
+                    simplified_trip_dim AS std ON std.simplified_trip_id = data_fact.simplified_trip_id
+            WHERE
+                ST_Intersects(
+                    std.line_string,
+                    %(hex1hex)s::geometry
+                ) AND
+                ST_Intersects(
+                    std.line_string),
+                    %(hex2hex)s::geometry, 4326
+                )
+            GROUP BY 
+                std.simplified_trip_id;
             '''
 def query_point_exists_in_hexagon() -> str:
     return f'''

@@ -45,7 +45,7 @@ def query_get_points_in_line_string() -> str:
                 INNER JOIN 
                     simplified_trip_dim AS std ON std.simplified_trip_id = data_fact.simplified_trip_id
                 INNER JOIN
-                    ship_type_dim ON ship_type_id = data_fact.ship_type_id    
+                    ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id    
             WHERE
                 ST_Intersects(
                     std.line_string,

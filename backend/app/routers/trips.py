@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.models.hexagon import Hexagon
-from app.models.line_string import SimplifiedLinestring
+from app.models.simplified_line_string import SimplifiedLineString
+from app.models.location import Location
 from app.db.database import engine, Session
 from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
@@ -43,6 +44,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     logger.info('Fetching line strings')
     query_line_strings_for_hexagons = query_fetch_line_strings_given_hexagons()
+    query_points_in_line_string = query_get_points_in_line_string()
 
     line_string_df = get_line_strings(query_line_strings_for_hexagons, hex1=hexagons[0], hex2=hexagons[1])
     
@@ -51,10 +53,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
         return []
 
-    line_strings = add_line_strings_to_list(line_string_df)
+    points_in_line_string_df = get_points(query_points_in_line_string, hex1=hexagons[0], hex2=hexagons[1])
+    
+    line_strings = get_list_of_line_strings_with_points(line_string_df=line_string_df, 
+                                                 points_df=points_in_line_string_df)
+
     logger.info('Line Strings fetched!')
 
-    line_string_to_return_to_frontend = [list(l.points) for l in line_strings]
+    line_string_to_return_to_frontend = [list(l.locations) for l in line_strings]
     print(line_string_to_return_to_frontend)
 
     print('Got linestrings')
@@ -185,17 +191,6 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
     print(df)
     return []
 
-def add_line_strings_to_list(df: gpd.GeoDataFrame) -> list[SimplifiedLinestring]:
-    line_strings = []
-    for row in df.itertuples():
-        if row is not None:
-            line_string = SimplifiedLinestring(
-                                simplified_trip_id=row.simplified_trip_id,
-                                line_string=row.line_string
-                            )
-            line_strings.append(line_string)
-    return line_strings
-
 def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
     df = gpd.read_postgis(
             query, 
@@ -207,7 +202,38 @@ def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
             },
             geom_col='line_string'
         )
+    print('linestring df: ', df)
     return df
+
+def get_points(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
+    df = gpd.read_postgis(
+        query, 
+        engine, 
+        params=
+        {
+            "hex1": wkb.dumps(hex1.hexagon, hex=True, srid=4326), 
+            "hex2": wkb.dumps(hex2.hexagon, hex=True, srid=4326)
+        },
+        geom_col='location')
+    print('point df: ', df)
+    return df
+
+def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame, 
+                                  points_df: gpd.GeoDataFrame) -> list[SimplifiedLineString]:
+
+    simplified_line_strings_list = {}
+    simplified_line_strings_list: list[SimplifiedLineString]
+    for simplified_trip_id, line_string in zip(line_string_df.simplified_trip_id, line_string_df.line_string):
+        line = SimplifiedLineString(simplified_trip_id=simplified_trip_id)
+        simplified_line_strings_list[simplified_trip_id] = line
+
+    for hex_10000_row, hex_10000_column, location, simplified_trip_id in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id):
+        line_class = simplified_line_strings_list.get(simplified_trip_id)
+        line_class: SimplifiedLineString
+        line_class.locations.append(Location(hex_10000_row=hex_10000_row, hex_10000_column=hex_10000_column, location=location))
+
+    print('lines with points: ', simplified_line_strings_list)
+    return simplified_line_strings_list
 
 def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
     hexagons = []
@@ -220,7 +246,7 @@ def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
 def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
     '''Returns the hexagons where p1 and p2 can be found within'''
     df = gpd.read_postgis(
-            query_fetch_hexagons_given_two_points(), 
+            query, 
             engine,
             params={
                 "p1": wkb.dumps(p1, hex=True, srid=4326),

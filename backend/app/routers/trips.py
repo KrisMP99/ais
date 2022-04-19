@@ -62,6 +62,9 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     line_string_to_return_to_frontend = list[SimplifiedLineString]
     for l in line_strings:
+        print(type(l))
+        print(type(line_strings))
+        quit()
         print(l.locations)
         line_string_to_return_to_frontend.append(l.locations)
 

@@ -52,7 +52,6 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     if len(line_string_df) == 0:
         logger.warning('No trips were found for the selected coordinates')
         raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
-        return []
 
     points_in_line_string_df = get_points(query_points_in_line_string, hex1=hexagons[0], hex2=hexagons[1])
     
@@ -61,38 +60,32 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     logger.info('Line strings fetched!')
 
+    # Create array with points from line strings and check if either hexagon appears in any of the points
     line_string_to_return_to_frontend = []
     for l_key in line_strings.copy():
         line_string = line_strings[l_key]
         line_string:SimplifiedLineString
 
         locations = []
-        for location in line_string.locations:
-            location:Location
-            locations.append([location.location.y, location.location.x])
+        point_found_in_hexagon = list[Location]
+        for location_object in line_string.locations:
+            location_object:Location
+
+            # Add points to frontend
+            locations.append([location_object.location.y, location_object.location.x])
+
+            # Checks if the points is in the hexagon
+            if location_object.hex_10000_column is hexagons[0].column and location_object.hex_10000_row is hexagons[0].row:
+                point_found_in_hexagon.append(hexagons[0])
+            elif location_object.hex_10000_column is hexagons[1].column and location_object.hex_10000_row is hexagons[1].row:
+                point_found_in_hexagon.append(hexagons[1])
+            else: 
+                continue
 
         line_string_to_return_to_frontend.append(locations)
 
-    print(line_string_to_return_to_frontend)
-
-    print('Got linestrings')
+    logger.info('Got linestrings')
     
-    # Select points that intersect with either of the hexagons **OBS RETURNERE MÅSKE iKKE NOGET LIGE NU**
-
-    # create_point_query = f'''hexagon_centroid AS (
-    #                                 SELECT
-    #                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,
-    #                                     ST_Centroid(hex1.geom) AS geom
-    #                                 FROM
-    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim
-    #                                 WHERE
-    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND
-    #                                     data_fact.date_id = date_dim.date_id AND
-    #                                     data_fact.time_id = time_dim.time_id AND
-    #                                     pil.geom = data_fact.location
-    #                                 LIMIT 1
-    #                          )'''
-
     return line_string_to_return_to_frontend
     
     df = gpd.read_postgis( 
@@ -237,10 +230,19 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
         line = SimplifiedLineString(simplified_trip_id=simplified_trip_id, line_string=line_string, locations=[])
         simplified_line_strings_list[simplified_trip_id] = line
 
-    for hex_10000_row, hex_10000_column, location, simplified_trip_id in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id):
+    for hex_10000_row, hex_10000_column, location, simplified_trip_id, date_dim_id, time_dim_id, ship_type, sog in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id):
         line_class = simplified_line_strings_list.get(simplified_trip_id)
         line_class: SimplifiedLineString
-        line_class.locations.append(Location(hex_10000_row=hex_10000_row, hex_10000_column=hex_10000_column, location=location))
+        line_class.locations.append(
+            Location(
+                hex_10000_row=hex_10000_row, 
+                hex_10000_column=hex_10000_column, 
+                location=location, 
+                date_dim_id=date_dim_id, 
+                time_dim_id=time_dim_id, 
+                ship_type=ship_type, 
+                sog=sog)
+            )
 
     return simplified_line_strings_list
 
@@ -264,3 +266,18 @@ def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
             geom_col='hexagon'
         )
     return df
+
+
+        # create_point_query = f'''hexagon_centroid AS (
+    #                                 SELECT
+    #                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,
+    #                                     ST_Centroid(hex1.geom) AS geom
+    #                                 FROM
+    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim
+    #                                 WHERE
+    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND
+    #                                     data_fact.date_id = date_dim.date_id AND
+    #                                     data_fact.time_id = time_dim.time_id AND
+    #                                     pil.geom = data_fact.location
+    #                                 LIMIT 1
+    #                          )'''

@@ -39,7 +39,7 @@ def query_get_points_in_line_string() -> str:
             SELECT
                 std.simplified_trip_id, data_fact.hex_10000_row, 
                 data_fact.hex_10000_column, data_fact.location, data_fact.time_id,
-                data_fact.date_id, ship_type_dim.name, data_fact.sog
+                data_fact.date_id, ship_type_dim.ship_type, data_fact.sog
             FROM
                 data_fact
                 INNER JOIN 

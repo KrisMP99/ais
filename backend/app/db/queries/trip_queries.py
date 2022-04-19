@@ -53,7 +53,8 @@ def query_get_points_in_line_string() -> str:
                     %(hex2)s::geometry
                 )
             GROUP BY 
-                std.simplified_trip_id;
+                std.simplified_trip_id, data_fact.hex_10000_row, 
+                data_fact.hex_10000_column, data_fact.location;
             '''
 def query_point_exists_in_hexagon() -> str:
     return f'''

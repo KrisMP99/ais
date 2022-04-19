@@ -38,7 +38,8 @@ def query_get_points_in_line_string() -> str:
     return  '''    
             SELECT
                 std.simplified_trip_id, data_fact.hex_10000_row, 
-                data_fact.hex_10000_column, data_fact.location
+                data_fact.hex_10000_column, data_fact.location, data_fact.time_dim_id,
+                data_fact.date_dim_id, data_fact.ship_type, data_fact.sog
             FROM
                 data_fact
                 INNER JOIN 
@@ -56,6 +57,9 @@ def query_get_points_in_line_string() -> str:
                 std.simplified_trip_id, data_fact.hex_10000_row, 
                 data_fact.hex_10000_column, data_fact.location;
             '''
+
+
+
 def query_point_exists_in_hexagon() -> str:
     return f'''
             {query_get_points_in_line_string()}

@@ -58,17 +58,12 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     line_strings = get_list_of_line_strings_with_points(line_string_df=line_string_df, 
                                                  points_df=points_in_line_string_df)
 
-    logger.info('Line Strings fetched!')
+    logger.info('Line strings fetched!')
 
     line_string_to_return_to_frontend = list[SimplifiedLineString]
-    for l in line_strings:
-        print(type(l))
-        print(type(line_strings))
-        quit()
-        print(l.locations)
-        line_string_to_return_to_frontend.append(l.locations)
-
-    print(line_string_to_return_to_frontend)
+    for l_key in line_strings.copy():
+        line_string = line_strings[l_key]
+        line_string_to_return_to_frontend.append(line_string.location)
 
     print('Got linestrings')
     
@@ -224,7 +219,7 @@ def get_points(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
     return df
 
 def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame, 
-                                  points_df: gpd.GeoDataFrame) -> list[SimplifiedLineString]:
+                                  points_df: gpd.GeoDataFrame) -> dict[SimplifiedLineString]:
 
     simplified_line_strings_list = {}
     simplified_line_strings_list: list[SimplifiedLineString]

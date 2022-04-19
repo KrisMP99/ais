@@ -49,7 +49,7 @@ def query_get_points_in_line_string() -> str:
                     %(hex1)s::geometry
                 ) AND
                 ST_Intersects(
-                    std.line_string),
+                    std.line_string,
                     %(hex2)s::geometry
                 )
             GROUP BY 

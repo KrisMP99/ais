@@ -62,7 +62,7 @@ def get_csv_files_from_log(logger):
     """
     Gets the .csv files from the log. The .csv files in the log have all been processed and are already insereted into the database.
     :param logger: A logger used for logging errors/warnings.
-    :return: A list of .csv file names.
+    :return: A list of .csv file names, sorted by date, in reverse order (latest last)
     """
     try:
         flog = open(LOG_FILE_PATH,'a+')
@@ -74,7 +74,7 @@ def get_csv_files_from_log(logger):
     finally:
         flog.close()
 
-    return csv_file_list
+    return sorted(csv_file_list)
 
 def connect_to_to_ais_web_server_and_get_data(logger):
     """
@@ -375,7 +375,6 @@ def download_interval(interval: str, logger):
     csv_files_on_server = connect_to_to_ais_web_server_and_get_data(logger)
     begin_index = None
     end_index = None
-
     for csv_file in csv_files_on_server:
         if begin_index is None:
             if dates[0] in csv_file:

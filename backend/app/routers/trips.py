@@ -8,6 +8,7 @@ from app.models.location import Location
 from app.db.database import engine, Session
 from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
+from shapely.ops import transform
 import shapely.wkb as wkb
 import geopandas as gpd
 import pandas as pd
@@ -68,7 +69,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         locations = []
         for location in line_string.locations:
             location:Location
-            locations.append(list(location.location.coords))
+            locations.append(list(transform(flip, location.location.coords)))
 
         line_string_to_return_to_frontend.append(locations)
 
@@ -263,3 +264,7 @@ def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
             geom_col='hexagon'
         )
     return df
+
+def flip(long, lat):
+    '''Flips the lat and long in a point'''
+    return lat, long

@@ -83,6 +83,32 @@ def execute_line_strings(cursor, conn, trip_id: int):
                                                     FROM data_points
                                                     WHERE data_points.data_fact_id = data_fact.data_fact_id;
                                                 '''
+
+    sql_drop_simplified_data_points = "DROP TABLE IF EXISTS simplified_points_temp;"
+    sql_simplified_data_points_query = f'''
+                                            WITH points_in_trip AS (
+                                            SELECT simplified_trip_id, (ST_DumpPoints(line_string)).geom as point
+                                            FROM simplified_trip_dim
+                                            WHERE simplified_trip_id >= {trip_id} 
+                                            ),
+                                            points_data_fact AS (
+                                                SELECT data_fact_id, points_in_trip.simplified_trip_id as simplified_trip_id
+                                                FROM points_in_trip JOIN data_fact
+                                                ON points_in_trip.point = data_fact.location
+                                                WHERE (points_in_trip.simplified_trip_id = data_fact.trip_id) AND (data_fact.trip_id >= {trip_id})
+
+                                            )
+                                            SELECT points_data_fact.data_fact_id, points_data_fact.simplified_trip_id
+                                            INTO UNLOGGED TABLE simplified_points_temp
+                                            FROM points_data_fact;
+                                            '''
+
+    sql_update_data_fact_simplified_trip_ids = f'''
+                                                    UPDATE data_fact
+                                                    SET simplified_trip_id = simplified_points_temp.simplified_trip_id
+                                                    FROM simplified_points_temp
+                                                    WHERE (simplified_points_temp.data_fact_id = data_fact.data_fact_id) AND (data_fact.trip_id >= {trip_id});
+                                                '''
     
     cursor.execute(sql_drop_simplified_data_points)
     conn.commit()
@@ -149,3 +175,6 @@ def execute_hex_ids(cursor, conn, simplified_trip_id):
     conn.commit()
     cursor.execute(sql_drop_10000_hex_table)
     conn.commit()
+
+def vacuum_and_analyze_tables(cursor, conn, logger):
+    

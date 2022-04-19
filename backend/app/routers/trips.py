@@ -69,7 +69,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         locations = []
         for location in line_string.locations:
             location:Location
-            locations.append(list(transform(flip, location.location.coords)))
+            locations.append(list(transform(flip, location.location).coords))
 
         line_string_to_return_to_frontend.append(locations)
 

@@ -264,7 +264,3 @@ def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
             geom_col='hexagon'
         )
     return df
-
-def flip(long, lat):
-    '''Flips the lat and long in a point'''
-    return lat, long

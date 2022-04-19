@@ -82,6 +82,8 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             else: 
                 continue
 
+            print(hexagons)
+
         line_string_to_return_to_frontend.append(locations)
 
     logger.info('Got linestrings')

@@ -60,13 +60,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     logger.info('Line strings fetched!')
 
-    line_string_to_return_to_frontend = list[Location]
+    line_string_to_return_to_frontend = []
     for l_key in line_strings.copy():
         line_string = line_strings[l_key]
         line_string:SimplifiedLineString
         print(line_string.locations)
 
-        locations = list[Location]
+        locations = []
         for location in line_string.locations:
             locations.append(location)
 

@@ -202,7 +202,6 @@ def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
             },
             geom_col='line_string'
         )
-    print('linestring df: ', df)
     return df
 
 def get_points(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
@@ -215,7 +214,6 @@ def get_points(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
             "hex2": wkb.dumps(hex2.hexagon, hex=True, srid=4326)
         },
         geom_col='location')
-    print('point df: ', df)
     return df
 
 def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame, 
@@ -224,7 +222,7 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
     simplified_line_strings_list = {}
     simplified_line_strings_list: list[SimplifiedLineString]
     for simplified_trip_id, line_string in zip(line_string_df.simplified_trip_id, line_string_df.line_string):
-        line = SimplifiedLineString(simplified_trip_id=simplified_trip_id)
+        line = SimplifiedLineString(simplified_trip_id=simplified_trip_id, line_string=line_string, locations=[])
         simplified_line_strings_list[simplified_trip_id] = line
 
     for hex_10000_row, hex_10000_column, location, simplified_trip_id in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id):

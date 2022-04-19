@@ -32,7 +32,7 @@ def parse_args():
     group.add_argument("-a","-all", metavar='', help="Download, cleanse and insert all available AIS data. NOTE: Will delete all entries in .log file and restart from first file.", dest="all", required=False, default=False, type=bool)
     group.add_argument("-c","--cont", metavar='', help="Continue downloading, cleansing and inserting AIS-data from lastest downloaded file (read from .log-file)", dest="cont", required=False, default=False, type=bool)
     group.add_argument("-s","--specific",metavar='', help="Download, cleanse and insert a specific AIS-file and insert it. Example: 'aisdk-2022-01-01.zip'", dest="specific", required=False, default=None, type=str)
-    group.add_argument("-i","--interval", metavar='', help="Download, cleanse and insert AIS-data in the interval given. Format: YYYY-MM-DD::YYY-MM-DD", dest="interval", required=False, default=None, type=str)
+    group.add_argument("-i","--interval", metavar='', help="Download, cleanse and insert AIS-data in the interval given. Format: YYYY-MM-DD::YYYY-MM-DD", dest="interval", required=False, default=None, type=str)
     group.add_argument("-f", "--from_folder", metavar='', help="Will only process and insert the data of the .csv files located in the 'CSV_FILES_PATH' .env variable", dest="from_folder", required=False, default=False, type=bool)
     args = parser.parse_args()
     return args

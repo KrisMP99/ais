@@ -177,4 +177,4 @@ def execute_hex_ids(cursor, conn, simplified_trip_id):
     conn.commit()
 
 def vacuum_and_analyze_tables(cursor, conn, logger):
-    
+    sql_query = ""

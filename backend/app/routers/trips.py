@@ -64,13 +64,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     for l_key in line_strings.copy():
         line_string = line_strings[l_key]
         line_string:SimplifiedLineString
-        print(line_string.locations)
 
         locations = []
         for location in line_string.locations:
             locations.append(location)
 
         line_string_to_return_to_frontend.append(locations)
+
+    print(line_string_to_return_to_frontend)
 
     print('Got linestrings')
     

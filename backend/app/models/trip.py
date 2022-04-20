@@ -12,4 +12,4 @@ class Trip:
         self.shipType = shipType
 
     def give_color():
-        return f"rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})"
+        return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'

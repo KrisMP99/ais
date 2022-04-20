@@ -102,11 +102,11 @@ On windows with:
 ### Initial setup
 1. Create table 
     ```SQL
-    CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON, 4326));
+    CREATE TABLE map_bounds(gid serial PRIMARY KEY, country_name varchar, geom geometry(MULTIPOLYGON, 4326));
     ```
 1. Insert the boundaries, covering the area of concern (in our case, it's Denmarks waters + a little extra)
     ```SQL
-    INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');
+    INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 53.32, 16.49 53.32, 16.49 56.23, 13.31 56.68, 10.97 60.03, 7.48 58.35, 3.24 58.35))');
     ```
 1. Convert the table to SRID 3857 
     ```SQL

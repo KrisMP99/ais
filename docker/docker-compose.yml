@@ -13,10 +13,10 @@ services:
         target: /var/lib/postgresql/data
     ports:
       - '5432:5432'
-    env_file: ../.env
     restart: always
     environment:
       - TZ=Europe/Copenhagen
+    env_file: ../backend/.env
     
   api:
     build:
@@ -37,6 +37,7 @@ services:
       - 8080:8000
     environment:
       - TZ=Europe/Copenhagen
+    env_file: ../backend/.env
     
   client:
     build:
@@ -54,6 +55,7 @@ services:
       - 3000:3000
     environment:
       - TZ=Europe/Copenhagen
+    env_file: ../frontend/.env
 
   cleansing:
     deploy:
@@ -77,3 +79,4 @@ services:
     restart: always
     environment:
       - TZ=Europe/Copenhagen
+    env_file: ../backend/.env

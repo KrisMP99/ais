@@ -1,11 +1,15 @@
+from random import randint
 import string
-from pandas import Timedelta
+from pandas import Timedelta, array
 from shapely.geometry import LineString
 
 class Trip:
-    def __init__(self, tripId:int, linestring:LineString, eta:Timedelta, color:string, shipType:string):
+    def __init__(self, tripId:int, linestring:array, eta:Timedelta, shipType:string):
         self.tripId = tripId
         self.linestring = linestring
         self.eta = eta
-        self.color = color
+        self.color = self.give_color()
         self.shipType = shipType
+
+    def give_color():
+        return f"rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})"

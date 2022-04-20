@@ -1,7 +1,7 @@
+from array import array
 from random import randint
 import string
-from pandas import Timedelta, array
-from shapely.geometry import LineString
+from pandas import Timedelta
 
 class Trip:
     def __init__(self, tripId:int, linestring:array, eta:Timedelta, shipType:string):

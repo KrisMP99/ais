@@ -78,8 +78,13 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
             if location_object.hex_10000_column is hexagons[0].column and location_object.hex_10000_row is hexagons[0].row:
                 point_from_line_string_found_in_hexagon.append(hexagons[0])
 
+                print('hex column ' + location_object.hex_10000_column + ' , hex row ' + location_object.hex_10000_row)
+                print('hex column ' + hexagons[0].column + ' , hex row ' + hexagons[0].row)
+
             elif location_object.hex_10000_column is hexagons[1].column and location_object.hex_10000_row is hexagons[1].row:
                 point_from_line_string_found_in_hexagon.append(hexagons[1])
+                print('hex column ' + location_object.hex_10000_column + ' , hex row ' + location_object.hex_10000_row)
+                print('hex column ' + hexagons[1].column + ' , hex row ' + hexagons[1].row)
             else: 
                 continue
 

@@ -26,7 +26,6 @@ services:
     environment:
       - TZ=Europe/Copenhagen
     command: uvicorn app.main:app --host 0.0.0.0 --reload
-    env_file: ../backend/.env
       
   client:
     build:
@@ -44,7 +43,6 @@ services:
     environment:
       - TZ=Europe/Copenhagen
     command: npm start
-    env_file: ../frontend/.env
     
   cleansing:
     build:
@@ -61,4 +59,3 @@ services:
     restart: always
     environment:
       - TZ=Europe/Copenhagen
-    env_file: ../backend/.env

@@ -89,7 +89,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
                 continue
 
         
-        print(point_from_line_string_found_in_hexagon)
+        print('length of list' + len(point_from_line_string_found_in_hexagon))
 
         line_string_to_return_to_frontend.append(locations)
 

@@ -67,7 +67,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         line_string:SimplifiedLineString
 
         locations = []
-        point_found_in_hexagon = list[Location]
+        point_from_line_string_found_in_hexagon = list[Location]
         for location_object in line_string.locations:
             location_object:Location
 
@@ -76,14 +76,15 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
             # Checks if the points is in the hexagon
             if location_object.hex_10000_column is hexagons[0].column and location_object.hex_10000_row is hexagons[0].row:
-                point_found_in_hexagon.append(hexagons[0])
+                point_from_line_string_found_in_hexagon.append(hexagons[0])
+
             elif location_object.hex_10000_column is hexagons[1].column and location_object.hex_10000_row is hexagons[1].row:
-                point_found_in_hexagon.append(hexagons[1])
+                point_from_line_string_found_in_hexagon.append(hexagons[1])
             else: 
                 continue
 
         
-        print(point_found_in_hexagon)
+        print(point_from_line_string_found_in_hexagon)
 
         line_string_to_return_to_frontend.append(locations)
 

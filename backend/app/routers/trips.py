@@ -67,7 +67,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         line_string:SimplifiedLineString
 
         locations = []
-        point_from_line_string_found_in_hexagon = [Location]
+        point_from_line_string_found_in_hexagon = []
         for location_object in line_string.locations:
             location_object:Location
 

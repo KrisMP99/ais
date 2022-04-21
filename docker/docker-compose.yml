@@ -37,7 +37,6 @@ services:
       - 8080:8000
     environment:
       - TZ=Europe/Copenhagen
-    env_file: ../backend/.env
     
   client:
     build:
@@ -55,7 +54,6 @@ services:
       - 3000:3000
     environment:
       - TZ=Europe/Copenhagen
-    env_file: ../frontend/.env
 
   cleansing:
     deploy:
@@ -79,4 +77,3 @@ services:
     restart: always
     environment:
       - TZ=Europe/Copenhagen
-    env_file: ../backend/.env

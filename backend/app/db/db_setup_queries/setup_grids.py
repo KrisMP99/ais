@@ -21,9 +21,9 @@ def setup_bounds() -> None:
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         # First create our map_bounds table...
         sql_map_bounds_query = '''
-                                CREATE TABLE map_bounds(
+                                CREATE TABLE IF NOT EXISTS map_bounds(
                                     country_name varchar,
-                                    geom GEOMETRY(MULTIPOLYGON, 4326)
+                                    geom GEOMETRY
                                 );
                                '''
         with conn.cursor() as cursor:
@@ -35,27 +35,44 @@ def setup_bounds() -> None:
             ROOT_DIR = path.parent.absolute()
             config_path = os.path.join(ROOT_DIR, "map_bounds.csv")
 
-            sql_copy_query = f"COPY map_test \
-                               FROM {config_path}\
-                               DELIMITER ','\
-                               CSV;"
-            cursor.execute(sql_copy_query)
+            with open(config_path, 'r') as f:
+                sql_copy_query = f"COPY map_bounds \
+                                FROM STDIN \
+                                DELIMITER ',' \
+                                CSV;"
+                cursor.copy_expert(sql_copy_query, file=f)
+        
+        with conn.cursor() as cursor:
+            sql_convert_query = "ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(geometry, 4326) USING ST_Transform(geom, 4326);"
+            cursor.execute(sql_convert_query)
         
         # Insert our own bounds, otherwise it would generate grids covering the entire globe
         with conn.cursor() as cursor:
-            sql_DK_SEA_query = "INSERT INTO map_bounds(country_name, geom) VALUES('DK_BOUNDS','POLYGON((3.24 58.35, 3.24 53.32, 16.49 53.32, 16.49 56.23, 13.31 56.68, 10.97 60.03, 7.48 58.35, 3.24 58.35))');"
+            sql_DK_SEA_query = "INSERT INTO map_bounds(country_name, geom) VALUES('DK_BOUNDS', ST_Multi('POLYGON((3.24 58.35, 3.24 53.32, 16.49 53.32, 16.49 56.23, 13.31 56.68, 10.97 60.03, 7.48 58.35, 3.24 58.35))'));"
             cursor.execute(sql_DK_SEA_query)
         
         # We convert the table to SRID 3857, so we can use meters instead of degrees
         with conn.cursor() as cursor:
-            sql_convert_query = "ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(MultiPolygon, 3857) USING ST_Transform(geom, 3857);"
+            sql_convert_query = "ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(geometry, 3857) USING ST_Transform(geom, 3857);"
             cursor.execute(sql_convert_query)
         
         # And finally, we analyze the table
         with conn.cursor() as cursor:
-            sql_analyze_query = "SQL ANALYZE map_bounds;"
+            sql_analyze_query = "ANALYZE map_bounds;"
             cursor.execute(sql_analyze_query)
+setup_bounds()
 
+'''
+WITH dump AS (
+	SELECT country_name, (ST_DUMP(geom)).geom as geo
+	FROM map_bounds
+)
+
+UPDATE map_bounds
+SET geom = dump.geo::geometry(Polygon, 3857)
+FROM dump
+WHERE dump.country_name = map_bounds.country_name
+'''
 
 def create_hexagon_grids() -> None:
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
@@ -65,7 +82,7 @@ def create_hexagon_grids() -> None:
                                             hex_{dim_size}_row INTEGER, 
                                             hex_{dim_size}_column INTEGER, 
                                             PRIMARY KEY(hex_{dim_size}_row, hex_{dim_size}_column), 
-                                            hexagon geometry);
+                                            hexagon geometry(Polygon, 3857));
                                        '''
             with conn.cursor() as cursor:
                 cursor.execute(sql_create_hexagon_table)
@@ -78,7 +95,7 @@ def create_square_grids() -> None:
                                             square_{dim_size}_row INTEGER, 
                                             square_{dim_size}_column INTEGER, 
                                             PRIMARY KEY(square_{dim_size}_row, square_{dim_size}_column), 
-                                            hexagon geometry);
+                                            hexagon geometry(Polygon, 3857));
                                        '''
             with conn.cursor() as cursor:
                 cursor.execute(sql_create_hexagon_table)
@@ -92,19 +109,23 @@ def fill_hexagons_tables() -> None:
                                     INSERT INTO hex_{dim_size}_dim(hex_{dim_size}_row, hex_{dim_size}_column, hexagon)
                                     SELECT hexes.j, hexes.i, hexes.geom  
                                     FROM ST_HexagonGrid({size}, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
-                                    INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom)
-                                    WHERE MB.country_name = 'DK_BOUNDS';
+                                    INNER JOIN (
+                                                SELECT geom
+                                                FROM map_bounds AS MB
+                                                WHERE MB.country_name = 'DK_BOUNDS'
+                                                ) MB
+                                    ON ST_Intersects(mb.geom, hexes.geom)
                                 '''
             # Fill the hexagon grid inside our own defined bounds
             with conn.cursor() as cursor:
                 cursor.execue(sql_fill_hexagons)
             
             # Remove all the hexagons which are inside of any of the countries
-            sql_delete_hexagons = f'''
-                                   SELECT hex_{dim_size}_row, hex_{dim_size}_column, hexagon
-                                   FROM hex_{dim_size}_dim
-                                   WHERE 
-                                   '''
+            sql_hexagons_inside_countries = f'''
+                                                SELECT hex_{dim_size}_row, hex_{dim_size}_column, hexagon
+                                                FROM hex_{dim_size}_dim
+                                                WHERE 
+                                            '''
             with conn.cursor() as cursor:
                 cursor.execue(sql_fill_hexagons)
             

@@ -23,7 +23,7 @@ export default function MapEvents(props: MapEventsProps) {
             if (props.points.length < 2 && props.ignoreLayers.length < 1) {
                 addMarker(event);
             }
-            if (props.points.length === 2) {
+            else {
                 props.clearPoints();
             }
         }

@@ -99,7 +99,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
         line_string_to_return_to_frontend.append(locations)
     print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
-    print(point_from_line_string_found_in_hexagon[0].ro)
+    print('what is in the list ', str(point_from_line_string_found_in_hexagon))
     logger.info('Got linestrings')
     
     return line_string_to_return_to_frontend

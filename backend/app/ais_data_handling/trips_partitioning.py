@@ -302,11 +302,12 @@ def remove_outliers(trip_list: list[Trip], logger):
         trip_PK_key += 1
         simplified_trip_PK_key += 1
         trip.trip_id = trip_PK_key
-        trip.simplified_trip_id = simplified_trip_PK_key
+        trip.simplified_trip_id = None
 
         p: PointClass
         for p in trip.get_points_in_trip():
             p.trip_id = trip.trip_id
+            p.simplified_trip_id = None
             point_list.append([p.timestamp, p.type_of_mobile, p.mmsi, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.Point, p.trip_id, p.simplified_trip_id])
     
     logger.info(f"Done adding trip keys. Converting to geopandas dataframe.")
@@ -331,7 +332,7 @@ def export_trips_csv(trip_list: list[Trip], logger, CSV_PATH = CSV_PATH):
                 row = [point.get_mmsi(), point.latitude, point.longitude, point.get_timestamp()]
                 writer.writerow(row)
 
-def get_cleansed_data(df: gpd.GeoDataFrame, logger):
+def get_cleansed_data(df: gpd.GeoDataFrame, logger) -> gpd.GeoDataFrame:
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)

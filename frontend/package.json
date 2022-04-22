@@ -10,6 +10,7 @@
     "@types/jest": "^27.4.1",
     "@types/node": "^16.11.26",
     "@types/react": "^17.0.39",
+    "@types/react-daterange-picker": "^2.0.8",
     "@types/react-dom": "^17.0.11",
     "@types/react-helmet": "^6.1.5",
     "leaflet": "^1.7.1",

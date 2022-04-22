@@ -4,7 +4,7 @@ import './App.css';
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
-import { ShipTypeFilter } from './Components/ShipTypeFilter/ShipTypeFilter';
+import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
 
 export interface Trip {
 	tripId: number;

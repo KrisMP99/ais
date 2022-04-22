@@ -112,7 +112,7 @@ export class App extends React.Component<any, AppStates> {
 						/>
 						<hr />
 						<ShipTypeFilter
-							shipTypes={this.state.filterShipTypes}
+							// shipTypes={this.state.filterShipTypes}
 							returnShipType={(shipTypes: string[]) => {
 								this.setState({filterShipTypes: shipTypes});
 							}}
@@ -125,7 +125,9 @@ export class App extends React.Component<any, AppStates> {
 	}
 
 	componentDidMount() {
-		this.fetchShipTypes();
+		// if(this.state.filterShipTypes.length) {
+		// 	this.fetchShipTypes();
+		// }
 	}
 
 	protected clearPoints() {
@@ -150,26 +152,7 @@ export class App extends React.Component<any, AppStates> {
 		return "0.0000";
 	}
 
-	protected async fetchShipTypes() {
-        const requestOptions = {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'x-token': process.env.REACT_APP_TOKEN!,
-            }
-        };
-
-        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
-            .then(async response => {
-                if (!response.ok) {
-                    return null;
-                }
-				const data = await response.json();
-				console.log(data);
-                return this.setState({ filterShipTypes: data });
-            });
-    }
+	
 }
 
 export default App;

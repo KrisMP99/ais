@@ -3,7 +3,6 @@ import '../../../App.css';
 import './ShipTypeFilter.css';
 
 interface ShipFilterProps {
-    shipTypes: string[];
     returnShipType: (shipTypes: string[]) => void;
 }
 
@@ -16,12 +15,13 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     protected fireOnce: boolean;
     protected dividerIndex: number;
+    protected fetchedShipTypes: boolean;
 
     constructor(props: ShipFilterProps) {
         super(props);
-
+        this.fetchedShipTypes = false;
         this.fireOnce = false;
-        this.dividerIndex = Math.floor(this.props.shipTypes.length * 0.5);
+        this.dividerIndex = 0;
 
         this.state = {
             shipTypes: [],
@@ -30,9 +30,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     componentDidMount() {
-        if(this.props.shipTypes.length > 0) {
-            this.setState({shipTypes: this.props.shipTypes});
+        if(!this.fetchedShipTypes) {
+            this.fetchShipTypes();
+            this.fetchedShipTypes = true;
+            this.dividerIndex = Math.floor(this.state.shipTypes.length * 0.5);
         }
+        // if(this.props.shipTypes.length) {
+        //     this.setState({shipTypes: this.props.shipTypes});
+        // }
     }
 
     render() {
@@ -78,7 +83,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                             return (
                                 <li key={key}>
                                     {val}
-                                    <input className="checkbox" type={"checkbox"} onClick={(e) => this.filter(val)} />
+                                    <input className="checkbox" type={"checkbox"} defaultChecked={true} onClick={(e) => this.filter(val)} />
                                 </li>
                             )
                         })}
@@ -87,7 +92,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 <div className="footer">
                     <button 
                         className="button btn-find-route"
-                        disabled={this.props.shipTypes === this.state.shipTypes} 
+                        // disabled={this.props.shipTypes === this.state.shipTypes} 
                         onClick={() => this.props.returnShipType(this.state.shipTypes)}   
                     >
                         Apply
@@ -105,6 +110,27 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             this.state.shipTypes.push(type)
             this.setState({ shipTypes: this.state.shipTypes })
         }
+    }
+
+    protected async fetchShipTypes() {
+        const requestOptions = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'x-token': process.env.REACT_APP_TOKEN!,
+            }
+        };
+
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+            .then(async response => {
+                if (!response.ok) {
+                    return null;
+                }
+				const data = await response.json();
+				console.log("Fetched: " + data);
+                return this.setState({ shipTypes: data });
+            });
     }
 }
     

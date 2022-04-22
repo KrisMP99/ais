@@ -67,32 +67,39 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         line_string:SimplifiedLineString
 
         locations = []
-        point_from_line_string_found_in_hexagon = [Location]
-        for location_object in line_string.locations:
-            location_object:Location
+        point_from_line_string_found_in_hexagon = [Hexagon]
+        for coordinate in line_string.locations:
+            coordinate:Location
 
             # Add points to frontend
-            locations.append([location_object.location.y, location_object.location.x])
+            locations.append([coordinate.location.y, coordinate.location.x])
 
             # Checks if the points is in the hexagon
-            if location_object.hex_10000_column is hexagons[0].column and location_object.hex_10000_row is hexagons[0].row:
+
+            print('coordinate ', coordinate.hex_10000_column)
+            print('hex ', hexagons[0].column)
+
+            isSame = coordinate.hex_10000_column is hexagons[0].column
+            print('is same ', isSame)
+
+            if coordinate.hex_10000_column is hexagons[0].column and coordinate.hex_10000_row is hexagons[0].row:
                 point_from_line_string_found_in_hexagon.append(hexagons[0])
 
-                print('hex column ' + location_object.hex_10000_column + ' , hex row ' + location_object.hex_10000_row)
-                print('hex column ' + hexagons[0].column + ' , hex row ' + hexagons[0].row)
+                print('hex column ' + str(coordinate.hex_10000_column) + ' , hex row ' + str(coordinate.hex_10000_row))
+                print('hex column ' + str(hexagons[0].column) + ' , hex row ' + str(hexagons[0].row))
 
-            elif location_object.hex_10000_column is hexagons[1].column and location_object.hex_10000_row is hexagons[1].row:
+            elif coordinate.hex_10000_column is hexagons[1].column and coordinate.hex_10000_row is hexagons[1].row:
                 point_from_line_string_found_in_hexagon.append(hexagons[1])
-                print('hex column ' + location_object.hex_10000_column + ' , hex row ' + location_object.hex_10000_row)
+                print('hex column ' + coordinate.hex_10000_column + ' , hex row ' + coordinate.hex_10000_row)
                 print('hex column ' + hexagons[1].column + ' , hex row ' + hexagons[1].row)
             else: 
+                print('continued')
                 continue
 
-        
-        print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
 
         line_string_to_return_to_frontend.append(locations)
-
+    print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
+    print(point_from_line_string_found_in_hexagon[0].ro)
     logger.info('Got linestrings')
     
     return line_string_to_return_to_frontend

@@ -87,8 +87,8 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                             <input 
                                 className="checkbox" 
                                 type={"checkbox"} 
-                                defaultChecked={val.checked} 
-                                onClick={() => {
+                                checked={val.checked} 
+                                onChange={() => {
                                     this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
                                     this.setState({shipTypes: this.state.shipTypes});
                                 }}

@@ -162,103 +162,103 @@ def get_fact_table_key_refs() -> str:
 
 def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
-    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
-    conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
-    logger.info("Converting back to 4326")
-    trip_id = df['trip_id'].min()
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+        conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
+        logger.info("Converting back to 4326")
+        trip_id = df['trip_id'].min()
 
-    df = insert_columns_for_grids(df)
+        df = insert_columns_for_grids(df)
 
-    df = df.astype(object).where(pd.notnull(df),None)
+        df = df.astype(object).where(pd.notnull(df),None)
 
-    fact_table_key_refs = get_fact_table_key_refs()
+        fact_table_key_refs = get_fact_table_key_refs()
 
-    ais_source = PandasSource(df)
+        ais_source = PandasSource(df)
 
-    date_dim = CachedDimension(
-        name='date_dim',
-        key='date_id',
-        attributes=['date','year','month','day'],
-        lookupatts=['date'],
-        cacheoninsert=True,
-    )
+        date_dim = CachedDimension(
+            name='date_dim',
+            key='date_id',
+            attributes=['date','year','month','day'],
+            lookupatts=['date'],
+            cacheoninsert=True,
+        )
 
-    nav_dim = CachedDimension(
-        name='nav_dim',
-        key='nav_id',
-        attributes=['navigational_status'],
-        lookupatts=['navigational_status'],
-        cacheoninsert=True,
-        prefill=True
-    )
+        nav_dim = CachedDimension(
+            name='nav_dim',
+            key='nav_id',
+            attributes=['navigational_status'],
+            lookupatts=['navigational_status'],
+            cacheoninsert=True,
+            prefill=True
+        )
 
-    ship_dim = CachedDimension(
-        name='ship_dim',
-        key='ship_id',
-        attributes=['mmsi','type_of_mobile','imo','name','callsign','type_of_position_fixing_device','width','length'],
-        lookupatts=['mmsi'],
-        cacheoninsert=True,
-        prefill=True
-    )
+        ship_dim = CachedDimension(
+            name='ship_dim',
+            key='ship_id',
+            attributes=['mmsi','type_of_mobile','imo','name','callsign','type_of_position_fixing_device','width','length'],
+            lookupatts=['mmsi'],
+            cacheoninsert=True,
+            prefill=True
+        )
 
-    ship_type_dim = CachedDimension(
-        name='ship_type_dim',
-        key='ship_type_id',
-        attributes=['ship_type'],
-        lookupatts=['ship_type'],
-        cacheoninsert=True,
-        prefill=True
-    )
+        ship_type_dim = CachedDimension(
+            name='ship_type_dim',
+            key='ship_type_id',
+            attributes=['ship_type'],
+            lookupatts=['ship_type'],
+            cacheoninsert=True,
+            prefill=True
+        )
 
-    time_dim = CachedDimension(
-        name='time_dim',
-        key='time_id',
-        attributes=['time','hour','quarter_hour','five_minutes'],
-        lookupatts=['time'],
-        cacheoninsert=True
-    )
+        time_dim = CachedDimension(
+            name='time_dim',
+            key='time_id',
+            attributes=['time','hour','quarter_hour','five_minutes'],
+            lookupatts=['time'],
+            cacheoninsert=True
+        )
 
-    trip_dim = CachedDimension (
-        name='trip_dim',
-        key='trip_id',
-        attributes=['line_string']
-    )
+        trip_dim = CachedDimension (
+            name='trip_dim',
+            key='trip_id',
+            attributes=['line_string']
+        )
 
-    fact_table = BatchFactTable(
-        name='data_fact',
-        keyrefs=fact_table_key_refs,
-        measures=['location','rot','sog','cog','heading','draught','destination'],
-        batchsize=500000,
-        targetconnection=conn_wrapper
-    )
+        fact_table = BatchFactTable(
+            name='data_fact',
+            keyrefs=fact_table_key_refs,
+            measures=['location','rot','sog','cog','heading','draught','destination'],
+            batchsize=500000,
+            targetconnection=conn_wrapper
+        )
 
-    logger.info("Inserting rows into star schema")
-    time_begin = datetime.datetime.now()
-    logger.info("Time begin: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
+        logger.info("Inserting rows into star schema")
+        time_begin = datetime.datetime.now()
+        logger.info("Time begin: " + time_begin.strftime("%d-%m-%Y, %H:%M:%S"))
 
-    for row in ais_source:
-        if row['date_id'] != date_dim.getbykey(row)['date_id']:
-            date_dim.insert(row)
+        for row in ais_source:
+            if row['date_id'] != date_dim.getbykey(row)['date_id']:
+                date_dim.insert(row)
 
-        if row['time_id'] != time_dim.getbykey(row)['time_id']:
-            time_dim.insert(row)
+            if row['time_id'] != time_dim.getbykey(row)['time_id']:
+                time_dim.insert(row)
 
-        row['nav_id'] = nav_dim.ensure(row)
-        row['ship_id'] = ship_dim.ensure(row)
-        row['ship_type_id'] = ship_type_dim.ensure(row)
+            row['nav_id'] = nav_dim.ensure(row)
+            row['ship_id'] = ship_dim.ensure(row)
+            row['ship_type_id'] = ship_type_dim.ensure(row)
 
-        if row['trip_id'] != trip_dim.getbykey(row)['trip_id']:
-            trip_dim.insert(row)
-    
-        fact_table.insert(row)
+            if row['trip_id'] != trip_dim.getbykey(row)['trip_id']:
+                trip_dim.insert(row)
 
-    conn_wrapper.commit()
+            fact_table.insert(row)
 
-    time_end = datetime.datetime.now()
-    time_delta = time_end - time_begin
-    logger.info("Done inserting into star schema")
-    logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M%S"))
-    logger.info(f"Took approx (star schema): {time_delta.total_seconds() / 60} minutes")
+        conn_wrapper.commit()
+
+        time_end = datetime.datetime.now()
+        time_delta = time_end - time_begin
+        logger.info("Done inserting into star schema")
+        logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M%S"))
+        logger.info(f"Took approx (star schema): {time_delta.total_seconds() / 60} minutes")
 
     logger.info("Generating line strings, simplified line strings, and updating data_fact with the corresponding keys...")
     create_line_strings(trip_id=trip_id, threshold=1000)

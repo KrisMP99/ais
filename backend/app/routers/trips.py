@@ -71,6 +71,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         for coordinate in line_string.locations:
             coordinate:Location
 
+            print('simplified_trip_id ', line_string.simplified_trip_id)
             # Add points to frontend
             locations.append([coordinate.location.y, coordinate.location.x])
 

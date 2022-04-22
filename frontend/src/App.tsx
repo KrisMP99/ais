@@ -4,8 +4,7 @@ import './App.css';
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
-import { ShipTypeFilter } from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
-import DateFilter from './Components/Filters/DateFilter/DateFilter';
+import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
 
 export interface Trip {
 	tripId: number;
@@ -109,13 +108,10 @@ export class App extends React.Component<any, AppStates> {
 						<hr />
 						<ETATrips
 							ref={this.ETATripsRef}
-							trips={this.temporaryTrips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
-							tripsShown={4}
+							trips={this.state.trips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
+							tripsShown={16}
 						/>
 						<hr />
-						<DateFilter 
-							returnDateInterval={() => {}}
-						/>
 						<ShipTypeFilter
 							shipTypes={this.state.filterShipTypes}
 							returnShipType={(shipTypes: string[]) => {

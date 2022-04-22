@@ -2,6 +2,8 @@ import React from "react";
 import './DateFilter.css';
 import '../ShipTypeFilter/ShipTypeFilter.css';
 import '../../../App.css';
+import DateRangePicker from "react-daterange-picker";
+
 
 
 interface DateFilterProps {
@@ -29,12 +31,10 @@ class DateFilter extends React.Component<DateFilterProps, DateFilterState> {
                     <p className='text-2' style={{marginTop: "auto", marginBottom: "auto"}}><b>Date filter</b></p>
                     <p><b>{openSymbol}</b></p>
                 </button>
-                {/* <ReactDatePicker
-                    dateFormat={"dd-mm-yyyy"}
-                    // selected={}
-                    onChange={() => {}}
+                {/* <DateRangePicker
+                    // maximumDate={}
                 >
-                </ReactDatePicker> */}
+                </DateRangePicker> */}
             </div>
          );
     }

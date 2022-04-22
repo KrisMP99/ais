@@ -24,8 +24,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         this.dividerIndex = Math.floor(this.props.shipTypes.length * 0.5);
 
         this.state = {
-            shipTypes: this.props.shipTypes,
+            shipTypes: [],
             openOnUi: true,
+        }
+    }
+
+    componentDidMount() {
+        if(this.props.shipTypes.length > 0) {
+            this.setState({shipTypes: this.props.shipTypes});
         }
     }
 
@@ -43,11 +49,11 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                     style={{height: (this.state.openOnUi ? "auto" : 0), display: (this.state.openOnUi ? "" : "none")}}
                 >
                     <ul className="text-3">
-                        <li>
+                        {/* <li>
                             Hello
                             <input className="checkbox" type={"checkbox"} defaultChecked={true} />
-                        </li>
-                        {/* {this.state.shipTypes.map((val, key) => {
+                        </li> */}
+                        {this.state.shipTypes.map((val, key) => {
                             if (key > this.dividerIndex) {
                                 return;
                             }
@@ -57,14 +63,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                     <input className="checkbox" type={"checkbox"} defaultChecked={true} onClick={(e) => this.filter(val)} />
                                 </li>
                             )
-                        })} */}
+                        })}
                     </ul>
                     <ul className="text-3">
-                        <li>
+                        {/* <li>
                             Hello2
                             <input className="checkbox" type={"checkbox"} defaultChecked={true} />
-                        </li>
-                        {/* {this.state.shipTypes.map((val, key) => {
+                        </li> */}
+                        {this.state.shipTypes.map((val, key) => {
                             if (key <= this.dividerIndex) {
                                 return;
                             }
@@ -74,7 +80,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                     <input className="checkbox" type={"checkbox"} onClick={(e) => this.filter(val)} />
                                 </li>
                             )
-                        })} */}
+                        })}
                     </ul>
                 </div>
                 <div className="footer">

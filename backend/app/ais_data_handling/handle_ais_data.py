@@ -183,7 +183,7 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
         'Data source type': str,
     }
     logger.info(f"Loading, converting and cleansing {file_name}")
-    df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types, nrows=200000)
+    df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types)
 
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.

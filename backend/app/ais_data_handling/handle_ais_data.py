@@ -184,8 +184,6 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
         '# Timestamp': str,
         'Type of mobile': str,
         'MMSI': 'Int32',
-        # 'Latitude': 'Float64',
-        # 'Longitude': 'Float64',
         'Navigational status': str,
         'Heading': 'Int16',
         'IMO': 'Int32',
@@ -341,19 +339,17 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     :param df: The dataframe to insert
     :param file_name: The .csv file name to add to the log.
     """
-    time_begin = datetime.datetime.now()
+    
     df_cleansed = get_cleansed_data(df, logger)
+
     df_cleansed = df_cleansed.to_crs(epsg="4326")
     df_cleansed = df_cleansed.rename_geometry('location')
     df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
+
     df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
-    trip_id = df_cleansed['trip_id'].min()
-    insert_into_star(trip_id, trip_id, df_cleansed, logger)
-    #add_new_file_to_log(file_name, logger=logger)
-    time_end = datetime.datetime.now()
-    time_delta = time_end - time_begin
-    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
-    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")
+    insert_into_star(df_cleansed, logger)
+    add_new_file_to_log(file_name, logger=logger)
+
 
 def download_all_and_process_everything(logger):
     """
@@ -406,6 +402,7 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
     :param cont: If True, will continue to download and process data from the latest file entry of the log file. Default is 'False'
     :param only_from_folder: Will only process and insert data from a folder. Default is 'False'
     """
+    time_begin = datetime.datetime.now()
     if all:
         download_all_and_process_everything(logger)
     elif cont:
@@ -416,3 +413,8 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
         download_cleanse_insert(file_to_download, logger)
     elif only_from_folder is not None:
         check_if_csv_is_in_log(logger)
+    
+    time_end = datetime.datetime.now()
+    time_delta = time_end - time_begin
+    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
+    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")

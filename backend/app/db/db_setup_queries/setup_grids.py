@@ -10,8 +10,8 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 
-hexagon_grid_resolutions = [str]
-square_grid_resolutions = [str]
+hexagon_grid_resolutions = []
+square_grid_resolutions = []
 
 def setup_bounds() -> None:
     '''
@@ -26,9 +26,15 @@ def setup_bounds() -> None:
                                     geom GEOMETRY
                                 );
                                '''
+        
         with conn.cursor() as cursor:
             cursor.execute(sql_map_bounds_query)
 
+        # Truncate the table in case it already exists and has data in it (avoid duplicate data)
+        with conn.cursor() as cursor:
+            sql_truncate_table = "TRUNCATE TABLE map_bounds;"
+            cursor.execute(sql_truncate_table)
+        
         # Then copy the bounds from the 'map_bounds.csv'-file into our map_bounds table
         with conn.cursor() as cursor:
             path = Path(__file__)
@@ -42,92 +48,80 @@ def setup_bounds() -> None:
                                 CSV;"
                 cursor.copy_expert(sql_copy_query, file=f)
         
-        with conn.cursor() as cursor:
-            sql_convert_query = "ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(geometry, 4326) USING ST_Transform(geom, 4326);"
-            cursor.execute(sql_convert_query)
-        
-        # Insert our own bounds, otherwise it would generate grids covering the entire globe
-        with conn.cursor() as cursor:
-            sql_DK_SEA_query = "INSERT INTO map_bounds(country_name, geom) VALUES('DK_BOUNDS', ST_Multi('POLYGON((3.24 58.35, 3.24 53.32, 16.49 53.32, 16.49 56.23, 13.31 56.68, 10.97 60.03, 7.48 58.35, 3.24 58.35))'));"
-            cursor.execute(sql_DK_SEA_query)
-        
-        # We convert the table to SRID 3857, so we can use meters instead of degrees
-        with conn.cursor() as cursor:
-            sql_convert_query = "ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(geometry, 3857) USING ST_Transform(geom, 3857);"
-            cursor.execute(sql_convert_query)
-        
         # And finally, we analyze the table
         with conn.cursor() as cursor:
             sql_analyze_query = "ANALYZE map_bounds;"
             cursor.execute(sql_analyze_query)
-setup_bounds()
 
-'''
-WITH dump AS (
-	SELECT country_name, (ST_DUMP(geom)).geom as geo
-	FROM map_bounds
-)
 
-UPDATE map_bounds
-SET geom = dump.geo::geometry(Polygon, 3857)
-FROM dump
-WHERE dump.country_name = map_bounds.country_name
-'''
+def create_grids(hexagons = True) -> None:
+    if hexagons:
+        dim_type = "hex"
+        resolutions = hexagon_grid_resolutions
+    else:
+        dim_type = "square"
+        resolutions = square_grid_resolutions
 
-def create_hexagon_grids() -> None:
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
-        for dim_size in hexagon_grid_resolutions:
+        for dim_size in resolutions:
             sql_create_hexagon_table = f'''
-                                            CREATE TABLE hex_{dim_size}_dim (
-                                            hex_{dim_size}_row INTEGER, 
-                                            hex_{dim_size}_column INTEGER, 
-                                            PRIMARY KEY(hex_{dim_size}_row, hex_{dim_size}_column), 
-                                            hexagon geometry(Polygon, 3857));
+                                            CREATE TABLE IF NOT EXISTS {dim_type}_{dim_size}_dim (
+                                            {dim_type}_{dim_size}_row INTEGER, 
+                                            {dim_type}_{dim_size}_column INTEGER,
+                                            PRIMARY KEY({dim_type}_{dim_size}_row, {dim_type}_{dim_size}_column),
+                                            centroid GEOMETRY(Point, 3857),
+                                            grid_geom GEOMETRY);
                                        '''
-            with conn.cursor() as cursor:
-                cursor.execute(sql_create_hexagon_table)
 
-def create_square_grids() -> None:
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
-        for dim_size in hexagon_grid_resolutions:
-            sql_create_hexagon_table = f'''
-                                            CREATE TABLE square_{dim_size}_dim (
-                                            square_{dim_size}_row INTEGER, 
-                                            square_{dim_size}_column INTEGER, 
-                                            PRIMARY KEY(square_{dim_size}_row, square_{dim_size}_column), 
-                                            hexagon geometry(Polygon, 3857));
-                                       '''
             with conn.cursor() as cursor:
                 cursor.execute(sql_create_hexagon_table)
 
 
-def fill_hexagons_tables() -> None:
+def fill_and_convert_tables(hexagons = True) -> None:
+    if hexagons:
+        dim_type = "hex"
+        resolutions = hexagon_grid_resolutions
+        grid_type = "ST_HexagonGrid"
+        table_name = "hexes"
+    else:
+        dim_type = "square"
+        resolutions = square_grid_resolutions
+        grid_type = "ST_SquareGrid"
+        table_name = "squares"
+
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
-        for dim_size in hexagon_grid_resolutions:
+        for dim_size in resolutions:
             size = int(dim_size)
             sql_fill_hexagons = f'''
-                                    INSERT INTO hex_{dim_size}_dim(hex_{dim_size}_row, hex_{dim_size}_column, hexagon)
-                                    SELECT hexes.j, hexes.i, hexes.geom  
-                                    FROM ST_HexagonGrid({size}, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
-                                    INNER JOIN (
-                                                SELECT geom
-                                                FROM map_bounds AS MB
-                                                WHERE MB.country_name = 'DK_BOUNDS'
-                                                ) MB
-                                    ON ST_Intersects(mb.geom, hexes.geom)
+                                    INSERT INTO {dim_type}_{dim_size}_dim({dim_type}_{dim_size}_row, {dim_type}_{dim_size}_column, centroid, grid_geom)
+                                    SELECT {table_name}.j, {table_name}.i, ST_centroid({table_name}.geom), {table_name}.geom  
+                                    FROM {grid_type}({size}, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS {table_name}  
+                                    INNER JOIN map_bounds as mb
+                                    ON ST_Intersects(mb.geom, {table_name}.geom)
+                                    AND mb.country_name = 'AREA_BOUNDS';
                                 '''
+
             # Fill the hexagon grid inside our own defined bounds
             with conn.cursor() as cursor:
-                cursor.execue(sql_fill_hexagons)
+                cursor.execute(sql_fill_hexagons)
             
             # Remove all the hexagons which are inside of any of the countries
-            sql_hexagons_inside_countries = f'''
-                                                SELECT hex_{dim_size}_row, hex_{dim_size}_column, hexagon
-                                                FROM hex_{dim_size}_dim
-                                                WHERE 
+            delete_intersecting_geoms = f'''
+                                                DELETE FROM {dim_type}_{dim_size}_dim
+                                                WHERE grid_geom IN (
+                                                    SELECT {dim_type}_{dim_size}_dim.grid_geom
+                                                    FROM {dim_type}_{dim_size}_dim
+                                                    INNER JOIN map_bounds as mb
+                                                    ON ST_Within(grid_geom, mb.geom)
+                                                    AND mb.country_name = 'ALL_COUNTRIES'
+                                                );
                                             '''
             with conn.cursor() as cursor:
-                cursor.execue(sql_fill_hexagons)
+                cursor.execute(delete_intersecting_geoms)
+
+            sql_transform_to_4326 = f"ALTER TABLE {dim_type}_{dim_size}_dim ALTER COLUMN grid_geom TYPE Geometry(Polygon, 4326) USING ST_TRANSFORM(grid_geom, 4326)"
+            with conn.cursor() as cursor:
+                cursor.execute(sql_transform_to_4326)
             
 
 def read_grids_resolutions_from_config_file() -> None:
@@ -144,12 +138,12 @@ def read_grids_resolutions_from_config_file() -> None:
     dim: str
     for dim in hex_str_split:
         if dim:
-            hexagon_grid_resolutions.append(dim)
+            hexagon_grid_resolutions.append(dim.strip())
     
     square_str_split = square_str_dims.split(',')
     for dim in square_str_split:
         if dim:
-            square_grid_resolutions.append(dim)
+            square_grid_resolutions.append(dim.strip())
 
 def add_hexagon_grid_resolution(resolution: int) -> None:
     '''
@@ -170,8 +164,166 @@ def add_square_grid_resolution(resolution: int) -> None:
     '''
     square_grid_resolutions.append(resolution)
 
+def truncate_grid_tables() -> None:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+        for dim_size in hexagon_grid_resolutions:
+            sql_truncate_hex_query = f"TRUNCATE TABLE hex_{dim_size}_dim CASCADE;"
 
-def create_hexagon_grid(resolutions: list[int]) -> None:
+            with conn.cursor() as cursor:
+                cursor.execute(sql_truncate_hex_query)
+        
+        for dim_size in square_grid_resolutions:
+            sql_truncate_square_query = f"TRUNCATE TABLE square_{dim_size}_dim CASCADE;"
+            
+            with conn.cursor() as cursor:
+                cursor.execute(sql_truncate_square_query)
+
+
+def create_spatial_indexes() -> None:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+        for dim_size in hexagon_grid_resolutions:
+            sql_hex_idx_query = f"CREATE INDEX hex_{dim_size}_dim_idx ON hex_{dim_size}_dim USING GIST(grid_geom);"
+
+            with conn.cursor() as cursor:
+                cursor.execute(sql_hex_idx_query)
+        
+        for dim_size in square_grid_resolutions:
+            sql_square_idx_query = f"CREATE INDEX sqaure_{dim_size}_dim_idx ON square_{dim_size}_dim USING GIST(grid_geom);"
+        
+            with conn.cursor() as cursor:
+                cursor.execute(sql_square_idx_query)
+
+
+def vacuum_and_analyze_tables():
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         with conn.cursor() as cursor:
-            print()
+            sql_query = "VACUUM ANALYZE;"
+            cursor.execute(sql_query)
+
+
+def create_star_schema() -> None:
+    result = []
+
+    for dim_size in hexagon_grid_resolutions:
+        size = dim_size.strip()
+        grid_col_name = f"hex_{size}_column INTEGER"
+        grid_row_name = f"hex_{size}_row INTEGER"
+        result.append(grid_col_name)
+        result.append(grid_row_name)
+    
+    for dim_size in square_grid_resolutions:
+        size = dim_size.strip()
+        grid_col_name = f"square_{size}_column INTEGER"
+        grid_row_name = f"square_{size}_row INTEGER"
+        result.append(grid_col_name)
+        result.append(grid_row_name)
+
+    result_str = ",".join(result)
+    result_str += ","
+
+    foregin_keys = []
+    for dim_size in hexagon_grid_resolutions:
+        size = dim_size.strip()
+        constraint = f'''CONSTRAINT fk_hex_{size} 
+                         FOREIGN KEY (hex_{size}_column, hex_{size}_row) 
+                         REFERENCES hex_{size}_dim(hex_{size}_column, hex_{size}_row)'''
+        foregin_keys.append(constraint)
+
+    for dim_size in square_grid_resolutions:
+        size = dim_size.strip()
+        constraint = f'''CONSTRAINT fk_square_{size} 
+                         FOREIGN KEY (square_{size}_column, square_{size}_row) 
+                         REFERENCES square_{size}_dim(square_{size}_column, square_{size}_row)'''
+        foregin_keys.append(constraint)
+
+    foregin_keys_str = ",".join(foregin_keys)
+    
+
+    sql_star_schema = f'''
+                            CREATE TABLE IF NOT EXISTS date_dim(
+                                date_id INTEGER PRIMARY KEY,
+                                date DATE,
+                                year INTEGER,
+                                month INTEGER,
+                                day INTEGER
+                            );
+
+                            CREATE TABLE IF NOT EXISTS time_dim(
+                                time_id INTEGER PRIMARY KEY,
+                                time TIME WITHOUT TIME ZONE,
+                                hour INTEGER,
+                                quarter_hour INTEGER,
+                                five_minutes INTEGER
+                            );
+
+                            CREATE TABLE IF NOT EXISTS ship_dim(
+                                ship_id INTEGER PRIMARY KEY,
+                                mmsi INTEGER,
+                                type_of_mobile VARCHAR,
+                                imo INTEGER,
+                                name VARCHAR,
+                                callsign VARCHAR,
+                                type_of_position_fixing_device VARCHAR,
+                                width smallint,
+                                length smallint
+                            );
+
+                            CREATE TABLE IF NOT EXISTS ship_type_dim(
+                                ship_type_id INTEGER PRIMARY KEY,
+                                ship_type varchar
+                            );
+
+                            CREATE TABLE IF NOT EXISTS nav_dim(
+                                nav_id INTEGER PRIMARY KEY,
+                                navigational_status VARCHAR
+                            );
+
+                            CREATE TABLE IF NOT EXISTS trip_dim(
+                                trip_id INTEGER PRIMARY KEY,
+                                line_string GEOMETRY(linestring, 4326)
+                            );
+
+                            create table IF NOT EXISTS simplified_trip_dim(
+                                simplified_trip_id INTEGER PRIMARY KEY,
+                                line_string GEOMETRY(linestring, 4326)
+                            );
+
+                            CREATE TABLE IF NOT EXISTS data_fact (
+                                data_fact_id SERIAL PRIMARY KEY,
+                                date_id INTEGER REFERENCES date_dim(date_id),
+                                time_id INTEGER REFERENCES time_dim(time_id),
+                                ship_type_id INTEGER REFERENCES ship_type_dim(ship_type_id),
+                                ship_id INTEGER REFERENCES ship_dim(ship_id),
+                                nav_id INTEGER REFERENCES nav_dim(nav_id),
+                                trip_id INTEGER REFERENCES trip_dim(trip_id),
+                                simplified_trip_id INTEGER REFERENCES simplified_trip_dim(simplified_trip_id),
+                                {result_str}
+                                location GEOMETRY(point, 4326),
+                                rot NUMERIC,
+                                sog NUMERIC,
+                                cog NUMERIC,
+                                heading SMALLINT,
+                                draught NUMERIC,
+                                destination VARCHAR,
+                                {foregin_keys_str}
+                            );
+                        '''
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(sql_star_schema)
+        with conn.cursor() as cursor:
+            sql_data_fact_idx_query = f"CREATE INDEX data_fact_idx ON data_fact USING GIST(location);"
+            cursor.execute(sql_data_fact_idx_query)
+    
+
+setup_bounds()
+read_grids_resolutions_from_config_file()
+create_grids(hexagons=True)
+create_grids(hexagons=False)
+truncate_grid_tables()
+fill_and_convert_tables(hexagons=True)
+fill_and_convert_tables(hexagons=False)
+create_spatial_indexes()
+create_star_schema()
+
+

@@ -302,12 +302,12 @@ def remove_outliers(trip_list: list[Trip], logger):
         trip_PK_key += 1
         simplified_trip_PK_key += 1
         trip.trip_id = trip_PK_key
-        trip.simplified_trip_id = simplified_trip_PK_key
+        trip.simplified_trip_id = None
 
         p: PointClass
         for p in trip.get_points_in_trip():
             p.trip_id = trip.trip_id
-            p.simplified_trip_id = trip.simplified_trip_id
+            p.simplified_trip_id = None
             point_list.append([p.timestamp, p.type_of_mobile, p.mmsi, p.navigational_status, p.rot, p.sog, p.cog, p.heading, p.imo, p.callsign, p.name, p.ship_type, p.width, p.length, p.type_of_position_fixing_device, p.draught, p.destination, p.Point, p.trip_id, p.simplified_trip_id])
     
     logger.info(f"Done adding trip keys. Converting to geopandas dataframe.")

@@ -5,7 +5,7 @@ import psycopg2
 import os
 import pygrametl
 from pygrametl.datasources import PandasSource
-from pygrametl.tables import CachedDimension, BatchFactTable
+from pygrametl.tables import CachedDimension, BulkFactTable
 from sqlalchemy import create_engine
 import datetime
 import geopandas as gpd
@@ -164,6 +164,14 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
+
+        def pgbulkloader(name, attributes, fieldsep, rowsep, nullval, filehandle):
+            cursor = conn_wrapper.cursor()
+            # psycopg2 does not accept the default value used to represent NULL
+            # by BulkDimension, which is None. Here this is ignored as we have no
+            # NULL values that we wish to substitute for a more descriptive value
+            cursor.copy_from(file=filehandle, table=name, null=nullval, columns=attributes)
+
         logger.info("Converting back to 4326")
         trip_id = df['trip_id'].min()
 
@@ -181,6 +189,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
             attributes=['date','year','month','day'],
             lookupatts=['date'],
             cacheoninsert=True,
+            prefill=True
         )
 
         nav_dim = CachedDimension(
@@ -215,7 +224,8 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
             key='time_id',
             attributes=['time','hour','quarter_hour','five_minutes'],
             lookupatts=['time'],
-            cacheoninsert=True
+            cacheoninsert=True,
+            prefill=True
         )
 
         trip_dim = CachedDimension (
@@ -224,12 +234,12 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
             attributes=['line_string']
         )
 
-        fact_table = BatchFactTable(
+        fact_table = BulkFactTable(
             name='data_fact',
             keyrefs=fact_table_key_refs,
             measures=['location','rot','sog','cog','heading','draught','destination'],
-            batchsize=500000,
-            targetconnection=conn_wrapper
+            nullsubst='\\\\N',
+            bulkloader=pgbulkloader
         )
 
         logger.info("Inserting rows into star schema")
@@ -252,8 +262,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
 
             fact_table.insert(row)
 
-        conn_wrapper.commit()
-
         time_end = datetime.datetime.now()
         time_delta = time_end - time_begin
         logger.info("Done inserting into star schema")
@@ -271,8 +279,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     logger.info("Adding hex (col, row) finished!")
     logger.info("Vacuuming and analyzing the tables...")
     vacuum_and_analyze_tables()
+
     logger.info("Finished vacuuming and analyzing!")
-    logger.info("Closing connections...")
-    conn_wrapper.close()
-    conn.close()
     logger.info("Finished!")

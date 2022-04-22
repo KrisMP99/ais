@@ -1,5 +1,8 @@
+from dotenv import load_dotenv
 import psycopg2
 import os
+
+load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
@@ -176,7 +179,13 @@ def create_hex_ids(square_resolutions, hex_resolutions, simplified_trip_id):
 
 
 def vacuum_and_analyze_tables():
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
-        with conn.cursor() as cursor:
-            sql_query = "VACUUM ANALYZE;"
-            cursor.execute(sql_query)
+    from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+    import sqlalchemy
+
+    db_string = f"postgresql://{USER}:{PASS}@{HOST_DB}/{DB_NAME}"
+    engine = sqlalchemy.create_engine(db_string)
+    connection = engine.raw_connection()
+    connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    cursor = connection.cursor()
+    cursor.execute("VACUUM ANALYZE;")
+    cursor.close()

@@ -108,7 +108,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                     <p className='text-2' style={{marginTop: "auto", marginBottom: "auto"}}><b>Ship type filter</b></p>
                     <p><strong>{openSymbol}</strong></p>
                 </button>
-                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'flex-start', height: '25px'}}>
+                <div className="check-all" style={{display: this.state.openOnUi ? 'flex' : 'none'}}>
                     <p className="text-3" style={{margin: 0, marginRight: '5px'}}><em>Check all:</em></p>
                     <input 
                         type="checkbox" 

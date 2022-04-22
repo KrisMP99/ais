@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.db.database import engine, Session
-from pypika import Query
+from pypika import Query, Field, Table
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 import asyncio
@@ -23,7 +23,8 @@ router = APIRouter(
 
 @router.get('/ship-types')
 async def get_ship_types():
-    query = Query.from_('ship_type_dim').select('ship_type').distinct() 
+    ship_type_dim = Table('ship_type_dim')
+    query = Query.from_(ship_type_dim).select(ship_type_dim.ship_type).distinct().where(ship_type_dim.ship_type.notnull())
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, str(query), engine)
 

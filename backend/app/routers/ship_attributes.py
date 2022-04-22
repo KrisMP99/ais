@@ -31,5 +31,4 @@ async def get_ship_types():
         raise HTTPException(status_code=404, detail='Could not find any ship types')
 
     ship_types = df['ship_type'].to_list()
-    print(ship_types)
     return jsonable_encoder(ship_types)

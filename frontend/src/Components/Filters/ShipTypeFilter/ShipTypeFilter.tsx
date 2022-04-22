@@ -34,9 +34,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             this.fetchShipTypes();
             this.fetchedShipTypes = true;
         }
-        // if(this.props.shipTypes.length) {
-        //     this.setState({shipTypes: this.props.shipTypes});
-        // }
     }
 
     render() {
@@ -127,7 +124,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                     return null;
                 }
 				const data = await response.json();
-				console.log("Fetched: " + data);
                 return this.setState({ shipTypes: data });
             });
     }

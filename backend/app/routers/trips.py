@@ -1,4 +1,3 @@
-from lib2to3.pgen2.pgen import DFAState
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
@@ -8,13 +7,17 @@ from app.models.location import Location
 from app.db.database import engine, Session
 from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
-from shapely.ops import transform
+from dotenv import load_dotenv
 import shapely.wkb as wkb
 import geopandas as gpd
 import pandas as pd
+import os
+
+load_dotenv()
+API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')
 
 session = Session()
-logger = get_logger()
+logger = get_logger(API_LOG_FILE_PATH)
 router = APIRouter(
     prefix="/trips",
     tags=["trips"],

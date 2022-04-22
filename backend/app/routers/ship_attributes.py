@@ -3,11 +3,17 @@ from app.dependencies import get_token_header, get_logger
 from app.db.database import engine, Session
 from pypika import Query
 from fastapi.encoders import jsonable_encoder
+from dotenv import load_dotenv
 import asyncio
 import pandas as pd
+import os
+
+load_dotenv()
+API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')
 
 session = Session()
-logger = get_logger()
+logger = get_logger(API_LOG_FILE_PATH)
+
 router = APIRouter(
     prefix="/ship_attributes",
     tags=["ship_attributes"],

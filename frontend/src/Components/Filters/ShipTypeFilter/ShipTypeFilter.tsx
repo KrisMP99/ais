@@ -33,7 +33,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         if(!this.fetchedShipTypes) {
             this.fetchShipTypes();
             this.fetchedShipTypes = true;
-            this.dividerIndex = Math.floor(this.state.shipTypes.length * 0.5);
         }
         // if(this.props.shipTypes.length) {
         //     this.setState({shipTypes: this.props.shipTypes});
@@ -42,7 +41,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     render() {
         let openSymbol = this.state.openOnUi ? "˅" : "˄";
-        console.log(this.state.shipTypes);
+        this.dividerIndex = Math.floor(this.state.shipTypes.length * 0.5);
         return (
             <div className='filter-container'>
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>

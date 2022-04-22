@@ -23,7 +23,13 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         this.dividerIndex = Math.floor(this.props.shipTypes.length * 0.5);
 
         this.state = {
-            shipTypes: this.props.shipTypes,
+            shipTypes: [],
+        }
+    }
+
+    componentDidMount(){
+        if (this.props.shipTypes.length > 0){
+            this.setState({shipTypes: this.props.shipTypes});
         }
     }
 

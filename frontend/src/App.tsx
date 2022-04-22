@@ -166,6 +166,7 @@ export class App extends React.Component<any, AppStates> {
                     return null;
                 }
 				const data = await response.json();
+				console.log(data);
                 return this.setState({ filterShipTypes: data });
             });
     }

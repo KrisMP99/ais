@@ -108,36 +108,14 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
     
     return line_string_to_return_to_frontend
     
-    df = gpd.read_postgis( 
-            query_point_exists_in_hexagon(), 
-            engine,
-            params={
-                'hex1row': hexagons[0].row,
-                'hex1column': hexagons[0].column,
-                'hex1hex': hexagons[0].hexagon.wkb_hex,
-                'hex2row': hexagons[1].row,
-                'hex2column': hexagons[1].column,
-                'hex2hex': hexagons[1].hexagon.wkb_hex,
-            },
-            geom_col='geom'
-        )
-
-    print(df)
-
-    hexagons_list = pd.unique(df[['hex_10000_row', 'hex_10000_column']].values.ravel('K')).tolist()
-
-    group = df.groupby(by=['hex_10000_row', 'hex_10000_column'])
-    
-    print('Number of groups ', group.ngroups)
-
-    if group.ngroups == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
+    if len(point_from_line_string_found_in_hexagon) == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('No points in either hexagons')
         for hex in hexagons:
             create_point(hex, query_get_points_in_line_string(), hexagons) 
-    elif group.ngroups == 1: # find centroid for points closest to the missing hexagon
+    elif len(point_from_line_string_found_in_hexagon) == 1: # find centroid for points closest to the missing hexagon
         # Find which hexagon has no points
         for hex in hexagons:
-            if hex.row not in hexagons_list and hex.column not in hexagons_list:
+            if hex not in point_from_line_string_found_in_hexagon:
                 create_point(hex, query_get_points_in_line_string(), hexagons)
     # else:     
     #     hex1_df = group.get_group(hexagons_list[0])
@@ -270,7 +248,7 @@ def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
     hexagons = []
     
     for table_row in df.itertuples():
-        hexagons.append(Hexagon(column=table_row.hex_10000_column, row=table_row.hex_10000_row, hexagon=table_row.hexagon))
+        hexagons.append(Hexagon(column=table_row.hex_10000_column, row=table_row.hex_10000_row, hexagon=table_row.hexagon, centroid=table_row.centroid))
     
     return hexagons
 

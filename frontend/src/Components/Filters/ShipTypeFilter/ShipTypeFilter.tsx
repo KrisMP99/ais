@@ -16,12 +16,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     protected fireOnce: boolean;
     protected dividerIndex: number;
+    protected checkBoxSetting: boolean;
 
     constructor(props: ShipFilterProps) {
         super(props);
 
         this.fireOnce = false;
         this.dividerIndex = Math.floor(this.props.shipTypes.length * 0.5);
+        this.checkBoxSetting = true;
 
         this.state = {
             shipTypes: [],
@@ -37,12 +39,24 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     render() {
         let openSymbol = this.state.openOnUi ? "˅" : "˄";
+        
+        
+        if (this.state.shipTypes.every(s => s.checked)){
+            this.checkBoxSetting = true;
+        }
+        else if (this.state.shipTypes.every(s => !s.checked)){
+            this.checkBoxSetting = false;
+        }
+
         return (
             <div className='filter-container'>
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
-                    <p><b>{openSymbol}</b></p>
+                    <p><strong>{openSymbol}</strong></p>
                     <p className='text-2' style={{marginTop: "auto", marginBottom: "auto"}}><b>Ship type filter</b></p>
-                    <p><b>{openSymbol}</b></p>
+                    <input type="checkbox" className="shipCheckBoxAll" defaultChecked={this.checkBoxSetting} onChange={(e) => {
+                        this.checkBoxSetting = !this.checkBoxSetting;
+                        this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting)
+                    }}/>
                 </button>
                 <div 
                     className="body-filter" 

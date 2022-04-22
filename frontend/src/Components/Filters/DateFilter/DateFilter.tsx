@@ -2,7 +2,7 @@ import React from "react";
 import './DateFilter.css';
 import '../ShipTypeFilter/ShipTypeFilter.css';
 import '../../../App.css';
-import DateRangePicker from "react-daterange-picker";
+// import DateRangePicker from "react-daterange-picker";
 
 
 

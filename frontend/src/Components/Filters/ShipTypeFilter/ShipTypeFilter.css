@@ -14,6 +14,11 @@
     padding: 0;
 }
 
+.check-all {
+    justify-content: center;
+    align-items: flex-start;
+    height: 25px;
+}
 
 ul {
     list-style-type: none;

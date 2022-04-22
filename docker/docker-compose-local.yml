@@ -5,10 +5,10 @@ services:
     container_name: postgres_db
     ports:
       - '5431:5431'
+    env_file: ../backend/.env
     restart: always
     environment:
       - TZ=Europe/Copenhagen
-    env_file: ../backend/.env
     
   api:
     build:

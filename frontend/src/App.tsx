@@ -163,10 +163,11 @@ export class App extends React.Component<any, AppStates> {
 
         fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
             .then(async response => {
-                const data = await response.json();
                 if (!response.ok) {
                     return null;
                 }
+				const data = await response.json();
+				console.log(data)
                 return this.setState({ filterShipTypes: data });
             });
     }

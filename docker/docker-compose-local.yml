@@ -7,6 +7,8 @@ services:
       - '5431:5431'
     env_file: ../backend/.env
     restart: always
+    environment:
+      - TZ=Europe/Copenhagen
     
   api:
     build:
@@ -14,7 +16,6 @@ services:
       dockerfile: ./docker/Dockerfile.API
     image: ais_api
     container_name: ais_api
-    command: uvicorn app.main:app --host 0.0.0.0 --reload
     volumes:
       - type: bind
         source: ../
@@ -22,6 +23,9 @@ services:
     restart: always
     ports:
       - 8080:8000
+    environment:
+      - TZ=Europe/Copenhagen
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
       
   client:
     build:
@@ -29,7 +33,6 @@ services:
       dockerfile: ./docker/Dockerfile.Client
     image: ais_client
     container_name: ais_client
-    command: npm start
     volumes:
       - type: bind
         source: ../
@@ -37,3 +40,22 @@ services:
     restart: always
     ports:
       - 3000:3000
+    environment:
+      - TZ=Europe/Copenhagen
+    command: npm start
+    
+  cleansing:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.Cleansing
+    tty: true
+    image: ais_cleansing
+    container_name: ais_cleansing
+    # command: python main.py -f True
+    volumes:
+      - type: bind
+        source: ../
+        target: /srv/data/ais
+    restart: always
+    environment:
+      - TZ=Europe/Copenhagen

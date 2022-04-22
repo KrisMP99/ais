@@ -8,31 +8,15 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import requests
 import zipfile, rarfile
-from douglas_peucker import add_simplified_trip_ids, add_hex_ids, create_simplified_trip_line_strings
-from data_insertion import insert_simplified_trips, calculate_date_tim_dim_and_hex, insert_into_star
+from data_insertion import calculate_date_tim_dim_and_hex, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
-import logging
 import numpy as np
 
 load_dotenv()
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
-
-# Logging for file
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
-
-    logger = logging.getLogger()
-    return logger
 
 def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
@@ -271,7 +255,7 @@ def check_if_csv_is_in_log(logger):
 
 def continue_from_log(logger):
     logger.info("Continuing from the log file.")
-
+    
     # First we check if we have any .csv files downloaded, that have not yet been inserted
     check_if_csv_is_in_log(logger)
 

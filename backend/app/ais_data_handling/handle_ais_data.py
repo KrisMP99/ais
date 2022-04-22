@@ -8,31 +8,15 @@ from bs4 import BeautifulSoup
 from urllib.request import urlopen
 import requests
 import zipfile, rarfile
-from douglas_peucker import add_simplified_trip_ids, add_hex_ids, create_simplified_trip_line_strings
-from data_insertion import insert_simplified_trips, calculate_date_tim_dim_and_hex, insert_into_star
+from data_insertion import calculate_date_tim_dim_and_hex, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
-import logging
 import numpy as np
 
 load_dotenv()
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
-
-# Logging for file
-def get_logger():
-    Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
-    logging.basicConfig(format = Log_Format,
-                        force = True,
-                        handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
-                            logging.StreamHandler()
-                        ],
-                        level = logging.INFO)
-
-    logger = logging.getLogger()
-    return logger
 
 def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
@@ -184,8 +168,6 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
         '# Timestamp': str,
         'Type of mobile': str,
         'MMSI': 'Int32',
-        # 'Latitude': 'Float64',
-        # 'Longitude': 'Float64',
         'Navigational status': str,
         'Heading': 'Int16',
         'IMO': 'Int32',
@@ -273,7 +255,7 @@ def check_if_csv_is_in_log(logger):
 
 def continue_from_log(logger):
     logger.info("Continuing from the log file.")
-
+    
     # First we check if we have any .csv files downloaded, that have not yet been inserted
     check_if_csv_is_in_log(logger)
 
@@ -291,8 +273,9 @@ def continue_from_log(logger):
     files_to_download = files_on_server[latest_file_index + 1: -1]
     logger.info(f"There are {len(files_to_download)} compressed files to download.")
 
+    file: str
     for file in files_to_download:
-        download_cleanse_insert(file, logger=logger)
+        download_cleanse_insert(file_name=file, logger=logger)
 
 def does_file_contain_whole_month(file_name: str):
     """
@@ -303,7 +286,8 @@ def does_file_contain_whole_month(file_name: str):
     """
     # This should probably be done with strftime instead
     # See https://www.programiz.com/python-programming/datetime/strftime
-    if(len(file_name.split('-')) <= 3):
+    length_split = len(file_name.split('-'))
+    if(length_split <= 3):
         return True
     else:
         return False
@@ -316,14 +300,20 @@ def download_cleanse_insert(file_name: str, logger):
     """
     download_file_from_ais_web_server(file_name, logger)
 
-    if(does_file_contain_whole_month):
+    if(does_file_contain_whole_month(file_name)):
         files_to_insert = get_downloaded_csv_files_from_folder(file_name, logger=logger)
 
+    files_to_insert = []
     if len(files_to_insert) <= 0:
         files_to_insert.append(file_name)
     
     for file in files_to_insert:
-        df = cleanse_csv_file_and_convert_to_df(file, logger=logger)
+        file_name = file
+        if ".zip" in file: 
+            file_name = file.replace('.zip', '.csv')
+        else:
+            file_name = file.replace('.rar', '.csv')
+        df = cleanse_csv_file_and_convert_to_df(file_name=file_name, logger=logger)
         partition_trips_and_insert(file, df, logger)
 
 def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
@@ -333,26 +323,17 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     :param df: The dataframe to insert
     :param file_name: The .csv file name to add to the log.
     """
-    time_begin = datetime.datetime.now()
+    
     df_cleansed = get_cleansed_data(df, logger)
-    simplified_trip_df = create_simplified_trip_line_strings(df_cleansed, logger)
-    df_cleansed = add_simplified_trip_ids(df_cleansed, simplified_trip_df)
-    logger.info("Converting line strings back to 4326...")
-    simplified_trip_df = simplified_trip_df.to_crs(epsg="4326")
-    logger.info("Finished converting cers to 4326!")
-    insert_simplified_trips(simplified_trip_df, logger)
-    df_cleansed = df_cleansed.set_crs("EPSG:3857")
+
     df_cleansed = df_cleansed.to_crs(epsg="4326")
     df_cleansed = df_cleansed.rename_geometry('location')
     df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
-    # df_cleansed = add_hex_ids(df_cleansed, logger)
+
     df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
-    insert_into_star(df_cleansed['trip_id'].min(), simplified_trip_df['simplified_trip_id'].min(), df_cleansed, logger)
+    insert_into_star(df_cleansed, logger)
     add_new_file_to_log(file_name, logger=logger)
-    time_end = datetime.datetime.now()
-    time_delta = time_end - time_begin
-    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
-    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")
+
 
 def download_all_and_process_everything(logger):
     """
@@ -373,13 +354,15 @@ def download_interval(interval: str, logger):
     dates = interval.split('::')
     csv_files_on_server = connect_to_to_ais_web_server_and_get_data(logger)
     begin_index = None
-
+    end_index = None
     for csv_file in csv_files_on_server:
-        if dates[0] in csv_file:
-            begin_index = csv_files_on_server.index(csv_file)
-            continue
-        if dates[1] in csv_file:
-            end_index = csv_files_on_server.index(csv_file)
+        if begin_index is None:
+            if dates[0] in csv_file:
+                begin_index = csv_files_on_server.index(csv_file)
+                continue
+        if end_index is None:
+            if dates[1] in csv_file:
+                end_index = csv_files_on_server.index(csv_file)
     
     if begin_index is None or end_index is None:
         logger.critical("The files on the webserver does not contain the interval you're trying to download. Qutting.")
@@ -389,8 +372,9 @@ def download_interval(interval: str, logger):
 
     logger.info(f"There are in total {len(files_to_download)} compressed files to download and process.")
 
+    file: str
     for file in files_to_download:
-        download_cleanse_insert(file, logger)
+        download_cleanse_insert(file_name=file, logger=logger)
 
 def start(logger, interval_to_download = None, file_to_download = None, all = False, cont = False, only_from_folder = False):
     """
@@ -402,6 +386,7 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
     :param cont: If True, will continue to download and process data from the latest file entry of the log file. Default is 'False'
     :param only_from_folder: Will only process and insert data from a folder. Default is 'False'
     """
+    time_begin = datetime.datetime.now()
     if all:
         download_all_and_process_everything(logger)
     elif cont:
@@ -412,4 +397,8 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
         download_cleanse_insert(file_to_download, logger)
     elif only_from_folder is not None:
         check_if_csv_is_in_log(logger)
-
+    
+    time_end = datetime.datetime.now()
+    time_delta = time_end - time_begin
+    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
+    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")

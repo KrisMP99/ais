@@ -4,13 +4,11 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import trips
+from app.routers import trips, hexagrids, ship_attributes
 
 load_dotenv()
 TESTSERVER = os.getenv('TEST_SERVER')
-TESTSERVERNOPORT = os.getenv('TEST_SERVER_NO_PORT')
 PRODSERVER = os.getenv('PRODUCTION_SERVER')
-PRODSERVERNOPORT = os.getenv('PRODUCTION_SERVER_NO_PORT')
 
 origins = [
     'http://localhost:3000',
@@ -24,10 +22,12 @@ middleware = [
         CORSMiddleware, 
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=['POST'],
+        allow_methods=['POST','PUT','GET'],
         allow_headers=['*']
     )
 ]
 
 app = FastAPI(middleware=middleware)
 app.include_router(trips.router)
+app.include_router(hexagrids.router)
+app.include_router(ship_attributes.router)

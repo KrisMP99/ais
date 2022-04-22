@@ -16,5 +16,3 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 
 COPY ./backend/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
-
-CMD [ "python", "main.py", "-f", "True" ]

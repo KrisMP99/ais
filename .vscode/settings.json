@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./backend/app/ais_data_handling"
+    ]
+}

@@ -5,7 +5,7 @@ services:
     container_name: postgres_db
     ports:
       - '5431:5431'
-    env_file: ../.env
+    env_file: ../backend/.env
     restart: always
     
   api:

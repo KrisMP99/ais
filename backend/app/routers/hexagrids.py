@@ -5,12 +5,17 @@ from app.models.coordinate import Coordinate
 from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
 from app.models.hexagon import Hexagon
+from dotenv import load_dotenv
 import shapely.wkb as wkb
-import pandas as pd
 import geopandas as gpd
+import os
+
+load_dotenv()
+API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')
 
 session = Session()
-logger = get_logger()
+logger = get_logger(API_LOG_FILE_PATH)
+
 router = APIRouter(
     prefix="/hexagrids",
     tags=["hexagrids"],

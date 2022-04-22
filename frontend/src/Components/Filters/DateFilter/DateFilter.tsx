@@ -7,7 +7,7 @@ import DateRangePicker from "react-daterange-picker";
 
 
 interface DateFilterProps {
-    returnDateInterval: () => void;
+    hasChanged: (hasChanged: boolean) => void;
 }
  
 interface DateFilterState {

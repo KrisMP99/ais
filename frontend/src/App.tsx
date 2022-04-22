@@ -5,6 +5,7 @@ import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
 import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
+import Filters from './Components/Filters/Filters';
 
 export interface Trip {
 	tripId: number;
@@ -111,11 +112,12 @@ export class App extends React.Component<any, AppStates> {
 							tripsShown={16}
 						/>
 						<hr />
-						<ShipTypeFilter
+						<Filters />
+						{/* <ShipTypeFilter
 							returnShipType={(shipTypes: string[]) => {
 								this.setState({filterShipTypes: shipTypes});
 							}}
-						/>
+						/> */}
 					</div>
 				</div>
 

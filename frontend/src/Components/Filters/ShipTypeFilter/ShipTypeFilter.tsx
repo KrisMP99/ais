@@ -8,11 +8,12 @@ interface ShipType {
 }
 
 interface ShipFilterProps {
-    returnShipType: (shipTypes: string[]) => void;
+    hasChanged: (hasChanged: boolean) => void;
+    // returnShipType: (shipTypes: string[]) => void;
 }
 
 interface ShipFilterStates {
-    preApply: ShipType[];
+    preApply: boolean[];
     shipTypes: ShipType[];
     openOnUi: boolean;
 }
@@ -132,10 +133,10 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                         {col2}
                     </ul>
                 </div>
-                <div className="footer">
+                {/* <div className="footer">
                     <button 
                         className="button btn-find-route"
-                        disabled={JSON.stringify(this.state.shipTypes) === JSON.stringify(this.state.preApply)} 
+                        disabled={this.areSimilar()} 
                         onClick={() => {
                             let shipTypesChecked: string[] = [];
                             this.state.shipTypes.forEach((val) => {
@@ -144,14 +145,26 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                 }
                             });
                             this.props.returnShipType(shipTypesChecked);
-                            this.setState({preApply: [...this.state.shipTypes]});
+                            let temp = this.state.shipTypes.map((val) => {
+                                return val.checked;
+                            });
+                            this.setState({preApply: temp});
                         }}   
                     >
                         Apply
                     </button>
-                </div>
+                </div> */}
             </div>
         )
+    }
+
+    protected areSimilar() {
+        for (let i = 0; i < this.state.shipTypes.length; i++) {
+            if(this.state.shipTypes[i].checked !== this.state.preApply[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected async fetchShipTypes() {
@@ -173,12 +186,12 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             })
             .then((data: string[]) => {
                 let shipTypes: ShipType[] = [];
-                let pre: ShipType[] = [];
+                let pre: boolean[] = [];
                 data.forEach((val) => {
                     shipTypes.push({type: val, checked: true});
-                    pre.push({type: val, checked: true});
+                    pre.push(true);
                 });
-                return this.setState({shipTypes: [...shipTypes], preApply: [...pre]});
+                return this.setState({shipTypes: shipTypes, preApply: pre});
             });
     }
 }

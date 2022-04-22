@@ -54,7 +54,6 @@ export class App extends React.Component<any, AppStates> {
 	}
 
 	render() {
-		console.count('App render count: ')
 		return (
 			<div className='main'>
 				<div className="main-container">

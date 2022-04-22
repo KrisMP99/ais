@@ -37,7 +37,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     componentDidMount() {
         if(this.state.shipTypes.length === 0) {
-            console.log("Fetching ship types...");
             this.fetchShipTypes();
         }
     }
@@ -107,11 +106,21 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p><strong>{openSymbol}</strong></p>
                     <p className='text-2' style={{marginTop: "auto", marginBottom: "auto"}}><b>Ship type filter</b></p>
-                    <input type="checkbox" className="shipCheckBoxAll" defaultChecked={this.checkBoxSetting} onChange={(e) => {
-                        this.checkBoxSetting = !this.checkBoxSetting;
-                        this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting)
-                    }}/>
+                    <p><strong>{openSymbol}</strong></p>
                 </button>
+                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'flex-start', height: '25px'}}>
+                    <p className="text-3" style={{margin: 0, marginRight: '5px'}}><em>Check all:</em></p>
+                    <input 
+                        type="checkbox" 
+                        className="shipCheckBoxAll" 
+                        checked={this.checkBoxSetting} 
+                        onChange={(e) => {
+                            this.checkBoxSetting = !this.checkBoxSetting;
+                            this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting)
+                            this.setState({shipTypes: this.state.shipTypes});
+                        }}
+                    />
+                </div>
                 <div 
                     className="body-filter" 
                     style={{height: (this.state.openOnUi ? "auto" : 0), display: (this.state.openOnUi ? "" : "none")}}

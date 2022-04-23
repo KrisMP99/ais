@@ -55,7 +55,7 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
         }
         return ( 
             <div className="setting-container">
-                <p className="text-1"><strong>Grid settings</strong></p>
+                <p className="text-1"><strong>Grid settings:</strong></p>
                 <div className="setting-body">
                     <p className="text-2" style={{margin: 0}}>Grid type:</p>
                     <div className="text-3 grid-polygon-group">

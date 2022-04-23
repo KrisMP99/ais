@@ -25,16 +25,17 @@ async def get_hexagon(p1: Coordinate):
                 SELECT
                     h.hex_10000_row, 
                     h.hex_10000_column, 
-                    ST_FlipCoordinates(h.hexagon) AS hexagon
+                    ST_FlipCoordinates(h.grid_geom) AS hexagon
                 FROM
                     hex_10000_dim AS h
                 WHERE
                     ST_Within(
                         %(hexagon)s::geometry,
-                        h.hexagon
+                        h.grid_geom
                     );
             '''
-
+            
+    
     df = gpd.read_postgis(query, engine, params={'hexagon': wkb.dumps(gp1, hex=True, srid=4326)}, geom_col='hexagon')
 
     if len(df) == 0:

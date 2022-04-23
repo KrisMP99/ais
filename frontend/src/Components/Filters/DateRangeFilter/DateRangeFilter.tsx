@@ -3,7 +3,6 @@ import './DateRangeFilter.css';
 import '../ShipTypeFilter/ShipTypeFilter.css';
 import '../../../App.css';
 import '../Filters.css';
-import DateRangePicker from "react-daterange-picker";
 import { DatePicker, addMonths, DefaultButton } from "@fluentui/react";
 
 interface DateRangeFilterProps {
@@ -62,7 +61,12 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
                             maxDate={this.maxDate}
                             minDate={this.minDate}
                             onSelectDate={(dateChosen) => {
-                                this.setState({startDate: dateChosen});
+                                if (this.state.endDate && dateChosen && dateChosen > this.state.endDate) {
+                                    this.setState({startDate: dateChosen, endDate: dateChosen})
+                                }
+                                else {
+                                    this.setState({startDate: dateChosen});
+                                }
                                 this.areSimilar();
                             }}
                         />
@@ -122,9 +126,15 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
         return (val !== null && val !== undefined);
     }
     protected areSimilar() { 
-        if(this.dateIsDefined(this.state.endDate) && 
-        (this.state.endDate !== this.state.preApplyEndDate || this.state.startDate !== this.state.preApplyStartDate)) {
-            this.props.hasChanged(true);
+        let endDateSame = this.state.endDate?.toDateString() === this.state.preApplyEndDate?.toDateString();
+        let startDateSame = this.state.startDate?.toDateString() === this.state.preApplyStartDate?.toDateString();
+        if (this.dateIsDefined(this.state.startDate) && this.dateIsDefined(this.state.endDate)) {
+            if (!endDateSame || !startDateSame) {
+                this.props.hasChanged(true);
+            }
+            else {
+                this.props.hasChanged(false);
+            }
         }
         else {
             this.props.hasChanged(false);

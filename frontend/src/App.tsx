@@ -3,11 +3,11 @@ import React from 'react';
 import './App.css';
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
-import PostButton from './Components/PostButton';
+import PostButton, { PostSetting } from './Components/PostButton';
 import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
 import Filters, { FilterObj } from './Components/Filters/Filters';
 import { initializeIcons } from '@fluentui/react/lib/Icons';
-initializeIcons();
+import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
 
 export interface Trip {
 	tripId: number;
@@ -23,7 +23,9 @@ interface AppStates {
 	mouseCoords: string[];
 	polylines: LatLng[][];
 	trips: Trip[];
+	postSetting: PostSetting | null;
 }
+initializeIcons(undefined, {disableWarnings: true});
 
 export class App extends React.Component<any, AppStates> {
 
@@ -36,7 +38,6 @@ export class App extends React.Component<any, AppStates> {
 
 	constructor(props: any) {
 		super(props);
-		
 		this.ETATripsRef = React.createRef();
 		this.DKMapRef = React.createRef();
 		this.mousePosRef = React.createRef();
@@ -53,6 +54,7 @@ export class App extends React.Component<any, AppStates> {
 			trips: [],
 			polylines: [],
 			filterShipTypes: [],
+			postSetting: { gridSetting: null, activeFilters: null },
 		}
 	}
 
@@ -97,13 +99,14 @@ export class App extends React.Component<any, AppStates> {
 									coordinates={this.state.pointCoords}
 									shipTypeArray={this.state.filterShipTypes}
 									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
+									postSetting={this.state.postSetting}
 								/>
 								<button
 									className={'button btn-clear'}
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear points
+									Clear point(s)
 								</button>
 							</div>
 						</div>
@@ -114,9 +117,25 @@ export class App extends React.Component<any, AppStates> {
 							tripsShown={16}
 						/>
 						<hr />
+						<GridSetting 
+							onChange={(setting: GridSettingObj) => {
+								this.setState({
+									postSetting: { 
+										gridSetting: setting, 
+										activeFilters: this.state.postSetting ? this.state.postSetting.activeFilters : null 
+									}
+								});
+							}}
+						/>
+						<hr />
 						<Filters 
 							returnFilters={(filters: FilterObj) => {
-								console.log(filters);
+								this.setState({
+									postSetting: { 
+										gridSetting: this.state.postSetting ? this.state.postSetting.gridSetting : null, 
+										activeFilters: filters
+									}
+								});
 							}}
 						/>
 					</div>
@@ -124,6 +143,10 @@ export class App extends React.Component<any, AppStates> {
 
 			</div>
 		);
+	}
+
+	componentDidMount() {
+		
 	}
 
 	protected clearPoints() {

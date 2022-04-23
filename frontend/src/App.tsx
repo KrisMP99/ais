@@ -63,6 +63,7 @@ export class App extends React.Component<any, AppStates> {
 			<div className='main'>
 				<div className="main-container">
 					<DKMap
+						gridSettings={this.state.postSetting?.gridSetting!}
 						ref={this.DKMapRef}
 						mapCenter={this.mapCenter}
 						mapBounds={this.mapBoundaries}

@@ -7,10 +7,12 @@ import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
+import { GridSettingObj } from '../GridSetting/GridSetting'
 
 interface DKMapProps {
     mapBounds: LatLngBoundsExpression;
     mapCenter: LatLng;
+    gridSettings: GridSettingObj;
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
     polylines: LatLng[][];
@@ -138,7 +140,9 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 JSON.stringify(
                     {
                         "long": point.lng,
-                        "lat": point.lat
+                        "lat": point.lat,
+                        "is_hexagon": this.props.gridSettings.isHexagon,
+                        "grid_size": this.props.gridSettings.sizeIndex
                     }
                 )
         };

@@ -54,6 +54,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# Docker
+docker-compose-local_kris.yml
+
 # Translations
 *.mo
 *.pot

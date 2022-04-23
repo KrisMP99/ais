@@ -1,0 +1,12 @@
+.date-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-self: flex-start;
+}
+.date-picker {
+    flex-grow: 1;
+}
+.date-clear-button {
+    margin: 5.5px;
+}

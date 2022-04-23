@@ -5,7 +5,9 @@ import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
 import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
-import Filters from './Components/Filters/Filters';
+import Filters, { FilterObj } from './Components/Filters/Filters';
+import { initializeIcons } from '@fluentui/react/lib/Icons';
+initializeIcons();
 
 export interface Trip {
 	tripId: number;
@@ -101,7 +103,7 @@ export class App extends React.Component<any, AppStates> {
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear
+									Clear points
 								</button>
 							</div>
 						</div>
@@ -112,12 +114,11 @@ export class App extends React.Component<any, AppStates> {
 							tripsShown={16}
 						/>
 						<hr />
-						<Filters />
-						{/* <ShipTypeFilter
-							returnShipType={(shipTypes: string[]) => {
-								this.setState({filterShipTypes: shipTypes});
+						<Filters 
+							returnFilters={(filters: FilterObj) => {
+								console.log(filters);
 							}}
-						/> */}
+						/>
 					</div>
 				</div>
 

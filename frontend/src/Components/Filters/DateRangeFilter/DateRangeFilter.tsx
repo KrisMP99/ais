@@ -4,22 +4,23 @@ import '../ShipTypeFilter/ShipTypeFilter.css';
 import '../../../App.css';
 import '../Filters.css';
 import DateRangePicker from "react-daterange-picker";
-import { DatePicker, addMonths } from "@fluentui/react";
-
-
-
+import { DatePicker, addMonths, DefaultButton } from "@fluentui/react";
 
 interface DateRangeFilterProps {
     hasChanged: (hasChanged: boolean) => void;
+    returnDateRange: (dates: Date[]) => void;
 }
  
 interface DateRangeFilterStates {
     openOnUi: boolean;
     startDate: Date | null | undefined;
     endDate: Date | null | undefined;
+
+    preApplyStartDate: Date | null | undefined;
+    preApplyEndDate: Date | null | undefined;
 }
  
-class DateFilter extends React.Component<DateRangeFilterProps, DateRangeFilterStates> {
+class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFilterStates> {
 
     protected maxDate: Date;
     protected minDate: Date;
@@ -29,42 +30,106 @@ class DateFilter extends React.Component<DateRangeFilterProps, DateRangeFilterSt
         this.maxDate = new Date(Date.now());
         this.minDate = new Date(addMonths(this.maxDate, -2));
         this.state = {
-            openOnUi: true,
+            openOnUi: false,
             startDate: null,
             endDate: null,
+            preApplyStartDate: null,
+            preApplyEndDate: null,
         }
     }
+
+    componentDidUpdate(prevProps: DateRangeFilterProps, prevStates: DateRangeFilterStates) {
+        if(prevStates.endDate !== this.state.endDate || prevStates.startDate !== this.state.startDate){
+            this.areSimilar();
+        }
+    }
+
     render() { 
-        let openSymbol = this.state.openOnUi ? "˅" : "˄";
+        let openSymbol = this.state.openOnUi ? "˄" : "˅";
         return ( 
             <div className="filter-container">
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
-                    <p className="text-2 filter-header-text"><strong>Date filter</strong></p>
+                    <p className="text-2 filter-header-text"><strong>Date range</strong></p>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
                 </button>
                 <div className="filter-date-range-body" style={{display: (this.state.openOnUi ? '' : 'none')}}>
-                    <DatePicker 
-                        label="From date"
-                        value={this.state.startDate!}
-                        maxDate={this.maxDate}
-                        minDate={this.minDate}
-                    />
-                    <DatePicker 
-                        label="To date"
-                        disabled={this.state.startDate ? true : false}
-                        value={this.state.endDate!}
-                        maxDate={this.maxDate}
-                        minDate={this.state.startDate!}
-                    />
+                    <div className="date-container">
+                        <DatePicker 
+                            className="date-picker"
+                            label="From date"
+                            value={this.state.startDate!}
+                            maxDate={this.maxDate}
+                            minDate={this.minDate}
+                            onSelectDate={(dateChosen) => {
+                                this.setState({startDate: dateChosen});
+                                this.areSimilar();
+                            }}
+                        />
+                        <DefaultButton
+                            className="date-clear-button"
+                            disabled={!this.dateIsDefined(this.state.startDate)}
+                            onClick={() => this.setState({startDate: null, endDate: null})}
+                        >
+                            Clear
+                        </DefaultButton>
+                    </div>
+                    <div className="date-container">
+                        <DatePicker 
+                            className="date-picker"
+                            label="To date"
+                            disabled={!this.dateIsDefined(this.state.startDate)}
+                            value={this.state.endDate!}
+                            maxDate={this.maxDate}
+                            minDate={this.state.startDate!}
+                            onSelectDate={(dateChosen) => {
+                                this.setState({endDate: dateChosen});
+                                this.areSimilar();
+                            }}
+                        />
+                        <DefaultButton
+                            className="date-clear-button"
+                            disabled={(!this.dateIsDefined(this.state.startDate) || !this.dateIsDefined(this.state.endDate))}
+                            onClick={() => this.setState({endDate: null})}
+                        >
+                            Clear
+                        </DefaultButton>
+                    </div>
                 </div>
             </div>
          );
     }
 
     public apply() {
-
+        if (this.dateIsDefined(this.state.endDate) && this.dateIsDefined(this.state.startDate)) {
+            this.props.returnDateRange(new Array(this.state.startDate!, this.state.endDate!));
+            this.setState({
+                preApplyStartDate: this.state.startDate,
+                preApplyEndDate: this.state.endDate,
+            });
+        }
+        else {
+            this.props.returnDateRange(new Array(this.minDate, this.maxDate));
+            this.setState({
+                startDate: null, 
+                endDate: null, 
+                preApplyStartDate: null, 
+                preApplyEndDate: null
+            });
+        }
+    }
+    protected dateIsDefined(val: Date | null | undefined): boolean {
+        return (val !== null && val !== undefined);
+    }
+    protected areSimilar() { 
+        if(this.dateIsDefined(this.state.endDate) && 
+        (this.state.endDate !== this.state.preApplyEndDate || this.state.startDate !== this.state.preApplyStartDate)) {
+            this.props.hasChanged(true);
+        }
+        else {
+            this.props.hasChanged(false);
+        }
     }
 }
  
-export default DateFilter;
+export default DateRangeFilter;

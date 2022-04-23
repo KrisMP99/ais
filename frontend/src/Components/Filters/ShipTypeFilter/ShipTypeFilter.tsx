@@ -10,12 +10,12 @@ interface ShipType {
 
 interface ShipFilterProps {
     hasChanged: (hasChanged: boolean) => void;
-    // returnShipType: (shipTypes: string[]) => void;
+    returnShipTypes: (shipTypes: string[] | null) => void;
 }
 
 interface ShipFilterStates {
     preApply: boolean[];
-    shipTypes: ShipType[];
+    shipTypes: ShipType[] | null;
     openOnUi: boolean;
 }
 
@@ -33,13 +33,13 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
         this.state = {
             preApply: [],
-            shipTypes: [],
-            openOnUi: true,
+            shipTypes: null,
+            openOnUi: false,
         }
     }
 
     componentDidMount() {
-        if(this.state.shipTypes.length === 0) {
+        if(!this.state.shipTypes) {
             this.fetchShipTypes();
         }
     }
@@ -51,9 +51,9 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     render() {
-        let openSymbol = this.state.openOnUi ? "˅" : "˄";
+        let openSymbol = this.state.openOnUi ? "˄" : "˅";
         
-        if (this.state.shipTypes.every((val) => val.checked)){
+        if (this.state.shipTypes && this.state.shipTypes.every((val) => val.checked)){
             this.checkBoxSetting = true;
         }
         else  {
@@ -62,7 +62,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         //Sets the columns
         let col1 = null;
         let col2 = null;
-        if(this.state.shipTypes.length > 0) {
+        if(this.state.shipTypes && this.state.shipTypes.length > 0) {
             this.dividerIndex = Math.floor(this.state.shipTypes.length * 0.5);
             col1 = (
                 this.state.shipTypes.map((val, key) => {
@@ -77,9 +77,11 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                 type={"checkbox"} 
                                 checked={val.checked} 
                                 onChange={() => {
-                                    this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
-                                    this.setState({shipTypes: this.state.shipTypes});
-                                    this.areSimilar();
+                                    if(this.state.shipTypes) {
+                                        this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
+                                        this.setState({shipTypes: this.state.shipTypes});
+                                        this.areSimilar();
+                                    }
                                 }}
                             />
                         </li>
@@ -99,9 +101,11 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                 type={"checkbox"} 
                                 checked={val.checked} 
                                 onChange={() => {
-                                    this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
-                                    this.setState({shipTypes: this.state.shipTypes});
-                                    this.areSimilar();
+                                    if(this.state.shipTypes) {
+                                        this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
+                                        this.setState({shipTypes: this.state.shipTypes});
+                                        this.areSimilar();
+                                    }
                                 }}
                             />
                         </li>
@@ -113,7 +117,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             <div className='filter-container'>
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
-                    <p className='text-2 filter-header-text'><b>Ship type filter</b></p>
+                    <p className='text-2 filter-header-text'><b>Ship type</b></p>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
                 </button>
                 <div className="check-all" style={{display: this.state.openOnUi ? 'flex' : 'none'}}>
@@ -123,10 +127,12 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                         className="shipCheckBoxAll" 
                         checked={this.checkBoxSetting} 
                         onChange={(e) => {
-                            this.checkBoxSetting = !this.checkBoxSetting;
-                            this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting);
-                            this.setState({shipTypes: this.state.shipTypes});
-                            this.areSimilar();
+                            this.checkBoxSetting = !this.checkBoxSetting; 
+                            if(this.state.shipTypes) {
+                                this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting);
+                                this.setState({shipTypes: this.state.shipTypes});
+                                this.areSimilar();
+                            }
                         }}
                     />
                 </div>
@@ -146,15 +152,28 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     public apply() {
-        let pre: boolean[] = [];
-        for (let i = 0; i < this.state.shipTypes.length; i++) {
-            pre.push(this.state.shipTypes[i].checked);    
+        if (this.state.shipTypes) {
+            let pre: boolean[] = [];
+            let ret: string[] = [];
+            for (let i = 0; i < this.state.shipTypes.length; i++) {
+                if (this.state.shipTypes[i].checked) {
+                    ret.push(this.state.shipTypes[i].type);
+                }
+                pre.push(this.state.shipTypes[i].checked);    
+            }
+            this.props.returnShipTypes(ret); 
+            this.setState({preApply: [...pre]});
         }
-        this.setState({preApply: [...pre]});
+        else {
+            this.props.returnShipTypes(null);
+        }
     }
 
     protected areSimilar() {
         let isSimilar = true;
+        if(!this.state.shipTypes) {
+            return;
+        }
         for (let i = 0; i < this.state.shipTypes.length; i++) {
             if(this.state.shipTypes[i].checked !== this.state.preApply[i]) {
                 isSimilar = false;
@@ -177,29 +196,29 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 'x-token': process.env.REACT_APP_TOKEN!,
             }
         };
-        let testArr: ShipType[] = [];
-        let testArr2: boolean[] = [];
-        for (let i = 0; i < 13; i++) {
-            testArr.push({type: ("test"+i), checked: true});
-            testArr2.push(true);
-        }
-        this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
-        // fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
-        //     .then((response) => {
-        //         if (!response.ok) {
-        //             return null;
-        //         }
-        //         return response.json();
-        //     })
-        //     .then((data: string[]) => {
-        //         let shipTypes: ShipType[] = [];
-        //         let pre: boolean[] = [];
-        //         data.forEach((val) => {
-        //             shipTypes.push({type: val, checked: true});
-        //             pre.push(true);
-        //         });
-        //         return this.setState({shipTypes: shipTypes, preApply: pre});
-        //     });
+        // let testArr: ShipType[] = [];
+        // let testArr2: boolean[] = [];
+        // for (let i = 0; i < 13; i++) {
+        //     testArr.push({type: ("test"+i), checked: true});
+        //     testArr2.push(true);
+        // }
+        // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+            .then((response) => {
+                if (!response.ok) {
+                    return null;
+                }
+                return response.json();
+            })
+            .then((data: string[]) => {
+                let shipTypes: ShipType[] = [];
+                let pre: boolean[] = [];
+                data.forEach((val) => {
+                    shipTypes.push({type: val, checked: true});
+                    pre.push(true);
+                });
+                return this.setState({shipTypes: shipTypes, preApply: pre});
+            });
     }
 }
     

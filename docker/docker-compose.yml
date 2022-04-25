@@ -17,6 +17,7 @@ services:
     environment:
       - TZ=Europe/Copenhagen
     env_file: ../backend/.env
+    shm_size: 16gb
     
   api:
     build:
@@ -77,3 +78,4 @@ services:
     restart: always
     environment:
       - TZ=Europe/Copenhagen
+    shm_size: 16gb

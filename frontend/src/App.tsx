@@ -11,7 +11,7 @@ import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSettin
 
 export interface Trip {
 	tripId: number;
-	tripPolyline?: LatLng[][]
+	tripPolyline?: LatLng[]
 	color: string;
 	totalTime: string;
 	shipType?: string;
@@ -32,7 +32,6 @@ export class App extends React.Component<any, AppStates> {
 
 	protected mapCenter: LatLng;
 	protected mapBoundaries: LatLngBoundsExpression;
-	protected temporaryTrips: Trip[];
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
 	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
@@ -46,10 +45,6 @@ export class App extends React.Component<any, AppStates> {
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
 		
-		this.temporaryTrips = [];
-		for (let i = 0; i < 130; i++) {
-			this.temporaryTrips.push({ color: 'red', totalTime: '30min', tripId: i });   //DUMMY DATA
-		}
 		this.state = {
 			pointCoords: [],
 			mouseCoords: [],
@@ -101,6 +96,7 @@ export class App extends React.Component<any, AppStates> {
 								<PostButton
 									coordinates={this.state.pointCoords}
 									shipTypeArray={this.state.filterShipTypes}
+									// returnTrips={(trips: Trip[]) => this.setState({trips: trips})}
 									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
 									postSetting={this.state.postSetting}
 								/>
@@ -116,7 +112,7 @@ export class App extends React.Component<any, AppStates> {
 						<hr />
 						<ETATrips
 							ref={this.ETATripsRef}
-							trips={this.state.trips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
+							trips={this.state.trips}
 							tripsShown={16}
 						/>
 						<hr />

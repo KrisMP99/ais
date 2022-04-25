@@ -5,7 +5,7 @@ from app.models.grid_polygon import GridPolygon
 from app.models.simplified_line_string import SimplifiedLineString
 from app.models.location import Location
 from app.db.database import engine, Session
-from app.db.queries.trip_queries import query_fetch_hexagons_given_two_points, query_fetch_line_strings_given_hexagons, query_get_points_in_line_string, query_point_exists_in_hexagon
+from app.db.queries.trip_queries import query_fetch_polygons_given_two_points, query_fetch_line_strings_given_polygon, query_get_points_in_line_string, query_point_exists_in_hexagon
 from shapely.geometry import Point
 from dotenv import load_dotenv
 import shapely.wkb as wkb
@@ -26,37 +26,37 @@ router = APIRouter(
 )
 
 @router.post('/')
-async def get_trip(p1: Coordinate, p2: Coordinate): 
+async def get_trips(p1: Coordinate, p2: Coordinate): 
     gp1 = Point(p1.long, p1.lat)
     gp2 = Point(p2.long, p2.lat)
 
     # First we fetch the hexagons for where two points can be found inside
-    logger.info('Fetching hexagon!')
-    query_hexagons = query_fetch_hexagons_given_two_points()
-    hex_df = get_hexagons(query_hexagons, gp1, gp2)
+    logger.info('Fetching polygons...')
+    query_hexagons = query_fetch_polygons_given_two_points(p1.is_hexagon, p1.grid_size)
+    poly_df = get_polygons(query_hexagons, gp1, gp2)
 
-    if len(hex_df) < 2:
+    if len(poly_df) < 2:
         logger.error('The two coordinates intersect with each other')
         return []
     
     # We add the hexagons to a list, so that we can access these values later
-    hexagons = add_hexagons_to_list(hex_df)
+    polygons = add_polygons_to_list(poly_df)
 
-    logger.info('Hexagons fetched!')
+    logger.info('Polygons fetched!')
     
     # linestring_query = "SELECT ST_AsGeoJSON(td.line_string)::json AS st_asgeojson FROM simplified_trip_dim AS td"
 
     logger.info('Fetching line strings')
-    query_line_strings_for_hexagons = query_fetch_line_strings_given_hexagons()
+    query_line_strings_for_polygons = query_fetch_line_strings_given_polygon()
     query_points_in_line_string = query_get_points_in_line_string()
 
-    line_string_df = get_line_strings(query_line_strings_for_hexagons, hex1=hexagons[0], hex2=hexagons[1])
+    line_string_df = get_line_strings(query_line_strings_for_polygons, poly1=polygons[0], poly2=polygons[1])
     
     if len(line_string_df) == 0:
-        logger.warning('No trips were found for the selected coordinates')
-        raise HTTPException(status_code=404, detail='No trips were found for the selected coordinates')
+        logger.warning('No trips were found for the selected polygons')
+        raise HTTPException(status_code=404, detail='No trips were found for the selected polygons')
 
-    points_in_line_string_df = get_points(query_points_in_line_string, hex1=hexagons[0], hex2=hexagons[1])
+    points_in_line_string_df = get_points(query_points_in_line_string, poly1=polygons[0], poly2=polygons[1])
     
     line_strings = get_list_of_line_strings_with_points(line_string_df=line_string_df, 
                                                  points_df=points_in_line_string_df)
@@ -80,25 +80,25 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
             # Checks if the points is in the hexagon
 
-            print('coordinate ', coordinate.hex_10000_column)
-            print('hex ', hexagons[0].column)
+            # print('coordinate ', coordinate.hex_10000_column)
+            # print('hex ', polygons[0].column)
 
-            isSame = coordinate.hex_10000_column is hexagons[0].column
-            print('is same ', isSame)
+            # isSame = coordinate.hex_10000_column is polygons[0].column
+            # print('is same ', isSame)
 
-            if coordinate.hex_10000_column is hexagons[0].column and coordinate.hex_10000_row is hexagons[0].row:
-                point_from_line_string_found_in_hexagon.append(hexagons[0])
+            # if coordinate.hex_10000_column is polygons[0].column and coordinate.hex_10000_row is polygons[0].row:
+            #     point_from_line_string_found_in_hexagon.append(polygons[0])
 
-                print('hex column ' + str(coordinate.hex_10000_column) + ' , hex row ' + str(coordinate.hex_10000_row))
-                print('hex column ' + str(hexagons[0].column) + ' , hex row ' + str(hexagons[0].row))
+            #     print('hex column ' + str(coordinate.hex_10000_column) + ' , hex row ' + str(coordinate.hex_10000_row))
+            #     print('hex column ' + str(polygons[0].column) + ' , hex row ' + str(polygons[0].row))
 
-            elif coordinate.hex_10000_column is hexagons[1].column and coordinate.hex_10000_row is hexagons[1].row:
-                point_from_line_string_found_in_hexagon.append(hexagons[1])
-                print('hex column ' + coordinate.hex_10000_column + ' , hex row ' + coordinate.hex_10000_row)
-                print('hex column ' + hexagons[1].column + ' , hex row ' + hexagons[1].row)
-            else: 
-                print('continued')
-                continue
+            # elif coordinate.hex_10000_column is polygons[1].column and coordinate.hex_10000_row is polygons[1].row:
+            #     point_from_line_string_found_in_hexagon.append(polygons[1])
+            #     print('hex column ' + coordinate.hex_10000_column + ' , hex row ' + coordinate.hex_10000_row)
+            #     print('hex column ' + polygons[1].column + ' , hex row ' + polygons[1].row)
+            # else: 
+            #     print('continued')
+            #     continue
 
 
         line_string_to_return_to_frontend.append(locations)
@@ -193,27 +193,27 @@ def create_point(hexagon: GridPolygon, linestring: str, hexagons: list[GridPolyg
         )
     return []
 
-def get_line_strings(query: str, hex1: GridPolygon, hex2: GridPolygon) -> pd.DataFrame:
+def get_line_strings(query: str, poly1: GridPolygon, poly2: GridPolygon) -> pd.DataFrame:
     df = gpd.read_postgis(
             query, 
             engine, 
             params=
             {
-                "hex1": wkb.dumps(hex1.polygon, hex=True, srid=4326), 
-                "hex2": wkb.dumps(hex2.polygon, hex=True, srid=4326)
+                "poly1": wkb.dumps(poly1.polygon, hex=True, srid=4326), 
+                "poly2": wkb.dumps(poly2.polygon, hex=True, srid=4326)
             },
             geom_col='line_string'
         )
     return df
 
-def get_points(query: str, hex1: GridPolygon, hex2: GridPolygon) -> pd.DataFrame:
+def get_points(query: str, poly1: GridPolygon, poly2: GridPolygon) -> pd.DataFrame:
     df = gpd.read_postgis(
         query, 
         engine, 
         params=
         {
-            "hex1": wkb.dumps(hex1.polygon, hex=True, srid=4326), 
-            "hex2": wkb.dumps(hex2.polygon, hex=True, srid=4326)
+            "poly1": wkb.dumps(poly1.polygon, hex=True, srid=4326), 
+            "poly2": wkb.dumps(poly2.polygon, hex=True, srid=4326)
         },
         geom_col='location')
     return df
@@ -244,16 +244,16 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
 
     return simplified_line_strings_list
 
-def add_hexagons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
-    hexagons = []
+def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
+    polygons = []
     
-    for table_row in df.itertuples():
-        hexagons.append(GridPolygon(column=table_row.hex_10000_column, row=table_row.hex_10000_row, polygon=table_row.hexagon, centroid=table_row.centroid))
+    for table_row in df.itertuples(name=None):
+        polygons.append(GridPolygon(column=table_row[2], row=table_row[1], polygon=table_row[3], centroid=table_row[4]))
     
-    return hexagons
+    return polygons
 
-def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
-    '''Returns the hexagons where p1 and p2 can be found within'''
+def get_polygons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
+    '''Returns the polygons where p1 and p2 can be found within'''
     df = gpd.read_postgis(
             query, 
             engine,

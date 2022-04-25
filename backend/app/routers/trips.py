@@ -261,7 +261,7 @@ def get_hexagons(query: str, p1: Point, p2: Point) -> pd.DataFrame:
                 "p1": wkb.dumps(p1, hex=True, srid=4326),
                 "p2": wkb.dumps(p2, hex=True, srid=4326)
             },
-            geom_col='hexagon'
+            geom_col='geom'
         )
     return df
 

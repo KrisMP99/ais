@@ -2,15 +2,15 @@ def query_fetch_hexagons_given_two_points() -> str:
     '''We find all hexagons where the points are found in'''
     return '''                                                         
                 SELECT                                                          
-                    h.hex_10000_column, h.hex_10000_row, h.hexagon                                          
+                    h.hex_10000_column, h.hex_10000_row, h.grid_geom AS geom                                         
                 FROM                                                            
                     hex_10000_dim as h                           
                 WHERE                                                           
                     ST_Within(
-                        %(p1)s::geometry, h.hexagon
+                        %(p1)s::geometry, h.geom
                     ) OR     
                     ST_Within(
-                        %(p2)s::geometry, h.hexagon
+                        %(p2)s::geometry, h.geom
                     );
             '''
 

@@ -8,6 +8,7 @@ __pycache__/
 
 # vscode settings
 .vscode/
+docker-compose-local-mig.yml
 
 # Distribution / packaging
 .Python
@@ -53,6 +54,9 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+
+# Docker
+docker-compose-local_kris.yml
 
 # Translations
 *.mo
@@ -130,6 +134,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+node_modules
 
 error_log.log
 api_log.log

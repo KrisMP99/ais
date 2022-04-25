@@ -112,7 +112,6 @@ export class App extends React.Component<any, AppStates> {
 						/>
 						<hr />
 						<ShipTypeFilter
-							// shipTypes={this.state.filterShipTypes}
 							returnShipType={(shipTypes: string[]) => {
 								this.setState({filterShipTypes: shipTypes});
 							}}
@@ -122,12 +121,6 @@ export class App extends React.Component<any, AppStates> {
 
 			</div>
 		);
-	}
-
-	componentDidMount() {
-		// if(this.state.filterShipTypes.length) {
-		// 	this.fetchShipTypes();
-		// }
 	}
 
 	protected clearPoints() {
@@ -151,8 +144,6 @@ export class App extends React.Component<any, AppStates> {
 		}
 		return "0.0000";
 	}
-
-	
 }
 
 export default App;

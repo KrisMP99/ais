@@ -1,4 +1,26 @@
 # AIS
+## Introduction
+This project's primary goal was to calculate the estimated time of arrival (ETA) of ships, and present it in a user-friendly vizual form.
+The project uses data from the automatic identification system (AIS).
+
+The pipeline works by first (automatically) downloading AIS-data from an FTP-server, which is then loaded into memory. From here, erroneous data is removed (such as ships sailing faster than physically possible or missing data which is needed for the project (e.g., a timestamp)) and then it is split into trips. A trip is defined by consisting of only valid points, along with being within some given thresholds. The data is then loaded into a star-schema in Postgres using the PygramETL library, and finally some additional attributes are calculated and updated for the tables, such as each point's location in a given hexagon or square grid.
+
+The backend is developed in Python, using popular libraries such as Pandas (along with the GeoPandas extension), and the data is stored in a Postgres database, which uses the PostGis extension.
+The frontend is developed using React and Typescript.
+The entire project (frontend + backend) is setup in Docker, using 4 different containers. See below how to get started.
+
+This project is a bachelors project, developed by the group `cs-22-sw-6-11` at Aalborg University, 2022. 
+
+
+## Getting started
+Wether you're setting up locally or on a server, the following is required to be installed on your system:
+1. Docker
+2. Git
+
+Begin by cloning the project to a location you can easily access. We used `/srv/data/ais/` on our server.
+```git clone https://github.com/KrisMP99/ais.git```
+
+
 
 ## Running Docker on server
 Docker is already installed on the server
@@ -107,11 +129,11 @@ On windows with:
 ### Initial setup
 1. Create table 
     ```SQL
-    CREATE TABLE map_bounds(gid serial PRIMARY KEY, geom geometry(POLYGON, 4326));
+    CREATE TABLE map_bounds(gid serial PRIMARY KEY, country_name varchar, geom geometry(MULTIPOLYGON, 4326));
     ```
 1. Insert the boundaries, covering the area of concern (in our case, it's Denmarks waters + a little extra)
     ```SQL
-    INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 54.32, 16.49 54.32, 16.49 58.35, 3.24 58.35))');
+    INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 53.32, 16.49 53.32, 16.49 56.23, 13.31 56.68, 10.97 60.03, 7.48 58.35, 3.24 58.35))');
     ```
 1. Convert the table to SRID 3857 
     ```SQL

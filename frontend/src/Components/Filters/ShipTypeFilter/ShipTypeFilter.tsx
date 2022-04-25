@@ -39,14 +39,12 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     componentDidMount() {
-        console.log("MOUNTED");
         if(!this.state.shipTypes) {
             this.fetchShipTypes();
         }
     }
 
     componentDidUpdate(prevProps: ShipFilterProps, prevStates: ShipFilterStates) {
-        console.log("UPDATING IN HERE")
         if(!prevStates.preApply.every((val, index) => val === this.state.preApply[index])) {
             this.areSimilar();
         }

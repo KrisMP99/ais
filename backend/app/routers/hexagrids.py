@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import shapely.wkb as wkb
 import geopandas as gpd
 import os
+from pydantic import BaseModel
 
 load_dotenv()
 API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')

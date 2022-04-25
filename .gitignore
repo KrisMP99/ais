@@ -141,3 +141,5 @@ node_modules
 
 error_log.log
 api_log.log
+
+docker-compose-local_jonas.yml

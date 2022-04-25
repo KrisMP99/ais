@@ -1,12 +1,12 @@
-import { LatLng, LatLngBoundsExpression } from 'leaflet';
 import React from 'react';
 import './App.css';
+import { initializeIcons } from '@fluentui/react/lib/Icons';
+import { LatLng, LatLngBoundsExpression } from 'leaflet';
+
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton, { PostSetting } from './Components/PostButton';
-import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
 import Filters, { FilterObj } from './Components/Filters/Filters';
-import { initializeIcons } from '@fluentui/react/lib/Icons';
 import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
 
 export interface Trip {
@@ -23,8 +23,9 @@ interface AppStates {
 	mouseCoords: string[];
 	polylines: LatLng[][];
 	trips: Trip[];
-	postSetting: PostSetting | null;
+	postSetting: PostSetting;
 }
+
 initializeIcons(undefined, {disableWarnings: true});
 
 export class App extends React.Component<any, AppStates> {
@@ -54,7 +55,7 @@ export class App extends React.Component<any, AppStates> {
 			trips: [],
 			polylines: [],
 			filterShipTypes: [],
-			postSetting: { gridSetting: null, activeFilters: null },
+			postSetting: { gridSetting: {sizeIndex: 500, isHexagon: true}, activeFilters: null },
 		}
 	}
 
@@ -63,7 +64,7 @@ export class App extends React.Component<any, AppStates> {
 			<div className='main'>
 				<div className="main-container">
 					<DKMap
-						gridSettings={this.state.postSetting?.gridSetting!}
+						gridSettings={this.state.postSetting.gridSetting!}
 						ref={this.DKMapRef}
 						mapCenter={this.mapCenter}
 						mapBounds={this.mapBoundaries}

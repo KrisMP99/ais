@@ -24,9 +24,14 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
         super(props);
         this.state = {
             openOnUi: false,
-            gridSetting: {isHexagon: true, sizeIndex: 0},
-            preApplyGridSetting: {isHexagon: true, sizeIndex: 0},
+            gridSetting: {isHexagon: true, sizeIndex: 500},
+            preApplyGridSetting: {isHexagon: true, sizeIndex: 500},
         }
+    }
+
+    componentDidMount() {
+        console.log("Mounted grid settings component");
+        this.props.onChange(this.state.gridSetting);
     }
 
     componentDidUpdate(prevProps: GridSettingProps, prevStates: GridSettingStates) {
@@ -39,18 +44,18 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
         let dropDownOptions = [];
         if (this.state.gridSetting.isHexagon) {
             dropDownOptions = [
-                { key: 0, text: '500' },
-                { key: 1, text: '1000' },
-                { key: 2, text: '5000' },
-                { key: 3, text: '10000' },
+                { key: 500, text: '500' },
+                { key: 1000, text: '1000' },
+                { key: 5000, text: '5000' },
+                { key: 10000, text: '10000' },
             ];
         }
         else {
             dropDownOptions = [
-                { key: 0, text: '806' },
-                { key: 1, text: '1603' },
-                { key: 2, text: '6006' },
-                { key: 3, text: '16203' },
+                { key: 806, text: '806' },
+                { key: 1612, text: '1603' },
+                { key: 4030, text: '6006' },
+                { key: 8060, text: '16203' },
             ];
         }
         return ( 

@@ -168,13 +168,13 @@ def truncate_grid_tables() -> None:
     '''
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         for dim_size in hexagon_grid_resolutions:
-            sql_truncate_hex_query = f"TRUNCATE TABLE hex_{dim_size}_dim CASCADE;"
+            sql_truncate_hex_query = f"TRUNCATE TABLE hex_{dim_size}_dim;"
 
             with conn.cursor() as cursor:
                 cursor.execute(sql_truncate_hex_query)
         
         for dim_size in square_grid_resolutions:
-            sql_truncate_square_query = f"TRUNCATE TABLE square_{dim_size}_dim CASCADE;"
+            sql_truncate_square_query = f"TRUNCATE TABLE square_{dim_size}_dim;"
             
             with conn.cursor() as cursor:
                 cursor.execute(sql_truncate_square_query)
@@ -333,7 +333,6 @@ setup_bounds()
 read_grids_resolutions_from_config_file()
 create_tables_for_grids(hexagons=True)
 create_tables_for_grids(hexagons=False)
-truncate_grid_tables()
 fill_and_convert_tables(hexagons=True)
 fill_and_convert_tables(hexagons=False)
 create_spatial_indexes()

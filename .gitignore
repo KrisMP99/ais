@@ -9,6 +9,9 @@ __pycache__/
 # vscode settings
 .vscode/
 
+# docker stuff
+docker-compose-local_kris.yml
+
 # Distribution / packaging
 .Python
 build/

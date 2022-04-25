@@ -8,6 +8,7 @@ __pycache__/
 
 # vscode settings
 .vscode/
+docker-compose-local-mig.yml
 
 # Distribution / packaging
 .Python

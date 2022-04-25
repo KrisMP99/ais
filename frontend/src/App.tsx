@@ -1,10 +1,13 @@
-import { LatLng, LatLngBoundsExpression } from 'leaflet';
 import React from 'react';
 import './App.css';
+import { initializeIcons } from '@fluentui/react/lib/Icons';
+import { LatLng, LatLngBoundsExpression } from 'leaflet';
+
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
-import PostButton from './Components/PostButton';
-import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
+import PostButton, { PostSetting } from './Components/PostButton';
+import Filters, { FilterObj } from './Components/Filters/Filters';
+import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
 
 export interface Trip {
 	tripId: number;
@@ -20,7 +23,10 @@ interface AppStates {
 	mouseCoords: string[];
 	polylines: LatLng[][];
 	trips: Trip[];
+	postSetting: PostSetting;
 }
+
+initializeIcons(undefined, {disableWarnings: true});
 
 export class App extends React.Component<any, AppStates> {
 
@@ -33,7 +39,6 @@ export class App extends React.Component<any, AppStates> {
 
 	constructor(props: any) {
 		super(props);
-		
 		this.ETATripsRef = React.createRef();
 		this.DKMapRef = React.createRef();
 		this.mousePosRef = React.createRef();
@@ -50,6 +55,7 @@ export class App extends React.Component<any, AppStates> {
 			trips: [],
 			polylines: [],
 			filterShipTypes: [],
+			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 		}
 	}
 
@@ -58,6 +64,7 @@ export class App extends React.Component<any, AppStates> {
 			<div className='main'>
 				<div className="main-container">
 					<DKMap
+						gridSettings={this.state.postSetting.gridSetting!}
 						ref={this.DKMapRef}
 						mapCenter={this.mapCenter}
 						mapBounds={this.mapBoundaries}
@@ -94,13 +101,14 @@ export class App extends React.Component<any, AppStates> {
 									coordinates={this.state.pointCoords}
 									shipTypeArray={this.state.filterShipTypes}
 									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
+									postSetting={this.state.postSetting}
 								/>
 								<button
 									className={'button btn-clear'}
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear
+									Clear point(s)
 								</button>
 							</div>
 						</div>
@@ -111,9 +119,25 @@ export class App extends React.Component<any, AppStates> {
 							tripsShown={16}
 						/>
 						<hr />
-						<ShipTypeFilter
-							returnShipType={(shipTypes: string[]) => {
-								this.setState({filterShipTypes: shipTypes});
+						<GridSetting 
+							onChange={(setting: GridSettingObj) => {
+								this.setState({
+									postSetting: { 
+										gridSetting: setting, 
+										activeFilters: this.state.postSetting ? this.state.postSetting.activeFilters : null 
+									}
+								});
+							}}
+						/>
+						<hr />
+						<Filters 
+							returnFilters={(filters: FilterObj) => {
+								this.setState({
+									postSetting: { 
+										gridSetting: this.state.postSetting ? this.state.postSetting.gridSetting : null, 
+										activeFilters: filters
+									}
+								});
 							}}
 						/>
 					</div>
@@ -121,6 +145,10 @@ export class App extends React.Component<any, AppStates> {
 
 			</div>
 		);
+	}
+
+	componentDidMount() {
+		
 	}
 
 	protected clearPoints() {

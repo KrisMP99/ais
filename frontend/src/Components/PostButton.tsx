@@ -1,11 +1,19 @@
 import React from 'react';
 import { LatLng } from 'leaflet';
 import '../App.css';
+import { GridSettingObj } from './GridSetting/GridSetting';
+import { FilterObj } from './Filters/Filters';
+
+export interface PostSetting {
+	gridSetting: GridSettingObj | null;
+	activeFilters: FilterObj | null;
+}
 
 interface PostButtonProps {
     coordinates: LatLng[];
     shipTypeArray: string[];
     getData: (data: LatLng[][]) => void;
+    postSetting: PostSetting | null;
 }
 interface PostButtonStates {
 
@@ -21,7 +29,7 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
         return (
             <button 
                 className="button btn-find-route" 
-                disabled={this.props.coordinates.length < 2}
+                disabled={this.props.coordinates.length < 2 || this.props.postSetting === null}
                 onClick={(e) => this.postCoordinates(this.props.coordinates)}
             >
                 Find route

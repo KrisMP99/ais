@@ -1,0 +1,17 @@
+.grid-polygon-group {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+.radio-group {
+    display: flex;
+
+}
+.radio-text {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.dropdown {
+    margin-right: 100px;
+}

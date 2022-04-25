@@ -16,8 +16,9 @@ square_grid_resolutions = []
 def setup_bounds() -> None:
     '''
     Setup the bounds used when generating the hexagon and square grids.
-    Should only be run once initially, but if ran again it will redo the bounds all over again.
+    Should only be run once initially, but if its run again it will redo the bounds all over again.
     '''
+    print("Creating map_bounds...")
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         # First create our map_bounds table...
         sql_map_bounds_query = '''
@@ -52,9 +53,15 @@ def setup_bounds() -> None:
         with conn.cursor() as cursor:
             sql_analyze_query = "ANALYZE map_bounds;"
             cursor.execute(sql_analyze_query)
+    print("Finished with map_bounds")
 
 
-def create_grids(hexagons = True) -> None:
+def create_tables_for_grids(hexagons = True) -> None:
+    '''
+    Creates the TABLES used to store the grids for either hexagons or squares.
+    It uses the resoultions (side lenghts) given in the `grid_setup_config.ini`-file.
+    :param hexagons: If set to true, it will generates the tables for the hexagons. If false, it will generate tables for square grids instead. Default: True
+    '''
     if hexagons:
         dim_type = "hex"
         resolutions = hexagon_grid_resolutions
@@ -78,6 +85,12 @@ def create_grids(hexagons = True) -> None:
 
 
 def fill_and_convert_tables(hexagons = True) -> None:
+    '''
+    Generates grids on the form hexagons or squares, and insert it into the tables.
+    This function requires, that the tables used to store the grids have already been created (see the `create_grids()`-function).
+    It will generate the grid sizes according to the resolutions (side length) given in the `grid_setup_config.ini`-file.
+    :param hexagons: If set to True, it will generate hexagons grids. If set to False, it will generate the square grids. Default: True
+    '''
     if hexagons:
         dim_type = "hex"
         resolutions = hexagon_grid_resolutions
@@ -125,6 +138,9 @@ def fill_and_convert_tables(hexagons = True) -> None:
             
 
 def read_grids_resolutions_from_config_file() -> None:
+    '''
+    Reads the grid resolutions from the `grid_setup_config.ini`-file, and stores them in memory to be used later.
+    '''
     path = Path(__file__)
     ROOT_DIR = path.parent.parent.absolute()
     config_path = os.path.join(ROOT_DIR, "grid_setup_config.ini")
@@ -145,26 +161,11 @@ def read_grids_resolutions_from_config_file() -> None:
         if dim:
             square_grid_resolutions.append(dim.strip())
 
-def add_hexagon_grid_resolution(resolution: int) -> None:
-    '''
-    Adds a resolution to the hexagon grid.
-    Example: If resolution = 500, a hexagon grid with a radius of 500 meters will be created
-    along with an spatial index.
-    :param resolution: The resolution of the hexagon grid
-    '''
-
-    hexagon_grid_resolutions.append(resolution)
-
-def add_square_grid_resolution(resolution: int) -> None:
-    '''
-    Adds a resolution to the square grid.
-    Example: If resolution = 500, a square grid with a radius of 500 meters will be created
-    along with an spatial index.
-    :param resolution: The resolution of the square grid
-    '''
-    square_grid_resolutions.append(resolution)
-
 def truncate_grid_tables() -> None:
+    '''
+    Truncates both the hexagon and square grid tables (according to the resolutions `grid_setup_config.ini`-file).
+    Requies the `read_grids_resolutions_from_config_file()` to be run first.
+    '''
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         for dim_size in hexagon_grid_resolutions:
             sql_truncate_hex_query = f"TRUNCATE TABLE hex_{dim_size}_dim CASCADE;"
@@ -180,6 +181,10 @@ def truncate_grid_tables() -> None:
 
 
 def create_spatial_indexes() -> None:
+    '''
+    Creates spatial indexes for both the hexagon and square dimension tables (according to the grid resolutions given in the `grid_setup_config.ini`-file)
+    Requries the tables to already exists, or the function `create_grids()` to be run atleast once, first.
+    '''
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         for dim_size in hexagon_grid_resolutions:
             sql_hex_idx_query = f"CREATE INDEX hex_{dim_size}_dim_idx ON hex_{dim_size}_dim USING GIST(grid_geom);"
@@ -195,6 +200,10 @@ def create_spatial_indexes() -> None:
 
 
 def vacuum_and_analyze_tables():
+    '''
+    Vacuums and analyzes all the tables in the database.
+    Should be run once after inserting/updating a lot of rows in a table (i.e., it should be run once everytime we have processed and inserted a .CSV file)
+    '''
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
         with conn.cursor() as cursor:
             sql_query = "VACUUM ANALYZE;"
@@ -202,6 +211,10 @@ def vacuum_and_analyze_tables():
 
 
 def create_star_schema() -> None:
+    '''
+    Creates the star schema along with spatial indexes on the `location` column.
+    Requires the `read_grids_resolutions_from_config_file()` to be run first.
+    '''
     result = []
 
     for dim_size in hexagon_grid_resolutions:
@@ -318,8 +331,8 @@ def create_star_schema() -> None:
 
 setup_bounds()
 read_grids_resolutions_from_config_file()
-create_grids(hexagons=True)
-create_grids(hexagons=False)
+create_tables_for_grids(hexagons=True)
+create_tables_for_grids(hexagons=False)
 truncate_grid_tables()
 fill_and_convert_tables(hexagons=True)
 fill_and_convert_tables(hexagons=False)

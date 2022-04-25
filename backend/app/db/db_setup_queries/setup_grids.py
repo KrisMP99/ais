@@ -19,7 +19,7 @@ def setup_bounds() -> None:
     Should only be run once initially, but if its run again it will redo the bounds all over again.
     '''
     print("Creating map_bounds...")
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         # First create our map_bounds table...
         sql_map_bounds_query = '''
                                 CREATE TABLE IF NOT EXISTS map_bounds(
@@ -69,7 +69,7 @@ def create_tables_for_grids(hexagons = True) -> None:
         dim_type = "square"
         resolutions = square_grid_resolutions
 
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         for dim_size in resolutions:
             sql_create_hexagon_table = f'''
                                             CREATE TABLE IF NOT EXISTS {dim_type}_{dim_size}_dim (
@@ -102,7 +102,7 @@ def fill_and_convert_tables(hexagons = True) -> None:
         grid_type = "ST_SquareGrid"
         table_name = "squares"
 
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         for dim_size in resolutions:
             size = int(dim_size)
             sql_fill_hexagons = f'''
@@ -166,7 +166,7 @@ def truncate_grid_tables() -> None:
     Truncates both the hexagon and square grid tables (according to the resolutions `grid_setup_config.ini`-file).
     Requies the `read_grids_resolutions_from_config_file()` to be run first.
     '''
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         for dim_size in hexagon_grid_resolutions:
             sql_truncate_hex_query = f"TRUNCATE TABLE hex_{dim_size}_dim;"
 
@@ -185,7 +185,7 @@ def create_spatial_indexes() -> None:
     Creates spatial indexes for both the hexagon and square dimension tables (according to the grid resolutions given in the `grid_setup_config.ini`-file)
     Requries the tables to already exists, or the function `create_grids()` to be run atleast once, first.
     '''
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         for dim_size in hexagon_grid_resolutions:
             sql_hex_idx_query = f"CREATE INDEX hex_{dim_size}_dim_idx ON hex_{dim_size}_dim USING GIST(grid_geom);"
 
@@ -204,7 +204,7 @@ def vacuum_and_analyze_tables():
     Vacuums and analyzes all the tables in the database.
     Should be run once after inserting/updating a lot of rows in a table (i.e., it should be run once everytime we have processed and inserted a .CSV file)
     '''
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         with conn.cursor() as cursor:
             sql_query = "VACUUM ANALYZE;"
             cursor.execute(sql_query)
@@ -321,7 +321,7 @@ def create_star_schema() -> None:
                                 {foregin_keys_str}
                             );
                         '''
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         with conn.cursor() as cursor:
             cursor.execute(sql_star_schema)
         with conn.cursor() as cursor:

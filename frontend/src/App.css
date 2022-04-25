@@ -78,13 +78,17 @@
 }
 .btn-find-route:hover:enabled {
   background-color: #419844;
+  transition: transform 200ms;
+  transform: scale(1.03);
 }
 .btn-clear {
-  width: 100px;
+  width: 120px;
   background-color: #af4c4c;
 }
 .btn-clear:hover:enabled {
   background-color: #984141;
+  transition: transform 150ms;
+  transform: scale(1.04);
 }
 
 hr {

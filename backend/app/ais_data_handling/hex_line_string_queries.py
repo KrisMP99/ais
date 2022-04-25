@@ -84,7 +84,7 @@ def create_line_strings(trip_id: int, threshold:int):
                                                 '''
 
     
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         with conn.cursor() as cursor:
                 cursor.execute(sql_drop_trip_temp_table)
         with conn.cursor() as cursor:
@@ -115,7 +115,7 @@ def create_line_strings(trip_id: int, threshold:int):
 
 
 def create_hex_ids(square_resolutions, hex_resolutions, simplified_trip_id):
-    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432") as conn:
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         dim_str: str
         for dim_str in square_resolutions:
             dim_size_str = dim_str.strip()

@@ -1,0 +1,19 @@
+.filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    background-color: #fff;
+    border: none;
+    height: 35px;
+}
+.filter-header:hover {
+    background-color: rgb(213, 213, 213);
+}
+.filter-header-text {
+    margin: auto 0;
+    width: 100px;
+    /* flex-grow: 2; */
+}
+/* .filter-header-arrow {
+    flex-grow: 1;
+} */

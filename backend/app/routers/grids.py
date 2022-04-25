@@ -35,15 +35,13 @@ async def get_hexagon(grid_data: GridData):
         if grid_data.grid_size in grid_sizes_hex:
             size = grid_data.grid_size
         else:
-            # Throw an error
-            print("Yo mama")
+            raise HTTPException(status_code=404, detail=f'Grid size is not available for polygon type: {grid_type}, size: {grid_data.grid_size}')
     else:
         grid_type = "square"
         if grid_data.grid_size in grid_sizes_square:
             size = grid_data.grid_size
         else:
-            # Throw an error
-            print("Yo mama") 
+            raise HTTPException(status_code=404, detail=f'Grid size is not available for polygon type: {grid_type}, size: {grid_data.grid_size}')
 
     query = f'''
                 SELECT

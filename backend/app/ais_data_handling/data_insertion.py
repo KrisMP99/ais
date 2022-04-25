@@ -162,7 +162,7 @@ def get_fact_table_key_refs() -> str:
 
 def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
-    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB, port="5432")
+    conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB)
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
 
     logger.info("Converting back to 4326")

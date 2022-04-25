@@ -188,14 +188,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     protected async fetchShipTypes() {
-        const requestOptions = {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'x-token': process.env.REACT_APP_TOKEN!,
-            }
-        };
+        // const requestOptions = {
+        //     method: 'GET',
+        //     headers: {
+        //         'Accept': 'application/json',
+        //         'Content-Type': 'application/json',
+        //         'x-token': process.env.REACT_APP_TOKEN!,
+        //     }
+        // };
         // let testArr: ShipType[] = [];
         // let testArr2: boolean[] = [];
         // for (let i = 0; i < 13; i++) {
@@ -204,22 +204,22 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         // }
         // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
         console.log("Fetching ship types...")
-        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
-            .then((response) => {
-                if (!response.ok) {
-                    return null;
-                }
-                return response.json();
-            })
-            .then((data: string[]) => {
-                let shipTypes: ShipType[] = [];
-                let pre: boolean[] = [];
-                data.forEach((val) => {
-                    shipTypes.push({type: val, checked: true});
-                    pre.push(true);
-                });
-                return this.setState({shipTypes: shipTypes, preApply: pre});
-            });
+        // fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+        //     .then((response) => {
+        //         if (!response.ok) {
+        //             return null;
+        //         }
+        //         return response.json();
+        //     })
+        //     .then((data: string[]) => {
+        //         let shipTypes: ShipType[] = [];
+        //         let pre: boolean[] = [];
+        //         data.forEach((val) => {
+        //             shipTypes.push({type: val, checked: true});
+        //             pre.push(true);
+        //         });
+        //         return this.setState({shipTypes: shipTypes, preApply: pre});
+        //     });
     }
 }
     

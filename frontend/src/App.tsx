@@ -122,6 +122,7 @@ export class App extends React.Component<any, AppStates> {
 						<hr />
 						<GridSetting 
 							onChange={(setting: GridSettingObj) => {
+								this.clearPoints();
 								this.setState({
 									postSetting: { 
 										gridSetting: setting, 

@@ -194,8 +194,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         //     testArr2.push(true);
         // }
         // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
-        let shipTypes: ShipType[] = [];
-        let pre: boolean[] = [];
+
         const requestOptions = {
             method: 'GET',
             headers: {
@@ -204,7 +203,9 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 'x-token': process.env.REACT_APP_TOKEN!,
             }
         };
-        await fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+        let shipTypes: ShipType[] = [];
+        let pre: boolean[] = [];
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
         .then((response) => {
                 if (!response.ok) {
                     return this.setState({shipTypes: [], preApply: []});
@@ -213,20 +214,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         })
         .then((data: string[]) => {
                 console.log(data)
+                
                 data.forEach((val) => {
                     shipTypes.push({type: val, checked: true});
                     pre.push(true);
                 });
                 return;
         });    
-        if(!this.state.shipTypes || this.state.shipTypes.length < 1) {
-            console.log("Didn't")
-            this.setState({shipTypes: [], preApply: []});
-        }
-        else {
-            this.setState({shipTypes: shipTypes, preApply: pre});
-        }
-
+        this.setState({shipTypes: shipTypes, preApply: pre});
     }
 }
     

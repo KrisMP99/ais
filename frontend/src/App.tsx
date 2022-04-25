@@ -45,6 +45,7 @@ export class App extends React.Component<any, AppStates> {
 
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
+		
 		this.temporaryTrips = [];
 		for (let i = 0; i < 130; i++) {
 			this.temporaryTrips.push({ color: 'red', totalTime: '30min', tripId: i });   //DUMMY DATA
@@ -121,6 +122,7 @@ export class App extends React.Component<any, AppStates> {
 						<hr />
 						<GridSetting 
 							onChange={(setting: GridSettingObj) => {
+								this.clearPoints();
 								this.setState({
 									postSetting: { 
 										gridSetting: setting, 

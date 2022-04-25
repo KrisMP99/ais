@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-class Coordinate(BaseModel):
+class GridData(BaseModel):
     long: float
     lat: float
     is_hexagon: bool

@@ -53,11 +53,15 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
                 {
                     "p1": {
                         "long": coordinates[0].lng,
-                        "lat": coordinates[0].lat
+                        "lat": coordinates[0].lat,
+                        "is_hexagon": this.props.postSetting?.gridSetting?.isHexagon,
+                        "grid_size": this.props.postSetting?.gridSetting?.size
                 },
                     "p2":{
                         "long": coordinates[1].lng,
                         "lat": coordinates[1].lat,
+                        "is_hexagon": this.props.postSetting?.gridSetting?.isHexagon,
+                        "grid_size": this.props.postSetting?.gridSetting?.size
                 }
             })
         };

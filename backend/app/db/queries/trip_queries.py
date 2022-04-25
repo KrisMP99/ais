@@ -1,22 +1,40 @@
-def query_fetch_hexagons_given_two_points() -> str:
+from fastapi import HTTPException
+def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
     '''We find all hexagons where the points are found in'''
-    return '''                                                         
+
+    grid_sizes_hex = [500, 1000, 2500, 5000, 10000]
+    grid_sizes_square = [806, 1612, 4030, 8060, 16120]
+    
+    if p1_is_hex:
+        grid_type = "hex"
+        if p1_size in grid_sizes_hex:
+            size = p1_size
+        else:
+            raise HTTPException(status_code=404, detail=f'Grid size is not available for polygon type: {grid_type}, size: {p1_size}')
+    else:
+        grid_type = "square"
+        if p1_size in grid_sizes_square:
+            size = p1_size
+        else:
+            raise HTTPException(status_code=404, detail=f'Grid size is not available for polygon type: {grid_type}, size: {p1_size}')
+
+    return f'''                                                         
                 SELECT                                                          
-                    h.hex_10000_column, h.hex_10000_row, h.grid_geom AS geom                                         
+                    h.{grid_type}_{size}_column, h.{grid_type}_{size}_row, h.grid_geom AS geom, ST_Transform(h.centroid, 4326) as centroid                                         
                 FROM                                                            
-                    hex_10000_dim as h                           
+                    {grid_type}_{size}_dim as h                           
                 WHERE                                                           
                     ST_Within(
-                        %(p1)s::geometry, h.geom
+                        %(p1)s::geometry, h.grid_geom
                     ) OR     
                     ST_Within(
-                        %(p2)s::geometry, h.geom
+                        %(p2)s::geometry, h.grid_geom
                     );
             '''
 
 
 
-def query_fetch_line_strings_given_hexagons() -> str:
+def query_fetch_line_strings_given_polygon() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
             SELECT

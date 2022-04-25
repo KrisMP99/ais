@@ -204,7 +204,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 'x-token': process.env.REACT_APP_TOKEN!,
             }
         };
-        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+        await fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
         .then((response) => {
                 if (!response.ok) {
                     return this.setState({shipTypes: [], preApply: []});
@@ -219,7 +219,8 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 });
                 return;
         });    
-        if(!this.state.shipTypes || this.state.shipTypes.length < 1) {
+        if(shipTypes.length < 1) {
+            console.log("Didn't find any ship types")
             this.setState({shipTypes: [], preApply: []});
         }
         else {

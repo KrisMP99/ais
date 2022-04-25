@@ -196,13 +196,13 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         //         'x-token': process.env.REACT_APP_TOKEN!,
         //     }
         // };
-        // let testArr: ShipType[] = [];
-        // let testArr2: boolean[] = [];
-        // for (let i = 0; i < 13; i++) {
-        //     testArr.push({type: ("test"+i), checked: true});
-        //     testArr2.push(true);
-        // }
-        // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
+        let testArr: ShipType[] = [];
+        let testArr2: boolean[] = [];
+        for (let i = 0; i < 13; i++) {
+            testArr.push({type: ("test"+i), checked: true});
+            testArr2.push(true);
+        }
+        this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
         console.log("Fetching ship types...")
         // fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
         //     .then((response) => {

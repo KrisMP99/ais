@@ -24,12 +24,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     protected dividerIndex: number;
     protected checkBoxSetting: boolean;
     protected appliedFilter: boolean;
+    protected fetched: boolean;
 
     constructor(props: ShipFilterProps) {
         super(props);
         this.dividerIndex = 0;
         this.appliedFilter = false;
         this.checkBoxSetting = true;
+        this.fetched = false;
 
         this.state = {
             preApply: [],
@@ -39,13 +41,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     componentDidMount() {
-        if(!this.state.shipTypes) {
+        if(!this.fetched) {
             this.fetchShipTypes();
         }
     }
 
     componentDidUpdate(prevProps: ShipFilterProps, prevStates: ShipFilterStates) {
-        if(!prevStates.preApply.every((val, index) => val === this.state.preApply[index])) {
+        if(!(prevStates.preApply.every((val, index) => val === this.state.preApply[index])) && this.fetched) {
+            console.log("UPDATE")
             this.areSimilar();
         }
     }
@@ -188,37 +191,39 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     protected async fetchShipTypes() {
-        // const requestOptions = {
-        //     method: 'GET',
-        //     headers: {
-        //         'Accept': 'application/json',
-        //         'Content-Type': 'application/json',
-        //         'x-token': process.env.REACT_APP_TOKEN!,
-        //     }
-        // };
-        let testArr: ShipType[] = [];
-        let testArr2: boolean[] = [];
-        for (let i = 0; i < 13; i++) {
-            testArr.push({type: ("test"+i), checked: true});
-            testArr2.push(true);
-        }
-        this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
-    //     fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
-    //         .then((response) => {
-    //             if (!response.ok) {
-    //                 return null;
-    //             }
-    //             return response.json();
-    //         })
-    //         .then((data: string[]) => {
-    //             let shipTypes: ShipType[] = [];
-    //             let pre: boolean[] = [];
-    //             data.forEach((val) => {
-    //                 shipTypes.push({type: val, checked: true});
-    //                 pre.push(true);
-    //             });
-    //             return this.setState({shipTypes: shipTypes, preApply: pre});
-    //         });
+        this.fetched = true;
+        const requestOptions = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'x-token': process.env.REACT_APP_TOKEN!,
+            }
+        };
+        // let testArr: ShipType[] = [];
+        // let testArr2: boolean[] = [];
+        // for (let i = 0; i < 13; i++) {
+        //     testArr.push({type: ("test"+i), checked: true});
+        //     testArr2.push(true);
+        // }
+        // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
+        console.log("Fetching ship types...")
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+            .then((response) => {
+                if (!response.ok) {
+                    return null;
+                }
+                return response.json();
+            })
+            .then((data: string[]) => {
+                let shipTypes: ShipType[] = [];
+                let pre: boolean[] = [];
+                data.forEach((val) => {
+                    shipTypes.push({type: val, checked: true});
+                    pre.push(true);
+                });
+                return this.setState({shipTypes: shipTypes, preApply: pre});
+            });
     }
 }
     

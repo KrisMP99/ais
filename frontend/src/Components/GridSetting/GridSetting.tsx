@@ -93,9 +93,9 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
                         label="Grid side length (meters):"
                         options={dropDownOptions}
                         selectedKey={this.state.gridSetting.size}
-                        onChange={(e, opt, key) => {
-                            if(key) {
-                                this.setState({gridSetting: {isHexagon: this.state.gridSetting.isHexagon, size: key}});
+                        onChange={(e, opt) => {
+                            if(opt) {
+                                this.setState({gridSetting: {isHexagon: this.state.gridSetting.isHexagon, size: opt.key as number}});
                             }
                         }}
                     />

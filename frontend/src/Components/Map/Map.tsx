@@ -154,6 +154,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             else return response.json();
         })
         .then((data: L.LatLngExpression[][] | null) => {
+            console.log(data)
             if (data){
                 let temp: L.Polygon[] = this.state.hexPolygons;         
                 temp.push(new L.Polygon(data, {

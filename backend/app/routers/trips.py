@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
-from app.models.hexagon import Hexagon
+from app.models.grid_polygon import GridPolygon
 from app.models.simplified_line_string import SimplifiedLineString
 from app.models.location import Location
 from app.db.database import engine, Session
@@ -70,7 +70,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
         line_string:SimplifiedLineString
 
         locations = []
-        point_from_line_string_found_in_hexagon = [Hexagon]
+        point_from_line_string_found_in_hexagon = [GridPolygon]
         for coordinate in line_string.locations:
             coordinate:Location
 
@@ -139,7 +139,7 @@ async def get_trip(p1: Coordinate, p2: Coordinate):
 
     return line_string_to_return_to_frontend
 
-def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
+def create_point(hexagon: GridPolygon, linestring: str, hexagons: list[GridPolygon]):
     # point_query =   f'''{linestring}
     #                 WITH nearest_point AS (
     #                     SELECT 
@@ -184,36 +184,36 @@ def create_point(hexagon: Hexagon, linestring: str, hexagons: list[Hexagon]):
             params={
                 'hex1row': hexagons[0].row,
                 'hex1column': hexagons[0].column,
-                'hex1hex': wkb.dumps(hexagons[0].hexagon, hex=True, srid=4326),
+                'hex1hex': wkb.dumps(hexagons[0].polygon, hex=True, srid=4326),
                 'hex2row': hexagons[1].row,
                 'hex2column': hexagons[1].column,
-                'hex2hex': wkb.dumps(hexagons[1].hexagon, hex=True, srid=4326),
-                'hex': wkb.dumps(hexagon.hexagon, hex=True, srid=4326) 
+                'hex2hex': wkb.dumps(hexagons[1].polygon, hex=True, srid=4326),
+                'hex': wkb.dumps(hexagon.polygon, hex=True, srid=4326) 
             }
         )
     return []
 
-def get_line_strings(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
+def get_line_strings(query: str, hex1: GridPolygon, hex2: GridPolygon) -> pd.DataFrame:
     df = gpd.read_postgis(
             query, 
             engine, 
             params=
             {
-                "hex1": wkb.dumps(hex1.hexagon, hex=True, srid=4326), 
-                "hex2": wkb.dumps(hex2.hexagon, hex=True, srid=4326)
+                "hex1": wkb.dumps(hex1.polygon, hex=True, srid=4326), 
+                "hex2": wkb.dumps(hex2.polygon, hex=True, srid=4326)
             },
             geom_col='line_string'
         )
     return df
 
-def get_points(query: str, hex1: Hexagon, hex2: Hexagon) -> pd.DataFrame:
+def get_points(query: str, hex1: GridPolygon, hex2: GridPolygon) -> pd.DataFrame:
     df = gpd.read_postgis(
         query, 
         engine, 
         params=
         {
-            "hex1": wkb.dumps(hex1.hexagon, hex=True, srid=4326), 
-            "hex2": wkb.dumps(hex2.hexagon, hex=True, srid=4326)
+            "hex1": wkb.dumps(hex1.polygon, hex=True, srid=4326), 
+            "hex2": wkb.dumps(hex2.polygon, hex=True, srid=4326)
         },
         geom_col='location')
     return df
@@ -244,11 +244,11 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
 
     return simplified_line_strings_list
 
-def add_hexagons_to_list(df: pd.DataFrame) -> list[Hexagon]:
+def add_hexagons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
     hexagons = []
     
     for table_row in df.itertuples():
-        hexagons.append(Hexagon(column=table_row.hex_10000_column, row=table_row.hex_10000_row, hexagon=table_row.hexagon, centroid=table_row.centroid))
+        hexagons.append(GridPolygon(column=table_row.hex_10000_column, row=table_row.hex_10000_row, polygon=table_row.hexagon, centroid=table_row.centroid))
     
     return hexagons
 

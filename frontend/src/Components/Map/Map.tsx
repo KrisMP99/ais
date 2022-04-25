@@ -97,11 +97,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     layerGroup={this.markerLayer}
                     markerIcon={this.markerIcon}
                     points={this.state.points}
-                    fetchHexagon={(point) => this.fetchHexagon(point)}
+                    fetchHexagon={(point) => this.fetchPolygon(point)}
                     retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
                     addPoint={(point) => {
                         this.state.points.push(point);
-                        this.fetchHexagon(point);
+                        this.fetchPolygon(point);
                         this.props.retCoords(this.state.points);
                         this.setState({points: this.state.points});
                         }}
@@ -127,7 +127,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.setState({points: [], hexPolygons: []});
     }
 
-    protected async fetchHexagon(point: LatLng) {
+    protected async fetchPolygon(point: LatLng) {
 
         const requestOptions = {
             method: 'POST',
@@ -146,7 +146,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     }
                 )
         };
-        fetch('http://' + process.env.REACT_APP_API! + '/hexagrids/hexagon', requestOptions)
+        fetch('http://' + process.env.REACT_APP_API! + '/grids/polygon', requestOptions)
         .then((response) => {
             if(!response.ok){
                 return null;

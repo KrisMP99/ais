@@ -142,7 +142,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         "long": point.lng,
                         "lat": point.lat,
                         "is_hexagon": this.props.gridSettings.isHexagon,
-                        "grid_size": this.props.gridSettings.sizeIndex
+                        "grid_size": this.props.gridSettings.size
                     }
                 )
         };

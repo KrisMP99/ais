@@ -5,7 +5,7 @@ import { ChoiceGroup, DefaultButton, Dropdown } from "@fluentui/react";
 
 export interface GridSettingObj {
     isHexagon: boolean;
-    sizeIndex: number;
+    size: number;
 }
 
 interface GridSettingProps {
@@ -24,23 +24,22 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
         super(props);
         this.state = {
             openOnUi: false,
-            gridSetting: {isHexagon: true, sizeIndex: 500},
-            preApplyGridSetting: {isHexagon: true, sizeIndex: 500},
+            gridSetting: {isHexagon: true, size: 500},
+            preApplyGridSetting: {isHexagon: true, size: 500},
         }
     }
 
     componentDidMount() {
-        console.log("Mounted grid settings component");
         this.props.onChange(this.state.gridSetting);
     }
 
     componentDidUpdate(prevProps: GridSettingProps, prevStates: GridSettingStates) {
-        
+        if (prevStates.gridSetting.size !== this.state.gridSetting.size || prevStates.gridSetting.isHexagon !== this.state.gridSetting.isHexagon) {
+            this.props.onChange(this.state.gridSetting);
+        } 
     }
 
     render() { 
-        let openSymbol = this.state.openOnUi ? "˄" : "˅";
-
         let dropDownOptions = [];
         if (this.state.gridSetting.isHexagon) {
             dropDownOptions = [
@@ -53,9 +52,9 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
         else {
             dropDownOptions = [
                 { key: 806, text: '806' },
-                { key: 1612, text: '1603' },
-                { key: 4030, text: '6006' },
-                { key: 8060, text: '16203' },
+                { key: 1612, text: '1612' },
+                { key: 4030, text: '4030' },
+                { key: 16120, text: '16120' },
             ];
         }
         return ( 
@@ -70,8 +69,7 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
                                 name="polygon" 
                                 checked={this.state.gridSetting.isHexagon}
                                 onChange={() => {
-                                    let temp: GridSettingObj = { isHexagon: true, sizeIndex: 0 };
-                                    this.props.onChange(temp);
+                                    let temp: GridSettingObj = { isHexagon: true, size: 500 };
                                     this.setState({gridSetting: temp });
                                 }}
                             />
@@ -83,8 +81,7 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
                                 name="polygon" 
                                 checked={!this.state.gridSetting.isHexagon}
                                 onChange={() => {
-                                    let temp: GridSettingObj = { isHexagon: false, sizeIndex: 0 };
-                                    this.props.onChange(temp);
+                                    let temp: GridSettingObj = { isHexagon: false, size: 806 };
                                     this.setState({gridSetting: temp });
                                 }}
                             />
@@ -95,10 +92,10 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
                         className="dropdown"
                         label="Grid side length (meters):"
                         options={dropDownOptions}
-                        selectedKey={this.state.gridSetting.sizeIndex}
+                        selectedKey={this.state.gridSetting.size}
                         onChange={(e, opt, key) => {
                             if(key) {
-                                this.setState({gridSetting: {isHexagon: this.state.gridSetting.isHexagon, sizeIndex: key}});
+                                this.setState({gridSetting: {isHexagon: this.state.gridSetting.isHexagon, size: key}});
                             }
                         }}
                     />

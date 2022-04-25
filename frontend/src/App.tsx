@@ -55,7 +55,7 @@ export class App extends React.Component<any, AppStates> {
 			trips: [],
 			polylines: [],
 			filterShipTypes: [],
-			postSetting: { gridSetting: {sizeIndex: 500, isHexagon: true}, activeFilters: null },
+			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 		}
 	}
 

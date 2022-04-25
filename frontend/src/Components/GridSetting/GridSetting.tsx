@@ -24,8 +24,8 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
         super(props);
         this.state = {
             openOnUi: false,
-            gridSetting: {isHexagon: true, sizeIndex: 500},
-            preApplyGridSetting: {isHexagon: true, sizeIndex: 500},
+            gridSetting: {isHexagon: true, sizeIndex: 0},
+            preApplyGridSetting: {isHexagon: true, sizeIndex: 0},
         }
     }
 

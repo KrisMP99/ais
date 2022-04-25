@@ -22,24 +22,49 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+class GridData(BaseModel):
+    long: float
+    lat: float
+    is_hexagon: bool
+    grid_size: int
+
+grid_sizes_hex = [500, 1000, 2500, 5000, 10000]
+grid_sizes_square = [806, 1612, 4030, 8060, 16120]
+
 @router.post('/hexagon')
-async def get_hexagon(p1: Coordinate):
-    gp1 = Point(p1.long, p1.lat)
-    query = '''
+async def get_hexagon(grid_data: GridData):
+    gp1 = Point(grid_data.long, grid_data.lat)
+
+    if grid_data.is_hexagon:
+        grid_type = "hex"
+        if grid_data.grid_size in grid_sizes_hex:
+            size = grid_data.grid_size
+        else:
+            # Throw an error
+            print("Yo mama")
+    else:
+        grid_type = "square"
+        if grid_data.grid_size in grid_sizes_square:
+            size = grid_data.grid_size
+        else:
+            # Throw an error
+            print("Yo mama") 
+
+    query = f'''
                 SELECT
-                    h.hex_10000_row, 
-                    h.hex_10000_column, 
-                    ST_FlipCoordinates(h.grid_geom) AS geom
+                    d.{grid_type}_{size}_row, 
+                    d.{grid_type}_{size}_column, 
+                    ST_FlipCoordinates(d.grid_geom) AS geom
                 FROM
-                    hex_10000_dim AS h
+                    {grid_type}_{size}_dim AS d
                 WHERE
                     ST_Within(
-                        %(hexagon)s::geometry,
-                        h.geom
+                        %(selected_point)s::geometry,
+                        d.geom
                     );
             '''
 
-    df = gpd.read_postgis(query, engine, params={'hexagon': wkb.dumps(gp1, hex=True, srid=4326)}, geom_col='geom')
+    df = gpd.read_postgis(query, engine, params={'selected_point': wkb.dumps(gp1, hex=True, srid=4326)}, geom_col='geom')
 
     if len(df) == 0:
         logger.error('Could not find the given coordinates')
@@ -47,8 +72,8 @@ async def get_hexagon(p1: Coordinate):
 
 
     hex = Hexagon(
-                row=df.hex_10000_row.iloc[0], 
-                column=df.hex_10000_column.iloc[0], 
-                hexagon=df.hexagon.iloc[0],
+                row=df.iloc[0].iloc[0], 
+                column=df.iloc[1].iloc[0], 
+                hexagon=df.iloc[2].iloc[0],
                 centroid=df.centroid.iloc[0])
     return list(hex.hexagon.exterior.coords)

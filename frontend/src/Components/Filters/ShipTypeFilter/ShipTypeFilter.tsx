@@ -219,8 +219,8 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 });
                 return;
         });    
-        if(shipTypes.length < 1) {
-            console.log("Didn't find any ship types")
+        if(!this.state.shipTypes || this.state.shipTypes.length < 1) {
+            console.log("Didn't")
             this.setState({shipTypes: [], preApply: []});
         }
         else {

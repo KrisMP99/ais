@@ -20,7 +20,7 @@ interface DKMapProps {
 
 interface DKMapStates {
     points: LatLng[];
-    hexPolygons: L.Polygon[];
+    polygons: L.Polygon[];
 }
 
 function getPolylineColor(){
@@ -56,11 +56,12 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
 
         this.state = {
             points: [],
-            hexPolygons: [],
+            polygons: [],
         }
     }
 
     render() {
+        console.log(this.state.polygons)
         return (
             <MapContainer
                 id='map'
@@ -82,7 +83,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         if(!this.countriesAdded) { 
                             this.addCountryPolygons(map);                        
                         }
-                        this.state.hexPolygons.map((poly) => {
+                        this.state.polygons.map((poly) => {
                             return poly.addTo(map); 
                         })
                         return null;
@@ -120,11 +121,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     }
 
     public clear() {
-        this.state.hexPolygons.forEach((hex)=>{
+        this.state.polygons.forEach((hex)=>{
             hex.remove();
         });
         this.markerLayer.clearLayers();
-        this.setState({points: [], hexPolygons: []});
+        this.setState({points: [], polygons: []});
     }
 
     protected async fetchHexagon(point: LatLng) {
@@ -155,16 +156,18 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         })
         .then((data: L.LatLngExpression[][] | null) => {
             if (data){
-                let temp: L.Polygon[] = this.state.hexPolygons;         
-                temp.push(new L.Polygon(data, {
+                let poly: L.Polygon[] = this.state.polygons;         
+                poly.push(new L.Polygon(data, {
                     opacity: 0,
-                    fillOpacity: 1,
-                    fillColor: "#000000"
+                    fillOpacity: 0.6,
                 }));
-                if(temp.length === 1) {
-                    temp[0].bindPopup("Choose a point further from your first point!");
+                if(poly.length === 1) {
+                    poly[0].bindPopup("Choose a point further from your first point!");
                 }
-                this.setState({hexPolygons: temp});
+                else if (poly.length === 2) {
+                    poly[0].unbindPopup();
+                }
+                this.setState({polygons: poly});
             }
         });
     }
@@ -179,8 +182,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     fillColor: "#90959e"
                 }
             }).addTo(map);
-        if(this.state.hexPolygons.length === 1) {
-            layer.addData(this.state.hexPolygons[0] as unknown as GeoJsonObject)
+        if(this.state.polygons.length === 1) {
+            layer.addData(this.state.polygons[0] as unknown as GeoJsonObject)
         }
         this.countriesAdded = true;
     }

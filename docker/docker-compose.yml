@@ -13,10 +13,10 @@ services:
         target: /var/lib/postgresql/data
     ports:
       - '5432:5432'
-    env_file: ../.env
     restart: always
     environment:
       - TZ=Europe/Copenhagen
+    env_file: ../backend/.env
     
   api:
     build:

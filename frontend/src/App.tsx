@@ -4,7 +4,7 @@ import './App.css';
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
 import PostButton from './Components/PostButton';
-import { ShipTypeFilter } from './Components/ShipTypeFilter/ShipTypeFilter';
+import ShipTypeFilter from './Components/Filters/ShipTypeFilter/ShipTypeFilter';
 
 export interface Trip {
 	tripId: number;
@@ -54,7 +54,6 @@ export class App extends React.Component<any, AppStates> {
 	}
 
 	render() {
-		console.count('App render count: ')
 		return (
 			<div className='main'>
 				<div className="main-container">
@@ -113,7 +112,6 @@ export class App extends React.Component<any, AppStates> {
 						/>
 						<hr />
 						<ShipTypeFilter
-							shipTypes={this.state.filterShipTypes}
 							returnShipType={(shipTypes: string[]) => {
 								this.setState({filterShipTypes: shipTypes});
 							}}
@@ -123,10 +121,6 @@ export class App extends React.Component<any, AppStates> {
 
 			</div>
 		);
-	}
-
-	componentDidMount() {
-		this.fetchShipTypes();
 	}
 
 	protected clearPoints() {
@@ -150,26 +144,6 @@ export class App extends React.Component<any, AppStates> {
 		}
 		return "0.0000";
 	}
-
-	protected async fetchShipTypes() {
-        const requestOptions = {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'x-token': process.env.REACT_APP_TOKEN!,
-            }
-        };
-
-        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    return null;
-                }
-                return this.setState({ filterShipTypes: data });
-            });
-    }
 }
 
 export default App;

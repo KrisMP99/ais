@@ -133,3 +133,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+node_modules
+
+error_log.log
+api_log.log

@@ -5,7 +5,7 @@ services:
     container_name: postgres_db
     ports:
       - '5431:5431'
-    env_file: ../.env
+    env_file: ../backend/.env
     restart: always
     environment:
       - TZ=Europe/Copenhagen
@@ -20,9 +20,6 @@ services:
       - type: bind
         source: ../
         target: /srv/data/ais
-      - type: bind
-        source: 'C:\\Users\\Krist\\Desktop\\data_ais\\'
-        target: /srv/data/csv/
     restart: always
     ports:
       - 8080:8000
@@ -54,14 +51,11 @@ services:
     tty: true
     image: ais_cleansing
     container_name: ais_cleansing
-    command: python main.py -f True
+    # command: python main.py -f True
     volumes:
       - type: bind
         source: ../
         target: /srv/data/ais
-      - type: bind
-        source: ../csv
-        target: /srv/data/csv
     restart: always
     environment:
       - TZ=Europe/Copenhagen

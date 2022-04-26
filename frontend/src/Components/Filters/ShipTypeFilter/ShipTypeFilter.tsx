@@ -210,7 +210,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 return response.json();
         })
         .then((data: string[]) => {
-                console.log(data)
+                // console.log(data)
                 if(data.length < 1) return;
                 data.forEach((val) => {
                     shipTypes.push({type: val, checked: true});

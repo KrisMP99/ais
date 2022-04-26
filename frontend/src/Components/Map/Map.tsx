@@ -24,12 +24,6 @@ interface DKMapStates {
     hexPolygons: L.Polygon[];
 }
 
-function getPolylineColor(){
-    return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
-}
-
-
-
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
     protected markerLayer: L.LayerGroup;
@@ -145,6 +139,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.state.hexPolygons.forEach((hex)=>{
             hex.remove();
         });
+        this.linestringLayer.clearLayers();
         this.markerLayer.clearLayers();
         this.setState({points: [], hexPolygons: []});
     }

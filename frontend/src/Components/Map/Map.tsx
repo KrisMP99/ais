@@ -68,8 +68,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 center={this.props.mapCenter}
                 // bounds={MAP_BOUNDS}
                 zoom={7}
-                minZoom={5}
-                maxZoom={14}
+                minZoom={1}
+                maxZoom={50}
                 scrollWheelZoom={true}
                 maxBounds={this.props.mapBounds}
             >

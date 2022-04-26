@@ -28,23 +28,12 @@ function getPolylineColor(){
     return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
 }
 
-function createPolyline(trip: Trip, map: L.Map){
-    let poly: L.Polyline;
-    let options: L.PolylineOptions;
-    options = {
-        color: trip.color,
-        weight: 5,
-    }
-    poly = new L.Polyline(trip.tripPolyline, options);
-    poly.bindPopup("ID: " + trip.tripId);
-    poly.addTo(map);
-    // (<Polyline positions={trip.tripPolyline} key={key} color={getPolylineColor()} weight={4}/>);
-    // poly.
-}
+
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
     protected markerLayer: L.LayerGroup;
+    protected linestringLayer: L.LayerGroup;
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
     protected ignoreCountries: L.Layer[];
@@ -58,6 +47,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.hexagons = [];
 
         this.markerLayer = L.layerGroup();
+        this.linestringLayer = L.layerGroup();
         this.markerIcon = L.icon({
             className: 'marker',
             iconUrl: iconUrl,
@@ -98,8 +88,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         })
                         if (this.props.trips.length > 0) {
                             this.props.trips.forEach((trip) => {
-                                createPolyline(trip, map);
+                                this.createPolyline(trip);
                             });
+                            if(!map.hasLayer(this.linestringLayer)) {
+                                map.addLayer(this.linestringLayer);
+                            }
                         }
                         return null;
                     }}
@@ -135,6 +128,14 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 </MapConsumer>
             </MapContainer>
         );
+    }
+
+    protected createPolyline(trip: Trip){
+        let options: L.PolylineOptions = {
+            color: trip.color,
+            weight: 5,
+        };
+        this.linestringLayer.addLayer(new L.Polyline(trip.tripPolyline, options).bindPopup("ID: " + trip.tripId));
     }
 
     public clear() {

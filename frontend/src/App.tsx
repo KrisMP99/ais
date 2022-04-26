@@ -98,7 +98,6 @@ export class App extends React.Component<any, AppStates> {
 									coordinates={this.state.pointCoords}
 									shipTypeArray={this.state.filterShipTypes}
 									returnTrips={(trips: Trip[]) => this.setState({trips: trips})}
-									// getData={(data: {linestring: LatLng[], id: number}[]) => this.setState({ polylines: data })}
 									postSetting={this.state.postSetting}
 								/>
 								<button
@@ -111,12 +110,12 @@ export class App extends React.Component<any, AppStates> {
 							</div>
 						</div>
 						<hr />
-						<ETATrips
+						{/* <ETATrips
 							ref={this.ETATripsRef}
 							trips={this.state.trips}
 							tripsShown={16}
 						/>
-						<hr />
+						<hr /> */}
 						<GridSetting 
 							onChange={(setting: GridSettingObj) => {
 								this.clearPoints();

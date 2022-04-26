@@ -33,8 +33,26 @@ def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
             '''
 
 
-
 def query_fetch_line_strings_given_polygon() -> str:
+    # We select all line strings that intersect with the two hexagons
+    return '''
+            SELECT
+                std.line_string as line_string, std.trip_id
+            FROM
+                trip_dim AS std
+            WHERE
+                ST_Intersects(
+                    std.line_string,
+                    %(poly1)s::geometry
+                ) AND
+                ST_Intersects(
+                    std.line_string,
+                    %(poly2)s::geometry
+                );
+            '''
+
+
+def query_fetch_line_strings_given_polygon1() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
             SELECT
@@ -44,37 +62,37 @@ def query_fetch_line_strings_given_polygon() -> str:
             WHERE
                 ST_Intersects(
                     std.line_string,
-                    %(hex1)s::geometry
+                    %(poly1)s::geometry
                 ) AND
                 ST_Intersects(
                     std.line_string,
-                    %(hex2)s::geometry
+                    %(poly2)s::geometry
                 );
             '''
 def query_get_points_in_line_string() -> str: 
     '''Select all points in the linestrings insecting the hexagons'''
     return  '''    
             SELECT
-                std.simplified_trip_id, data_fact.hex_10000_row, 
+                std.trip_id, data_fact.hex_10000_row, 
                 data_fact.hex_10000_column, data_fact.location, data_fact.time_id,
                 data_fact.date_id, ship_type_dim.ship_type, data_fact.sog
             FROM
                 data_fact
                 INNER JOIN 
-                    simplified_trip_dim AS std ON std.simplified_trip_id = data_fact.simplified_trip_id
+                    trip_dim AS std ON std.trip_id = data_fact.trip_id
                 INNER JOIN
                     ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id    
             WHERE
                 ST_Intersects(
                     std.line_string,
-                    %(hex1)s::geometry
+                    %(poly1)s::geometry
                 ) AND
                 ST_Intersects(
                     std.line_string,
-                    %(hex2)s::geometry
+                    %(poly2)s::geometry
                 )
             GROUP BY 
-                std.simplified_trip_id, data_fact.hex_10000_row, 
+                std.trip_id, data_fact.hex_10000_row, 
                 data_fact.hex_10000_column, data_fact.location,
                 data_fact.time_id, data_fact.date_id, 
                 ship_type_dim.ship_type, data_fact.sog;

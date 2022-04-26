@@ -63,8 +63,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 center={this.props.mapCenter}
                 // bounds={MAP_BOUNDS}
                 zoom={7}
-                minZoom={5}
-                maxZoom={14}
+                minZoom={1}
+                maxZoom={50}
                 scrollWheelZoom={true}
                 maxBounds={this.props.mapBounds}
             >
@@ -129,10 +129,25 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             color: trip.color,
             weight: 5,
         };
-        if(trip.color === undefined || trip.eta  === undefined || trip.shipType  === undefined || trip.tripId  === undefined || trip.tripPolyline  === undefined) {
-            console.log("ERROR WITH TRIP: " + JSON.stringify(trip));
+        if(trip.color === undefined || trip.eta  === undefined || trip.shipType  === undefined || trip.tripId  === undefined || trip.linestring  === undefined) {
+            if(trip.color === undefined){
+                console.log("Error with TRIP COLOR")
+            }
+            if(trip.eta === undefined){
+                console.log("Error with ETA")
+            }
+            if(trip.shipType === undefined){
+                console.log("Error with SHIP TYPE")
+            }
+            if(trip.tripId === undefined){
+                console.log("Error with TRIP ID")
+            }
+            if(trip.linestring === undefined){
+                console.log("Error with TRIP POLYLINE")
+            }
+            // console.log("ERROR WITH TRIP: " + JSON.stringify(trip));
         }
-        this.linestringLayer.addLayer(L.polyline(trip.tripPolyline, options).bindPopup("ID: " + trip.tripId));
+        this.linestringLayer.addLayer(L.polyline(trip.linestring, options).bindPopup("ID: " + trip.tripId));
     }
 
     public clear() {

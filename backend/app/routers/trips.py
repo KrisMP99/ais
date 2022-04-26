@@ -59,6 +59,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
 
     points_in_line_string_df = get_points(query_points_in_line_string, poly1=polygons[0], poly2=polygons[1])
     
+    
     line_strings = get_list_of_line_strings_with_points(line_string_df=line_string_df, 
                                                  points_df=points_in_line_string_df)
 
@@ -70,11 +71,14 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     for l_key in line_strings.copy():
         line_string = line_strings[l_key]
         line_string:SimplifiedLineString
-
+        if(line_string.simplified_trip_id == 1234):
+            print(f"TRIP ID: {line_string.simplified_trip_id}")
         locations = []
         point_from_line_string_found_in_hexagon = [GridPolygon]
         for coordinate in line_string.locations:
             coordinate:Location
+            if(line_string.simplified_trip_id == 1234):
+                print(coordinate.time_id)
 
             # print('simplified_trip_id ', line_string.simplified_trip_id)
             # Add points to frontend
@@ -229,14 +233,14 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
     simplified_line_strings_list = {}
     simplified_line_strings_list: list[SimplifiedLineString]
     
-    for trip_id, line_string in zip(line_string_df.trip_id, line_string_df.line_string):
-        line = SimplifiedLineString(simplified_trip_id=trip_id, line_string=line_string, locations=[])
-        simplified_line_strings_list[trip_id] = line
-
-    for hex_10000_row, hex_10000_column, location, trip_id, date_id, time_id, ship_type, sog in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.trip_id, points_df.date_id, points_df.time_id, points_df.ship_type, points_df.sog):
-        line_class = simplified_line_strings_list.get(trip_id)
-        line_class: SimplifiedLineString
-        line_class.locations.append(
+    for simplified_trip_id, line_string in zip(line_string_df.simplified_trip_id, line_string_df.line_string):
+        line_class_object = SimplifiedLineString(simplified_trip_id=simplified_trip_id, line_string=line_string, locations=[])
+        simplified_line_strings_list[simplified_trip_id] = line_class_object
+    
+    for hex_10000_row, hex_10000_column, location, simplified_trip_id, date_id, time_id, ship_type, sog in zip(points_df.hex_10000_row, points_df.hex_10000_column, points_df.location, points_df.simplified_trip_id, points_df.date_id, points_df.time_id, points_df.ship_type, points_df.sog):
+        line_class_object = simplified_line_strings_list.get(simplified_trip_id)
+        line_class_object: SimplifiedLineString
+        line_class_object.locations.append(
             Location(
                 hex_10000_row=hex_10000_row, 
                 hex_10000_column=hex_10000_column, 

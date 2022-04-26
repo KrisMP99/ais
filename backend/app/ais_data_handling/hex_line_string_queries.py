@@ -8,6 +8,19 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 
+def round_coordinates(trip_id: int):
+    sql_query = f'''
+                    UPDATE data_fact
+                    SET location = (
+                        SELECT ST_ReducePrecision(location, 0.0001)
+                        WHERE data_fact.trip_id >= {trip_id}
+                    )
+                 '''
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query)
+        
+
 def create_line_strings(trip_id: int, threshold:int):
     '''
     Generates the both the 'normal' line strings and simplified line strings for each trip.
@@ -60,7 +73,7 @@ def create_line_strings(trip_id: int, threshold:int):
     sql_drop_simplified_data_points = "DROP TABLE IF EXISTS simplified_points_temp;"
     sql_simplified_data_points_query = f'''
                                             WITH points_in_trip AS (
-                                                SELECT simplified_trip_id, (ST_DumpPoints(line_string)).geom as point
+                                                SELECT simplified_trip_id, ST_ReducePrecision((ST_DumpPoints(line_string)).geom, 0.0001) as point
                                                 FROM simplified_trip_dim
                                                 WHERE simplified_trip_id >= {trip_id} 
                                             ),
@@ -86,31 +99,31 @@ def create_line_strings(trip_id: int, threshold:int):
     
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_trip_temp_table)
+            cursor.execute(sql_drop_trip_temp_table)
         with conn.cursor() as cursor:
-                cursor.execute(sql_trip_table_insert_query)
+            cursor.execute(sql_trip_table_insert_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_trip_update_query)
+            cursor.execute(sql_trip_update_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_trip_temp_table)
+            cursor.execute(sql_drop_trip_temp_table)
 
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_trip_table)
+            cursor.execute(sql_drop_simplified_trip_table)
         with conn.cursor() as cursor:
-                cursor.execute(sql_simplified_trip_table_insert_query)
+            cursor.execute(sql_simplified_trip_table_insert_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_simplified_trip_update_query)
+            cursor.execute(sql_simplified_trip_update_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_trip_table)
+            cursor.execute(sql_drop_simplified_trip_table)
         
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_data_points)
+            cursor.execute(sql_drop_simplified_data_points)
         with conn.cursor() as cursor:
-                cursor.execute(sql_simplified_data_points_query)
+            cursor.execute(sql_simplified_data_points_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_update_data_fact_simplified_trip_ids)
+            cursor.execute(sql_update_data_fact_simplified_trip_ids)
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_data_points)
+            cursor.execute(sql_drop_simplified_data_points)
 
 
 

@@ -1,4 +1,12 @@
+from logging import Logger
 from fastapi import HTTPException
+from shapely.geometry import Point
+from app.models.grid_polygon import GridPolygon
+import pandas as pd
+import geopandas as gpd
+import shapely.wkb as wkb
+from app.db.database import engine, Session
+
 def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
     '''We find all hexagons where the points are found in'''
 
@@ -32,6 +40,25 @@ def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
                     );
             '''
 
+def get_polygons(p1: Point, p2: Point, p1_is_hex: bool, p1_size: int, logger: Logger) -> pd.DataFrame:
+    '''Returns the polygons where p1 and p2 can be found within'''
+    sql_query = query_fetch_polygons_given_two_points(p1_is_hex, p1_size)
+
+    df = gpd.read_postgis(
+            sql_query, 
+            engine,
+            params={
+                "p1": wkb.dumps(p1, hex=True, srid=4326),
+                "p2": wkb.dumps(p2, hex=True, srid=4326)
+            },
+            geom_col='geom'
+        )
+
+    if len(df) < 2:
+        logger.error('The two coordinates intersect with each other')
+        return []
+
+    return df
 
 
 def query_fetch_line_strings_given_polygon() -> str:
@@ -44,38 +71,58 @@ def query_fetch_line_strings_given_polygon() -> str:
             WHERE
                 ST_Intersects(
                     std.line_string,
-                    %(poly1)s::geometry
+                    ST_GeomFromEWKT(%(poly1)s)
                 ) AND
                 ST_Intersects(
                     std.line_string,
-                    %(poly1)s::geometry
+                    ST_GeomFromEWKT(%(poly2)s)
                 );
             '''
-def query_get_points_in_line_string() -> str: 
+def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, logger: Logger) -> pd.DataFrame:
+    sql_query = query_fetch_line_strings_given_polygon()
+    df = gpd.read_postgis(
+            sql_query, 
+            engine, 
+            params=
+            {
+                "poly1": wkb.dumps(poly1.polygon, hex=True, srid=4326), 
+                "poly2": wkb.dumps(poly2.polygon, hex=True, srid=4326)
+            },
+            geom_col='line_string'
+        )
+    
+    print(df.head())
+    if len(df) == 0:
+        logger.warning('No trips were found for the selected polygons')
+        raise HTTPException(status_code=404, detail='No trips were found for the selected polygons')
+
+    return df
+
+def query_get_points_in_line_string(simplified_trip_ids_array, poly_type, poly_size) -> str: 
     '''Select all points in the linestrings insecting the hexagons'''
-    return  '''    
+    trips_to_select = "("
+    for trip_id in simplified_trip_ids_array[:-1]:
+        trips_to_select += f"{trip_id},"
+
+    trips_to_select += f"{simplified_trip_ids_array[-1]})"
+
+    return  f'''    
             SELECT
-                std.simplified_trip_id, data_fact.hex_10000_row, 
-                data_fact.hex_10000_column, data_fact.location, data_fact.time_id,
+                data_fact.simplified_trip_id, data_fact.{poly_type}_{poly_size}_row as row, 
+                data_fact.{poly_type}_{poly_size}_column as col, data_fact.location, data_fact.time_id,
                 data_fact.date_id, ship_type_dim.ship_type, data_fact.sog
-            FROM
-                data_fact
-                INNER JOIN 
-                    simplified_trip_dim AS std ON std.simplified_trip_id = data_fact.simplified_trip_id
-                INNER JOIN
-                    ship_type_dim ON ship_type_dim.ship_type_id = data_fact.ship_type_id    
-            WHERE
-                ST_Intersects(
-                    std.line_string,
-                    %(poly1)s::geometry
-                ) AND
-                ST_Intersects(
-                    std.line_string,
-                    %(poly2)s::geometry
-                )
+            FROM data_fact NATURAL JOIN ship_type_dim
+            WHERE data_fact.simplified_trip_id IN {trips_to_select}
             ORDER BY data_fact.time_id;
             '''
 
+def get_points(simplified_trip_ids_array, poly_type, poly_size) -> pd.DataFrame:
+    sql_query = query_get_points_in_line_string(simplified_trip_ids_array, poly_type, poly_size)
+    df = gpd.read_postgis(
+        sql_query, 
+        engine,
+        geom_col='location')
+    return df
 
 
 def query_point_exists_in_hexagon() -> str:

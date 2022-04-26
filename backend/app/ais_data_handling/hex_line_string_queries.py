@@ -67,7 +67,7 @@ def create_line_strings(trip_id: int, threshold:int):
                                             points_data_fact AS (
                                                 SELECT data_fact_id, points_in_trip.simplified_trip_id as simplified_trip_id
                                                 FROM points_in_trip JOIN data_fact
-                                                ON points_in_trip.point = data_fact.location
+                                                ON ST_Equals(points_in_trip.point, data_fact.location)
                                                 WHERE (points_in_trip.simplified_trip_id = data_fact.trip_id) AND (data_fact.trip_id >= {trip_id})
 
                                             )
@@ -189,3 +189,49 @@ def vacuum_and_analyze_tables():
     cursor = connection.cursor()
     cursor.execute("VACUUM ANALYZE;")
     cursor.close()
+
+'''
+WITH trip_list AS (
+    SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line
+    FROM data_fact
+    WHERE trip_id >= 0
+    GROUP BY trip_id 
+)
+SELECT trip_id, line
+INTO UNLOGGED TABLE line_temp
+FROM trip_list;
+                                   
+UPDATE trip_dim
+SET line_string = line
+FROM line_temp
+WHERE line_temp.trip_id = trip_dim.trip_id
+
+'''
+
+
+'''
+WITH simplified_trip_list AS (
+    SELECT trip_id, ST_Simplify(ST_Transform(line_string, 3857), 1000) as line
+    FROM trip_dim
+    WHERE trip_id >= 0
+    GROUP BY trip_id 
+)
+
+SELECT trip_id, ST_Transform(line, 4326) as line_simplified
+INTO UNLOGGED TABLE line_simplified_temp
+FROM simplified_trip_list;
+'''
+
+
+# UPDATE simplified_trip_dim
+# SET line_string = (
+#     SELECT line_simplified
+#     FROM line_simplified_temp
+#     WHERE simplified_trip_dim.simplified_trip_id = line_simplified_temp.trip_id
+# );
+
+'''
+INSERT INTO simplified_trip_dim(simplified_trip_id, line_string)
+SELECT trip_id, line_simplified
+FROM line_simplified_temp
+'''

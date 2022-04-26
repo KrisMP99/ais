@@ -8,6 +8,7 @@ import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
 import { GridSettingObj } from '../GridSetting/GridSetting'
+import { Trip } from '../../App';
 
 interface DKMapProps {
     mapBounds: LatLngBoundsExpression;
@@ -15,25 +16,19 @@ interface DKMapProps {
     gridSettings: GridSettingObj;
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
-    polylines: LatLng[][];
+    trips: Trip[];
 }
 
 interface DKMapStates {
     points: LatLng[];
     hexPolygons: L.Polygon[];
-}
-
-function getPolylineColor(){
-    return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
-}
-
-function createPolyline(polyline: LatLng[], key: number){
-    return <Polyline positions={polyline} key={key} color={getPolylineColor()} weight={5}/>
+    // linestrings: L.Polygon[];
 }
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
     protected markerLayer: L.LayerGroup;
+    protected linestrings: L.Polyline[];
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
     protected ignoreCountries: L.Layer[];
@@ -45,7 +40,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.ignoreCountries = [];
         this.countriesAdded = false;
         this.hexagons = [];
-
+        this.linestrings = [];
         this.markerLayer = L.layerGroup();
         this.markerIcon = L.icon({
             className: 'marker',
@@ -57,6 +52,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.state = {
             points: [],
             hexPolygons: [],
+            // linestrings: [],
         }
     }
 
@@ -68,8 +64,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 center={this.props.mapCenter}
                 // bounds={MAP_BOUNDS}
                 zoom={7}
-                minZoom={5}
-                maxZoom={14}
+                minZoom={1}
+                maxZoom={50}
                 scrollWheelZoom={true}
                 maxBounds={this.props.mapBounds}
             >
@@ -84,14 +80,17 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         }
                         this.state.hexPolygons.map((poly) => {
                             return poly.addTo(map); 
-                        })
+                        });
+                        if (this.props.trips.length > 0) {
+                            this.props.trips.map((trip) => {
+                                let x = new L.Polyline(trip.linestring, { color: trip.color }).bindPopup("Trip ID: " + trip.tripId);
+                                this.linestrings.push(x);
+                                x.addTo(map);
+                            })
+                        }
                         return null;
                     }}
                 </MapConsumer>
-                {this.props.polylines.map((polyline, key) => createPolyline(polyline, key))}
-                <Polyline
-                    positions={this.props.polylines}
-                />
                 <MapEvents 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}
@@ -107,6 +106,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         }}
                     clearPoints={() => this.clear}
                 ></MapEvents>
+                {}
                 <MapConsumer>
                     {(map) => {
                         if(!this.countriesAdded) { 
@@ -123,7 +123,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.state.hexPolygons.forEach((hex)=>{
             hex.remove();
         });
+        this.linestrings.forEach((linestring) => {
+            linestring.remove();
+        })
         this.markerLayer.clearLayers();
+        this.linestrings = [];
         this.setState({points: [], hexPolygons: []});
     }
 
@@ -154,13 +158,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             else return response.json();
         })
         .then((data: L.LatLngExpression[][] | null) => {
-            console.log(data)
             if (data){
                 let temp: L.Polygon[] = this.state.hexPolygons;         
                 temp.push(new L.Polygon(data, {
                     opacity: 0,
-                    fillOpacity: 1,
-                    fillColor: "#000000"
+                    fillOpacity: 0.6,
                 }));
                 if(temp.length === 1) {
                     temp[0].bindPopup("Choose a point further from your first point!");

@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import { initializeIcons } from '@fluentui/react/lib/Icons';
-import { LatLng, LatLngBoundsExpression } from 'leaflet';
+import { LatLng, LatLngBoundsExpression, LatLngExpression } from 'leaflet';
 
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
@@ -11,17 +11,17 @@ import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSettin
 
 export interface Trip {
 	tripId: number;
-	tripPolyline?: LatLng[][]
+	linestring: LatLng[]
+	eta: string;
 	color: string;
-	totalTime: string;
-	shipType?: string;
+	shipType: string;
 }
+
 
 interface AppStates {
 	pointCoords: LatLng[];
 	filterShipTypes: string[];
 	mouseCoords: string[];
-	polylines: LatLng[][];
 	trips: Trip[];
 	postSetting: PostSetting;
 }
@@ -32,7 +32,6 @@ export class App extends React.Component<any, AppStates> {
 
 	protected mapCenter: LatLng;
 	protected mapBoundaries: LatLngBoundsExpression;
-	protected temporaryTrips: Trip[];
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
 	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
@@ -46,15 +45,10 @@ export class App extends React.Component<any, AppStates> {
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
 		
-		this.temporaryTrips = [];
-		for (let i = 0; i < 130; i++) {
-			this.temporaryTrips.push({ color: 'red', totalTime: '30min', tripId: i });   //DUMMY DATA
-		}
 		this.state = {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
-			polylines: [],
 			filterShipTypes: [],
 			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 		}
@@ -78,7 +72,7 @@ export class App extends React.Component<any, AppStates> {
 								"Current mouse location:\nLat: " + this.textIsNotUndefined(0, true, pos) + " Lng: " + this.textIsNotUndefined(0, false, pos); 
 							}
 						}}
-						polylines={this.state.polylines}
+						trips={this.state.trips}
 					/>
 					<div className='right-side'>
 						<div className='positions-container'>
@@ -101,7 +95,7 @@ export class App extends React.Component<any, AppStates> {
 								<PostButton
 									coordinates={this.state.pointCoords}
 									shipTypeArray={this.state.filterShipTypes}
-									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
+									returnTrips={(trips: Trip[]) => this.setState({trips: trips})}
 									postSetting={this.state.postSetting}
 								/>
 								<button
@@ -114,12 +108,12 @@ export class App extends React.Component<any, AppStates> {
 							</div>
 						</div>
 						<hr />
-						<ETATrips
+						{/* <ETATrips
 							ref={this.ETATripsRef}
-							trips={this.state.trips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
+							trips={this.state.trips}
 							tripsShown={16}
 						/>
-						<hr />
+						<hr /> */}
 						<GridSetting 
 							onChange={(setting: GridSettingObj) => {
 								this.clearPoints();
@@ -144,7 +138,6 @@ export class App extends React.Component<any, AppStates> {
 						/>
 					</div>
 				</div>
-
 			</div>
 		);
 	}
@@ -158,7 +151,7 @@ export class App extends React.Component<any, AppStates> {
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
-			polylines: [],
+			trips: [],
 		});
 	}
 

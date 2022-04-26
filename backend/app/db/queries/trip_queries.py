@@ -44,11 +44,11 @@ def query_fetch_line_strings_given_polygon() -> str:
             WHERE
                 ST_Intersects(
                     std.line_string,
-                    %(hex1)s::geometry
+                    %(poly1)s::geometry
                 ) AND
                 ST_Intersects(
                     std.line_string,
-                    %(hex2)s::geometry
+                    %(poly1)s::geometry
                 );
             '''
 def query_get_points_in_line_string() -> str: 
@@ -67,17 +67,13 @@ def query_get_points_in_line_string() -> str:
             WHERE
                 ST_Intersects(
                     std.line_string,
-                    %(hex1)s::geometry
+                    %(poly1)s::geometry
                 ) AND
                 ST_Intersects(
                     std.line_string,
-                    %(hex2)s::geometry
+                    %(poly2)s::geometry
                 )
-            GROUP BY 
-                std.simplified_trip_id, data_fact.hex_10000_row, 
-                data_fact.hex_10000_column, data_fact.location,
-                data_fact.time_id, data_fact.date_id, 
-                ship_type_dim.ship_type, data_fact.sog;
+            ORDER BY data_fact.time_id;
             '''
 
 

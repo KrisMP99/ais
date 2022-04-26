@@ -44,12 +44,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         }
     }
 
-    componentDidUpdate(prevProps: ShipFilterProps, prevStates: ShipFilterStates) {
-        if(!prevStates.preApply.every((val, index) => val === this.state.preApply[index])) {
-            this.areSimilar();
-        }
-    }
-
     render() {
         let openSymbol = this.state.openOnUi ? "˄" : "˅";
         
@@ -80,6 +74,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                     if(this.state.shipTypes) {
                                         this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
                                         this.setState({shipTypes: this.state.shipTypes});
+                                        this.areSimilar();
                                     }
                                 }}
                             />
@@ -103,6 +98,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                     if(this.state.shipTypes) {
                                         this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
                                         this.setState({shipTypes: this.state.shipTypes});
+                                        this.areSimilar();
                                     }
                                 }}
                             />
@@ -129,6 +125,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                             if(this.state.shipTypes) {
                                 this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting);
                                 this.setState({shipTypes: this.state.shipTypes});
+                                this.areSimilar();
                             }
                         }}
                     />
@@ -191,6 +188,8 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         //     testArr.push({type: ("test"+i), checked: true});
         //     testArr2.push(true);
         // }
+        // // console.log(testArr)
+        // // console.log(testArr2)
         // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
 
         const requestOptions = {
@@ -211,7 +210,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 return response.json();
         })
         .then((data: string[]) => {
-                console.log(data)
+                // console.log(data)
                 if(data.length < 1) return;
                 data.forEach((val) => {
                     shipTypes.push({type: val, checked: true});

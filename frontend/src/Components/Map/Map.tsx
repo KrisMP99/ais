@@ -8,6 +8,7 @@ import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
 import { GridSettingObj } from '../GridSetting/GridSetting'
+import { Trip } from '../../App';
 
 interface DKMapProps {
     mapBounds: LatLngBoundsExpression;
@@ -15,7 +16,7 @@ interface DKMapProps {
     gridSettings: GridSettingObj;
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
-    polylines: LatLng[][];
+    trips: Trip[];
 }
 
 interface DKMapStates {
@@ -27,8 +28,18 @@ function getPolylineColor(){
     return 'RGB('+ Math.random()*255 + ',' + Math.random()*255 + ',' + Math.random()*255 + ')';
 }
 
-function createPolyline(polyline: LatLng[], key: number){
-    return <Polyline positions={polyline} key={key} color={getPolylineColor()} weight={5}/>
+function createPolyline(trip: Trip, map: L.Map){
+    let poly: L.Polyline;
+    let options: L.PolylineOptions;
+    options = {
+        color: trip.color,
+        weight: 5,
+    }
+    poly = new L.Polyline(trip.tripPolyline, options);
+    poly.bindPopup("ID: " + trip.tripId);
+    poly.addTo(map);
+    // (<Polyline positions={trip.tripPolyline} key={key} color={getPolylineColor()} weight={4}/>);
+    // poly.
 }
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
@@ -85,13 +96,20 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         this.state.hexPolygons.map((poly) => {
                             return poly.addTo(map); 
                         })
+                        if (this.props.trips.length > 0) {
+                            this.props.trips.forEach((trip) => {
+                                createPolyline(trip, map);
+                            });
+                        }
                         return null;
                     }}
                 </MapConsumer>
-                {this.props.polylines.map((polyline, key) => createPolyline(polyline, key))}
-                <Polyline
+                {/* {this.props.trips.map((trip, key) => {
+                    createPolyline(trip, key)
+                })} */}
+                {/* <Polyline
                     positions={this.props.polylines}
-                />
+                /> */}
                 <MapEvents 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}

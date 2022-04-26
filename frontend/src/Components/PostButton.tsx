@@ -3,6 +3,7 @@ import { LatLng } from 'leaflet';
 import '../App.css';
 import { GridSettingObj } from './GridSetting/GridSetting';
 import { FilterObj } from './Filters/Filters';
+import { Trip } from '../App';
 
 export interface PostSetting {
 	gridSetting: GridSettingObj | null;
@@ -12,7 +13,7 @@ export interface PostSetting {
 interface PostButtonProps {
     coordinates: LatLng[];
     shipTypeArray: string[];
-    getData: (data: LatLng[][]) => void;
+    returnTrips: (data: Trip[]) => void;
     postSetting: PostSetting | null;
 }
 interface PostButtonStates {
@@ -73,8 +74,10 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
             } 
             else return response.json();
           })
-        .then((data) => {
-            if(data) return this.props.getData(data);
+        .then((data: Trip[]) => {
+            if(data) {
+                return this.props.returnTrips(data);
+            }
         })
       };
 }

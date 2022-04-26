@@ -22,7 +22,6 @@ interface AppStates {
 	pointCoords: LatLng[];
 	filterShipTypes: string[];
 	mouseCoords: string[];
-	polylines: LatLng[][];
 	trips: Trip[];
 	postSetting: PostSetting;
 }
@@ -50,7 +49,6 @@ export class App extends React.Component<any, AppStates> {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
-			polylines: [],
 			filterShipTypes: [],
 			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 		}
@@ -153,7 +151,7 @@ export class App extends React.Component<any, AppStates> {
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
-			polylines: [],
+			trips: [],
 		});
 	}
 

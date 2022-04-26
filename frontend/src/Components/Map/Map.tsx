@@ -22,12 +22,13 @@ interface DKMapProps {
 interface DKMapStates {
     points: LatLng[];
     hexPolygons: L.Polygon[];
+    // linestrings: L.Polygon[];
 }
 
 export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     
     protected markerLayer: L.LayerGroup;
-    protected linestringLayer: L.LayerGroup;
+    protected linestrings: L.Polyline[];
     protected markerIcon: L.DivIcon;
     protected countriesAdded: boolean;
     protected ignoreCountries: L.Layer[];
@@ -39,9 +40,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.ignoreCountries = [];
         this.countriesAdded = false;
         this.hexagons = [];
-
+        this.linestrings = [];
         this.markerLayer = L.layerGroup();
-        this.linestringLayer = L.layerGroup();
         this.markerIcon = L.icon({
             className: 'marker',
             iconUrl: iconUrl,
@@ -52,6 +52,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.state = {
             points: [],
             hexPolygons: [],
+            // linestrings: [],
         }
     }
 
@@ -79,24 +80,17 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         }
                         this.state.hexPolygons.map((poly) => {
                             return poly.addTo(map); 
-                        })
+                        });
                         if (this.props.trips.length > 0) {
-                            this.props.trips.forEach((trip) => {
-                                this.createPolyline(trip);
-                            });
-                            if(!map.hasLayer(this.linestringLayer)) {
-                                map.addLayer(this.linestringLayer);
-                            }
+                            this.props.trips.map((trip) => {
+                                let x = new L.Polyline(trip.linestring, { color: trip.color }).bindPopup("Trip ID: " + trip.tripId);
+                                this.linestrings.push(x);
+                                x.addTo(map);
+                            })
                         }
                         return null;
                     }}
                 </MapConsumer>
-                {/* {this.props.trips.map((trip, key) => {
-                    createPolyline(trip, key)
-                })} */}
-                {/* <Polyline
-                    positions={this.props.polylines}
-                /> */}
                 <MapEvents 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}
@@ -112,6 +106,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         }}
                     clearPoints={() => this.clear}
                 ></MapEvents>
+                {}
                 <MapConsumer>
                     {(map) => {
                         if(!this.countriesAdded) { 
@@ -124,38 +119,15 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         );
     }
 
-    protected createPolyline(trip: Trip){
-        let options: L.PolylineOptions = {
-            color: trip.color,
-            weight: 5,
-        };
-        if(trip.color === undefined || trip.eta  === undefined || trip.shipType  === undefined || trip.tripId  === undefined || trip.linestring  === undefined) {
-            if(trip.color === undefined){
-                console.log("Error with TRIP COLOR")
-            }
-            if(trip.eta === undefined){
-                console.log("Error with ETA")
-            }
-            if(trip.shipType === undefined){
-                console.log("Error with SHIP TYPE")
-            }
-            if(trip.tripId === undefined){
-                console.log("Error with TRIP ID")
-            }
-            if(trip.linestring === undefined){
-                console.log("Error with TRIP POLYLINE")
-            }
-            // console.log("ERROR WITH TRIP: " + JSON.stringify(trip));
-        }
-        this.linestringLayer.addLayer(L.polyline(trip.linestring, options).bindPopup("ID: " + trip.tripId));
-    }
-
     public clear() {
         this.state.hexPolygons.forEach((hex)=>{
             hex.remove();
         });
-        this.linestringLayer.clearLayers();
+        this.linestrings.forEach((linestring) => {
+            linestring.remove();
+        })
         this.markerLayer.clearLayers();
+        this.linestrings = [];
         this.setState({points: [], hexPolygons: []});
     }
 
@@ -186,13 +158,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             else return response.json();
         })
         .then((data: L.LatLngExpression[][] | null) => {
-            console.log(data)
             if (data){
                 let temp: L.Polygon[] = this.state.hexPolygons;         
                 temp.push(new L.Polygon(data, {
                     opacity: 0,
-                    fillOpacity: 1,
-                    fillColor: "#000000"
+                    fillOpacity: 0.6,
                 }));
                 if(temp.length === 1) {
                     temp[0].bindPopup("Choose a point further from your first point!");

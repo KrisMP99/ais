@@ -76,7 +76,6 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
           })
         .then((data: Trip[]) => {
             if(data) {
-                console.log("Data when recieved in postbutton: " + JSON.stringify(data));
                 return this.props.returnTrips(data);
             }
         })

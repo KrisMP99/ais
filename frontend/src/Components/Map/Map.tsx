@@ -135,7 +135,10 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             color: trip.color,
             weight: 5,
         };
-        this.linestringLayer.addLayer(new L.Polyline(trip.tripPolyline, options).bindPopup("ID: " + trip.tripId));
+        if(trip.color === undefined || trip.eta  === undefined || trip.shipType  === undefined || trip.tripId  === undefined || trip.tripPolyline  === undefined) {
+            console.log("ERROR WITH TRIP: " + JSON.stringify(trip));
+        }
+        this.linestringLayer.addLayer(L.polyline(trip.tripPolyline, options).bindPopup("ID: " + trip.tripId));
     }
 
     public clear() {

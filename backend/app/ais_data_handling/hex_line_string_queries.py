@@ -67,7 +67,7 @@ def create_line_strings(trip_id: int, threshold:int):
                                             points_data_fact AS (
                                                 SELECT data_fact_id, points_in_trip.simplified_trip_id as simplified_trip_id
                                                 FROM points_in_trip JOIN data_fact
-                                                ON points_in_trip.point = data_fact.location
+                                                ON ST_Equals(points_in_trip.point, data_fact.location)
                                                 WHERE (points_in_trip.simplified_trip_id = data_fact.trip_id) AND (data_fact.trip_id >= {trip_id})
 
                                             )
@@ -211,7 +211,7 @@ WHERE line_temp.trip_id = trip_dim.trip_id
 
 '''
 WITH simplified_trip_list AS (
-    SELECT trip_id, ST_Simplify(ST_Transform(line_string, 3857), 50) as line
+    SELECT trip_id, ST_Simplify(ST_Transform(line_string, 3857), 1000) as line
     FROM trip_dim
     WHERE trip_id >= 0
     GROUP BY trip_id 

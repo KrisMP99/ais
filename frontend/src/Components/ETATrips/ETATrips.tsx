@@ -70,7 +70,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
         else if (this.state.tripChosen !== null) {
             body = (
                 <p>
-                    ID {this.state.tripChosen.tripId} takes approximately {this.state.tripChosen.totalTime}
+                    ID {this.state.tripChosen.tripId} takes approximately {this.state.tripChosen.eta}
                 </p>
             );
             footer = (
@@ -143,7 +143,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                             >
                                 <b>{trip.tripId + 1}:</b>
                             </p>
-                            <p className='text-3 filter-text'>Time: {trip.totalTime}</p>
+                            <p className='text-3 filter-text'>Time: {trip.eta}</p>
                         </div>
                     </label>
                 </button>

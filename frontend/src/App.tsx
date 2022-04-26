@@ -11,11 +11,12 @@ import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSettin
 
 export interface Trip {
 	tripId: number;
-	tripPolyline?: LatLng[]
+	tripPolyline: LatLng[]
 	color: string;
-	totalTime: string;
-	shipType?: string;
+	eta: string;
+	shipType: string;
 }
+
 
 interface AppStates {
 	pointCoords: LatLng[];
@@ -73,7 +74,7 @@ export class App extends React.Component<any, AppStates> {
 								"Current mouse location:\nLat: " + this.textIsNotUndefined(0, true, pos) + " Lng: " + this.textIsNotUndefined(0, false, pos); 
 							}
 						}}
-						polylines={this.state.polylines}
+						trips={this.state.trips}
 					/>
 					<div className='right-side'>
 						<div className='positions-container'>
@@ -96,8 +97,8 @@ export class App extends React.Component<any, AppStates> {
 								<PostButton
 									coordinates={this.state.pointCoords}
 									shipTypeArray={this.state.filterShipTypes}
-									// returnTrips={(trips: Trip[]) => this.setState({trips: trips})}
-									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
+									returnTrips={(trips: Trip[]) => this.setState({trips: trips})}
+									// getData={(data: {linestring: LatLng[], id: number}[]) => this.setState({ polylines: data })}
 									postSetting={this.state.postSetting}
 								/>
 								<button
@@ -140,7 +141,6 @@ export class App extends React.Component<any, AppStates> {
 						/>
 					</div>
 				</div>
-
 			</div>
 		);
 	}

@@ -104,9 +104,9 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
 
 
         line_string_to_return_to_frontend.append(locations)
-        trips_array.append(Trip(tripId=line_string.simplified_trip_id, linestring=locations, eta = 0, shipType='XD'))
+        trips_array.append(Trip(tripId=line_string.simplified_trip_id, linestring=locations, eta="0", shipType='XD'))
 
-        
+ 
     print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
     print('what is in the list ', str(point_from_line_string_found_in_hexagon))
     logger.info('Got linestrings')

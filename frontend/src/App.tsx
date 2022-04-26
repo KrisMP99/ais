@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import { initializeIcons } from '@fluentui/react/lib/Icons';
-import { LatLng, LatLngBoundsExpression } from 'leaflet';
+import { LatLng, LatLngBoundsExpression, LatLngExpression } from 'leaflet';
 
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
@@ -11,9 +11,9 @@ import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSettin
 
 export interface Trip {
 	tripId: number;
-	tripPolyline: LatLng[]
-	color: string;
+	linestring: LatLng[]
 	eta: string;
+	color: string;
 	shipType: string;
 }
 

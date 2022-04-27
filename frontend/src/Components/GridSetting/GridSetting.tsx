@@ -1,7 +1,7 @@
 import React from "react";
 import './GridSetting.css';
 import '../../App.css';
-import { ChoiceGroup, DefaultButton, Dropdown } from "@fluentui/react";
+import { Dropdown } from "@fluentui/react";
 
 export interface GridSettingObj {
     isHexagon: boolean;

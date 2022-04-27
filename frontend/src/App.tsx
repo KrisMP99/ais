@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import { initializeIcons } from '@fluentui/react/lib/Icons';
-import { LatLng, LatLngBoundsExpression, LatLngExpression } from 'leaflet';
+import { LatLng, LatLngBoundsExpression } from 'leaflet';
 
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
@@ -108,12 +108,16 @@ export class App extends React.Component<any, AppStates> {
 							</div>
 						</div>
 						<hr />
-						{/* <ETATrips
+						<ETATrips
 							ref={this.ETATripsRef}
 							trips={this.state.trips}
 							tripsShown={16}
+							returnTripIndex={(fromIndex: number, amount: number) => {
+								/*Fetch the next trips from the database
+								  Fetch from fromIndex and then fetch 'amount' trips*/
+							}}
 						/>
-						<hr /> */}
+						<hr />
 						<GridSetting 
 							onChange={(setting: GridSettingObj) => {
 								this.clearPoints();

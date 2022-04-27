@@ -21,10 +21,6 @@ interface PostButtonStates {
 }
 
 export class PostButton extends React.Component<PostButtonProps, PostButtonStates> {
-
-    constructor(props: PostButtonProps) {
-        super(props);
-    }
     
     render() {
         return (

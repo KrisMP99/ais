@@ -6,6 +6,7 @@ import { Trip } from '../../App';
 interface ETATripsProps {
     trips: Trip[];
     tripsShown: number;
+    returnTripIndex: (fromIndex: number, amount: number) => void;
 }
 
 interface ETATripsState {

@@ -61,7 +61,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             col1 = (
                 this.state.shipTypes.map((val, key) => {
                     if (key > this.dividerIndex) {
-                        return;
+                        return null;
                     }
                     return (
                         <li key={key}>
@@ -72,8 +72,9 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                 checked={val.checked} 
                                 onChange={() => {
                                     if(this.state.shipTypes) {
-                                        this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
-                                        this.setState({shipTypes: this.state.shipTypes});
+                                        let temp = this.state.shipTypes;
+                                        temp[key].checked = !temp[key].checked;
+                                        this.setState({shipTypes: temp});
                                         this.areSimilar();
                                     }
                                 }}
@@ -85,7 +86,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             col2 = (
                 this.state.shipTypes.map((val, key) => {
                     if (key <= this.dividerIndex) {
-                        return;
+                        return null;
                     }
                     return (
                         <li key={key}>
@@ -96,8 +97,9 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                 checked={val.checked} 
                                 onChange={() => {
                                     if(this.state.shipTypes) {
-                                        this.state.shipTypes[key].checked = !this.state.shipTypes[key].checked;
-                                        this.setState({shipTypes: this.state.shipTypes});
+                                        let temp = this.state.shipTypes;
+                                        temp[key].checked = !temp[key].checked;
+                                        this.setState({shipTypes: temp});
                                         this.areSimilar();
                                     }
                                 }}

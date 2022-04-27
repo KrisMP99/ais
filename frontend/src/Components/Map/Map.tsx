@@ -83,7 +83,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         });
                         if (this.props.trips.length > 0) {
                             this.props.trips.map((trip) => {
-                                let x = new L.Polyline(trip.linestring, { color: trip.color }).bindPopup("Trip ID: " + trip.tripId);
+                                let x = new L.Polyline(trip.lineString, { color: trip.color }).bindPopup("Trip ID: " + trip.tripId);
                                 this.linestrings.push(x);
                                 x.addTo(map);
                             })

@@ -62,10 +62,10 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
                                                         points_df=points_in_line_string_df)
 
     logger.info('Line strings fetched!')
-    trips_array = []
 
     # Create array with points from line strings and check if either hexagon appears in any of the points
-    line_string_to_return_to_frontend = []
+    trips_array = []
+
     for l_key in line_strings.copy():
         line_string = line_strings[l_key]
         line_string:SimplifiedLineString
@@ -101,9 +101,17 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
             #     print('continued')
             #     continue
 
-
-        line_string_to_return_to_frontend.append(locations)
-        trips_array.append(Trip(tripId=line_string.simplified_trip_id, linestring=locations, eta="0", shipType='XD'))
+        trips_array.append(Trip(trip_id=line_string.simplified_trip_id, 
+                                line_string=locations, 
+                                eta="0", 
+                                ship_type = line_string.ship_type,
+                                mmsi=line_string.mmsi,
+                                imo=line_string.imo,
+                                type_of_mobile=line_string.type_of_mobile,
+                                name=line_string.name,
+                                width=line_string.width,
+                                length=line_string.length
+                            ))
 
  
     print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
@@ -206,23 +214,34 @@ def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame,
 
     simplified_line_strings_list = {}
     simplified_line_strings_list: list[SimplifiedLineString]
+
+    line_string_df = line_string_df.fillna('')
+    points_df = points_df.fillna('')
     
-    for simplified_trip_id, line_string in zip(line_string_df.simplified_trip_id, line_string_df.line_string):
-        line_class_object = SimplifiedLineString(simplified_trip_id=simplified_trip_id, line_string=line_string, locations=[])
+    for simplified_trip_id, line_string, mmsi, type_of_mobile, imo, name, width, length, ship_type in zip(line_string_df.simplified_trip_id, line_string_df.line_string, line_string_df.mmsi, line_string_df.type_of_mobile, line_string_df.imo, line_string_df.name, line_string_df.width, line_string_df.length, line_string_df.ship_type):
+        line_class_object = SimplifiedLineString(simplified_trip_id=simplified_trip_id, 
+                                                line_string=line_string, 
+                                                locations=[],
+                                                mmsi=mmsi,
+                                                imo=imo,
+                                                name=name,
+                                                type_of_mobile=type_of_mobile,
+                                                width=width,
+                                                length=length,
+                                                ship_type=ship_type)
         simplified_line_strings_list[simplified_trip_id] = line_class_object
     
 
-    for row, col, location, simplified_trip_id, date_id, time_id, ship_type, sog in zip(points_df.row, points_df.col, points_df.location, points_df.simplified_trip_id, points_df.date_id, points_df.time_id, points_df.ship_type, points_df.sog):
+    for row, col, location, simplified_trip_id, date_id, time_id, sog in zip(points_df.row, points_df.col, points_df.location, points_df.simplified_trip_id, points_df.date_id, points_df.time_id, points_df.sog):
         line_class_object = simplified_line_strings_list.get(simplified_trip_id)
         line_class_object: SimplifiedLineString
         line_class_object.locations.append(
             Location(
-                hex_10000_row=row, 
-                hex_10000_column=col, 
+                row=row, 
+                column=col, 
                 location=location, 
                 date_id=date_id, 
                 time_id=time_id, 
-                ship_type=ship_type, 
                 sog=sog)
             )
 

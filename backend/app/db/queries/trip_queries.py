@@ -65,9 +65,9 @@ def query_fetch_line_strings_given_polygon() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
             SELECT
-                std.line_string as line_string, std.simplified_trip_id
+                DISTINCT std.line_string as line_string, std.simplified_trip_id, sd.mmsi, sd.type_of_mobile, sd.imo, sd.name, sd.width, sd.length, ship_type_dim.ship_type
             FROM
-                simplified_trip_dim AS std
+                simplified_trip_dim AS std NATURAL JOIN data_fact as df NATURAL JOIN ship_dim as sd NATURAL JOIN ship_type_dim
             WHERE
                 ST_Intersects(
                     std.line_string,
@@ -110,8 +110,8 @@ def query_get_points_in_line_string(simplified_trip_ids_array, poly_type, poly_s
             SELECT
                 data_fact.simplified_trip_id, data_fact.{poly_type}_{poly_size}_row as row, 
                 data_fact.{poly_type}_{poly_size}_column as col, data_fact.location, data_fact.time_id,
-                data_fact.date_id, ship_type_dim.ship_type, data_fact.sog
-            FROM data_fact NATURAL JOIN ship_type_dim
+                data_fact.date_id, data_fact.sog
+            FROM data_fact
             WHERE data_fact.simplified_trip_id IN {trips_to_select}
             ORDER BY data_fact.time_id;
             '''

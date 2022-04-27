@@ -78,6 +78,7 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
             if(data) {
                 return this.props.returnTrips(data);
             }
+            else alert('No trips were found between the two coordinates')
         })
       };
 }

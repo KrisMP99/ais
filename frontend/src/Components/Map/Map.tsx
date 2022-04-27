@@ -1,8 +1,8 @@
 import React from 'react';
 import './Map.css';
 import '../../Leaflet.css'; 
-import { MapConsumer, MapContainer, TileLayer, Polyline} from 'react-leaflet';    
-import L, { LatLngBoundsExpression, LatLng, marker } from 'leaflet';
+import { MapConsumer, MapContainer, TileLayer } from 'react-leaflet';    
+import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';
 import countries from './countries';
@@ -82,7 +82,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                             return poly.addTo(map); 
                         });
                         if (this.props.trips.length > 0) {
-                            this.props.trips.map((trip) => {
+                            this.props.trips.forEach((trip) => {
                                 let x = new L.Polyline(trip.lineString, { color: trip.color }).bindPopup("Trip ID: " + trip.tripId);
                                 this.linestrings.push(x);
                                 x.addTo(map);

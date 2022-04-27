@@ -45,6 +45,7 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
             dropDownOptions = [
                 { key: 500, text: '500' },
                 { key: 1000, text: '1000' },
+                { key: 2500, text: '2500' },
                 { key: 5000, text: '5000' },
                 { key: 10000, text: '10000' },
             ];
@@ -54,6 +55,7 @@ class GridSetting extends React.Component<GridSettingProps, GridSettingStates> {
                 { key: 806, text: '806' },
                 { key: 1612, text: '1612' },
                 { key: 4030, text: '4030' },
+                { key: 8060, text: '8060' },
                 { key: 16120, text: '16120' },
             ];
         }

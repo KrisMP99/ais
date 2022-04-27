@@ -28,7 +28,7 @@ def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
 
     return f'''                                                         
                 SELECT                                                          
-                    h.{grid_type}_{size}_column, h.{grid_type}_{size}_row, h.grid_geom AS geom, ST_Transform(h.centroid, 4326) as centroid                                         
+                    h.{grid_type}_{size}_column, h.{grid_type}_{size}_row, h.grid_geom AS geom, h.centroid as centroid                                         
                 FROM                                                            
                     {grid_type}_{size}_dim as h                           
                 WHERE                                                           

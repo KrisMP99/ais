@@ -11,10 +11,16 @@ import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSettin
 
 export interface Trip {
 	tripId: number;
-	linestring: LatLng[]
+	lineString: LatLng[]
 	eta: string;
 	color: string;
 	shipType: string;
+	mmsi?: number;
+	imo?: number;
+	typeOfMobile?: string;
+	name?: string;
+	width?: number;
+	length?: number;
 }
 
 

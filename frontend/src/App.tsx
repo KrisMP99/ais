@@ -10,14 +10,14 @@ import Filters, { FilterObj } from './Components/Filters/Filters';
 import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
 
 export interface Trip {
-	tripId: number;
-	lineString: LatLng[]
+	trip_id: number;
+	line_string: LatLng[]
 	eta: string;
 	color: string;
-	shipType: string;
+	ship_type: string;
 	mmsi?: number;
 	imo?: number;
-	typeOfMobile?: string;
+	type_of_mobile?: string;
 	name?: string;
 	width?: number;
 	length?: number;

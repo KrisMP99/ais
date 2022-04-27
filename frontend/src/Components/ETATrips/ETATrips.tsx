@@ -71,7 +71,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
         else if (this.state.tripChosen !== null) {
             body = (
                 <p>
-                    ID {this.state.tripChosen.tripId} takes approximately {this.state.tripChosen.eta}
+                    ID {this.state.tripChosen.trip_id} takes approximately {this.state.tripChosen.eta}
                 </p>
             );
             footer = (
@@ -97,7 +97,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
             )
         }
         else {
-            header = (this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "Trips found:");
+            header = (this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.trip_id + ":") : "Trips found:");
         }
 
 
@@ -142,7 +142,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                                 className='text-3 filter-text'
                                 style={{ color: trip.color, marginRight: '5px', flexGrow: 1 }}
                             >
-                                <b>{trip.tripId + 1}:</b>
+                                <b>{trip.trip_id + 1}:</b>
                             </p>
                             <p className='text-3 filter-text'>Time: {trip.eta}</p>
                         </div>

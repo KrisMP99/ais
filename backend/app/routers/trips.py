@@ -1,3 +1,4 @@
+from random import randint
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
@@ -121,7 +122,12 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     print('what is in the list ', str(point_from_line_string_found_in_hexagon))
     logger.info('Got linestrings')
     
-    return line_string_df.to_json()
+    feature_collection = line_string_df.to_json()
+
+    for feature in feature_collection['FeatureCollection']['features']:
+        feature['style'] = give_color()
+
+    return feature_collection
     
     if len(point_from_line_string_found_in_hexagon) == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('No points in either hexagons')
@@ -274,3 +280,7 @@ def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
     #                                     pil.geom = data_fact.location
     #                                 LIMIT 1
     #                          )'''
+
+
+def give_color():
+            return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'

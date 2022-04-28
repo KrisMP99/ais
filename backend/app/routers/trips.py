@@ -50,8 +50,6 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     # with open('/srv/data/csv/line_strings.json', 'w') as out_file:
     #     out_file.write(line_string_df.to_json())
 
-    return
-
     simplified_trip_ids_array = line_string_df['simplified_trip_id'].to_numpy()
 
     # logger.info('Getting points in the line strings') <--- idk if we should log this ?

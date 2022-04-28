@@ -4,26 +4,34 @@ import { initializeIcons } from '@fluentui/react/lib/Icons';
 import { LatLng, LatLngBoundsExpression } from 'leaflet';
 
 import ETATrips from './Components/ETATrips/ETATrips';
-import DKMap from './Components/Map/Map';
-import PostButton, { PostSetting } from './Components/PostButton';
+import DKMap, { PostSetting } from './Components/Map/Map';
+// import PostButton, { PostSetting } from './Components/PostButton';
 import Filters, { FilterObj } from './Components/Filters/Filters';
 import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
 
 export interface Trip {
 	tripId: number;
-	tripPolyline?: LatLng[][]
+	// lineString: LatLng[]
+	eta: string;
 	color: string;
-	totalTime: string;
-	shipType?: string;
+	shipType: string;
+	mmsi?: number;
+	imo?: number;
+	typeOfMobile?: string;
+	name?: string;
+	width?: number;
+	length?: number;
 }
+
 
 interface AppStates {
 	pointCoords: LatLng[];
 	filterShipTypes: string[];
 	mouseCoords: string[];
-	polylines: LatLng[][];
 	trips: Trip[];
 	postSetting: PostSetting;
+	getTrips: boolean;
+	selectedTripId: number | null;
 }
 
 initializeIcons(undefined, {disableWarnings: true});
@@ -32,7 +40,6 @@ export class App extends React.Component<any, AppStates> {
 
 	protected mapCenter: LatLng;
 	protected mapBoundaries: LatLngBoundsExpression;
-	protected temporaryTrips: Trip[];
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
 	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
@@ -46,17 +53,14 @@ export class App extends React.Component<any, AppStates> {
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
 		
-		this.temporaryTrips = [];
-		for (let i = 0; i < 130; i++) {
-			this.temporaryTrips.push({ color: 'red', totalTime: '30min', tripId: i });   //DUMMY DATA
-		}
 		this.state = {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
-			polylines: [],
 			filterShipTypes: [],
 			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
+			selectedTripId: null,
+			getTrips: false,
 		}
 	}
 
@@ -78,7 +82,15 @@ export class App extends React.Component<any, AppStates> {
 								"Current mouse location:\nLat: " + this.textIsNotUndefined(0, true, pos) + " Lng: " + this.textIsNotUndefined(0, false, pos); 
 							}
 						}}
-						polylines={this.state.polylines}
+						retSelectedTripId={(tripId: number) => {
+							this.setState({selectedTripId: tripId});
+						}}
+						postSetting={this.state.postSetting}
+						fetchTrips={this.state.getTrips}
+						doneFetching={(trips: Trip[]) => {
+							this.setState({getTrips: false, trips: trips});
+						}}
+						selectedTripId={this.state.selectedTripId}
 					/>
 					<div className='right-side'>
 						<div className='positions-container'>
@@ -98,12 +110,13 @@ export class App extends React.Component<any, AppStates> {
 								</p>
 							</div>
 							<div className='footer'>
-								<PostButton
-									coordinates={this.state.pointCoords}
-									shipTypeArray={this.state.filterShipTypes}
-									getData={(data: LatLng[][]) => this.setState({ polylines: data })}
-									postSetting={this.state.postSetting}
-								/>
+								<button 
+									className="button btn-find-route" 
+									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null}
+									onClick={() => this.setState({getTrips: true})}// this.postCoordinates(this.props.coordinates)}
+								>
+									Find route
+								</button>
 								<button
 									className={'button btn-clear'}
 									disabled={this.state.pointCoords.length <= 0}
@@ -116,8 +129,16 @@ export class App extends React.Component<any, AppStates> {
 						<hr />
 						<ETATrips
 							ref={this.ETATripsRef}
-							trips={this.state.trips} //DENNE HER ER DUMMY DATA - SKAL GØRES TIL DE FAKTISKE TRIPS
+							trips={this.state.trips}
 							tripsShown={16}
+							selectedTripId={this.state.selectedTripId}
+							returnTripIndex={(fromIndex: number, amount: number) => {
+								/*Fetch the next trips from the database
+								  Fetch from fromIndex and then fetch 'amount' trips*/
+							}}
+							retSelectedTripId={(tripId: number) => {
+								this.setState({selectedTripId: tripId});
+							}}
 						/>
 						<hr />
 						<GridSetting 
@@ -144,13 +165,8 @@ export class App extends React.Component<any, AppStates> {
 						/>
 					</div>
 				</div>
-
 			</div>
 		);
-	}
-
-	componentDidMount() {
-		
 	}
 
 	protected clearPoints() {
@@ -158,7 +174,8 @@ export class App extends React.Component<any, AppStates> {
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
-			polylines: [],
+			trips: [],
+			selectedTripId: null
 		});
 	}
 

@@ -11,7 +11,7 @@ import datetime
 import geopandas as gpd
 from shapely import wkb
 import pandas as pd
-from hex_line_string_queries import create_line_strings, create_hex_ids, vacuum_and_analyze_tables
+from hex_line_string_queries import create_line_strings, create_hex_ids, vacuum_and_analyze_tables, round_coordinates
 import configparser
 from pathlib import Path
 
@@ -174,6 +174,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
 
     fact_table_key_refs = get_fact_table_key_refs()
 
+
     ais_source = PandasSource(df)
 
     date_dim = CachedDimension(
@@ -264,6 +265,9 @@ def insert_into_star(df: gpd.GeoDataFrame, logger):
     logger.info("Done inserting into star schema")
     logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M%S"))
     logger.info(f"Took approx (star schema): {time_delta.total_seconds() / 60} minutes")
+
+    logger.info("Rounding location coordinates to 4 decimals...")
+    round_coordinates(trip_id=trip_id)
 
     logger.info("Generating line strings, simplified line strings, and updating data_fact with the corresponding keys...")
     create_line_strings(trip_id=trip_id, threshold=1000)

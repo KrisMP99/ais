@@ -1,16 +1,19 @@
 import React from 'react';
 import './ETATrips.css';
 import { Trip } from '../../App';
-
+import '../../App.css';
 
 interface ETATripsProps {
     trips: Trip[];
     tripsShown: number;
+    returnTripIndex: (fromIndex: number, amount: number) => void;
+    selectedTripId: number | null;
+    retSelectedTripId: (tripId: number) => void;
 }
 
 interface ETATripsState {
     tripChosen: Trip | null;
-    startIndexTripsShown: number;
+    startIndexTripsShown: number; 
 }
 
 export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
@@ -20,8 +23,19 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
     constructor(props: ETATripsProps) {
         super(props);
         this.state = {
-            tripChosen: null,
+            tripChosen: this.findTripInList(),
             startIndexTripsShown: 0,
+        }
+    }
+
+    componentDidUpdate(prevProps: ETATripsProps){
+        if(prevProps.selectedTripId !== this.props.selectedTripId) {
+            if(this.props.selectedTripId) {
+                let trip = this.props.trips.find((trip) => trip.tripId === this.props.selectedTripId);
+                if(trip) {
+                    this.setState({tripChosen: trip});
+                }
+            }
         }
     }
 
@@ -69,9 +83,17 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
         }
         else if (this.state.tripChosen !== null) {
             body = (
-                <p>
-                    ID {this.state.tripChosen.tripId} takes approximately {this.state.tripChosen.totalTime}
-                </p>
+                <div className='text-3' style={{display: "flex", flexWrap: "wrap"}}>
+                    <p className='data'><strong>Trip ID:</strong> {this.state.tripChosen.tripId}</p>
+                    <p className='data'><strong>ETA:</strong> {this.state.tripChosen.eta}</p>
+                    <p className='data'><strong>MMSI:</strong> {this.state.tripChosen.mmsi || "undefined"}</p>
+                    <p className='data'><strong>IMO:</strong> {this.state.tripChosen.imo || "undefined"}</p>
+                    <p className='data'><strong>Ship type:</strong> {this.state.tripChosen.shipType || "undefined"}</p>
+                    <p className='data'><strong>Type of mobile (class):</strong> {this.state.tripChosen.typeOfMobile || "undefined"}</p>
+                    <p className='data'><strong>Length (m):</strong> {this.state.tripChosen.length || "undefined"}</p>
+                    <p className='data'><strong>Width (m):</strong> {this.state.tripChosen.width || "undefined"}</p>
+                    <p className='data'><strong>Name:</strong> {this.state.tripChosen.name || "undefined"}</p>
+                </div>
             );
             footer = (
                 <div className='footer'>
@@ -132,7 +154,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     key={key}
                     className='trip-button'
                     onClick={() => {
-                        this.setState({ tripChosen: trip });
+                        this.props.retSelectedTripId(trip.tripId);
                     }}
                 >
                     <label style={{ cursor: 'pointer' }}>
@@ -141,14 +163,24 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                                 className='text-3 filter-text'
                                 style={{ color: trip.color, marginRight: '5px', flexGrow: 1 }}
                             >
-                                <b>{trip.tripId + 1}:</b>
+                                <b>{trip.tripId}:</b>
                             </p>
-                            <p className='text-3 filter-text'>Time: {trip.totalTime}</p>
+                            <p className='text-3 filter-text'>Time: {trip.eta}</p>
                         </div>
                     </label>
                 </button>
             );
         });
+    }
+
+    protected findTripInList() : Trip | null {
+        if(this.props.selectedTripId) {
+            let trip = this.props.trips.find((trip) => trip.tripId === this.props.selectedTripId);
+            if (trip !== undefined) {
+                return trip;
+            }
+        }
+        return null;
     }
 }
 

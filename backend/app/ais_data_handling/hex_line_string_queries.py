@@ -8,6 +8,19 @@ PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 
+def round_coordinates(trip_id: int):
+    sql_query = f'''
+                    UPDATE data_fact
+                    SET location = (
+                        SELECT ST_ReducePrecision(location, 0.0001)
+                        WHERE data_fact.trip_id >= {trip_id}
+                    )
+                 '''
+    with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query)
+        
+
 def create_line_strings(trip_id: int, threshold:int):
     '''
     Generates the both the 'normal' line strings and simplified line strings for each trip.
@@ -60,14 +73,14 @@ def create_line_strings(trip_id: int, threshold:int):
     sql_drop_simplified_data_points = "DROP TABLE IF EXISTS simplified_points_temp;"
     sql_simplified_data_points_query = f'''
                                             WITH points_in_trip AS (
-                                                SELECT simplified_trip_id, (ST_DumpPoints(line_string)).geom as point
+                                                SELECT simplified_trip_id, ST_ReducePrecision((ST_DumpPoints(line_string)).geom, 0.0001) as point
                                                 FROM simplified_trip_dim
                                                 WHERE simplified_trip_id >= {trip_id} 
                                             ),
                                             points_data_fact AS (
                                                 SELECT data_fact_id, points_in_trip.simplified_trip_id as simplified_trip_id
                                                 FROM points_in_trip JOIN data_fact
-                                                ON points_in_trip.point = data_fact.location
+                                                ON ST_Equals(points_in_trip.point, data_fact.location)
                                                 WHERE (points_in_trip.simplified_trip_id = data_fact.trip_id) AND (data_fact.trip_id >= {trip_id})
 
                                             )
@@ -86,31 +99,31 @@ def create_line_strings(trip_id: int, threshold:int):
     
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_trip_temp_table)
+            cursor.execute(sql_drop_trip_temp_table)
         with conn.cursor() as cursor:
-                cursor.execute(sql_trip_table_insert_query)
+            cursor.execute(sql_trip_table_insert_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_trip_update_query)
+            cursor.execute(sql_trip_update_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_trip_temp_table)
+            cursor.execute(sql_drop_trip_temp_table)
 
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_trip_table)
+            cursor.execute(sql_drop_simplified_trip_table)
         with conn.cursor() as cursor:
-                cursor.execute(sql_simplified_trip_table_insert_query)
+            cursor.execute(sql_simplified_trip_table_insert_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_simplified_trip_update_query)
+            cursor.execute(sql_simplified_trip_update_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_trip_table)
+            cursor.execute(sql_drop_simplified_trip_table)
         
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_data_points)
+            cursor.execute(sql_drop_simplified_data_points)
         with conn.cursor() as cursor:
-                cursor.execute(sql_simplified_data_points_query)
+            cursor.execute(sql_simplified_data_points_query)
         with conn.cursor() as cursor:
-                cursor.execute(sql_update_data_fact_simplified_trip_ids)
+            cursor.execute(sql_update_data_fact_simplified_trip_ids)
         with conn.cursor() as cursor:
-                cursor.execute(sql_drop_simplified_data_points)
+            cursor.execute(sql_drop_simplified_data_points)
 
 
 
@@ -189,3 +202,49 @@ def vacuum_and_analyze_tables():
     cursor = connection.cursor()
     cursor.execute("VACUUM ANALYZE;")
     cursor.close()
+
+'''
+WITH trip_list AS (
+    SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line
+    FROM data_fact
+    WHERE trip_id >= 0
+    GROUP BY trip_id 
+)
+SELECT trip_id, line
+INTO UNLOGGED TABLE line_temp
+FROM trip_list;
+                                   
+UPDATE trip_dim
+SET line_string = line
+FROM line_temp
+WHERE line_temp.trip_id = trip_dim.trip_id
+
+'''
+
+
+'''
+WITH simplified_trip_list AS (
+    SELECT trip_id, ST_Simplify(ST_Transform(line_string, 3857), 1000) as line
+    FROM trip_dim
+    WHERE trip_id >= 0
+    GROUP BY trip_id 
+)
+
+SELECT trip_id, ST_Transform(line, 4326) as line_simplified
+INTO UNLOGGED TABLE line_simplified_temp
+FROM simplified_trip_list;
+'''
+
+
+# UPDATE simplified_trip_dim
+# SET line_string = (
+#     SELECT line_simplified
+#     FROM line_simplified_temp
+#     WHERE simplified_trip_dim.simplified_trip_id = line_simplified_temp.trip_id
+# );
+
+'''
+INSERT INTO simplified_trip_dim(simplified_trip_id, line_string)
+SELECT trip_id, line_simplified
+FROM line_simplified_temp
+'''

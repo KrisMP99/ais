@@ -175,6 +175,7 @@ export class App extends React.Component<any, AppStates> {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
+			selectedTripId: null
 		});
 	}
 

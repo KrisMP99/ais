@@ -13,6 +13,7 @@ import shapely.wkb as wkb
 import geopandas as gpd
 import pandas as pd
 import os
+import json
 
 load_dotenv()
 API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')
@@ -42,10 +43,12 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     # We add the hexagons to a list, so that we can access these values later
     polygons_list = add_polygons_to_list(poly_df)
     logger.info('Polygons fetched!')
-
     
     logger.info('Fetching line strings')
     line_string_df = get_line_strings(poly1=polygons_list[0], poly2=polygons_list[1], logger=logger)
+    # with open('/srv/data/csv/line_strings.json', 'w') as out_file:
+    #     out_file.write(line_string_df.to_json())
+
     simplified_trip_ids_array = line_string_df['simplified_trip_id'].to_numpy()
 
     # logger.info('Getting points in the line strings') <--- idk if we should log this ?
@@ -118,7 +121,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     print('what is in the list ', str(point_from_line_string_found_in_hexagon))
     logger.info('Got linestrings')
     
-    return trips_array
+    return line_string_df.to_json()
     
     if len(point_from_line_string_found_in_hexagon) == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('No points in either hexagons')

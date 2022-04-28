@@ -65,7 +65,11 @@ def query_fetch_line_strings_given_polygon() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
             SELECT
-                DISTINCT std.line_string as line_string, std.simplified_trip_id, sd.mmsi, sd.type_of_mobile, sd.imo, sd.name, sd.width, sd.length, ship_type_dim.ship_type
+                DISTINCT std.line_string as line_string, std.simplified_trip_id, 
+                sd.mmsi, sd.type_of_mobile, sd.imo, sd.name, sd.width, sd.length, 
+                ship_type_dim.ship_type,
+                ST_ClosestPoint(ST_GeomFromEWKT(%(centroid1)s), line_string) as p1, 
+                ST_ClosestPoint(ST_GeomFromEWKT(%(centroid2)s), line_string) as p2
             FROM
                 simplified_trip_dim AS std NATURAL JOIN data_fact as df NATURAL JOIN ship_dim as sd NATURAL JOIN ship_type_dim
             WHERE
@@ -85,13 +89,16 @@ def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, logger: Logger) -> 
             engine, 
             params=
             {
+                "centroid1": poly1.centroid,
+                "centroid2": poly2.centroid,
                 "poly1": wkb.dumps(poly1.polygon, hex=True, srid=4326), 
                 "poly2": wkb.dumps(poly2.polygon, hex=True, srid=4326)
             },
             geom_col='line_string'
         )
     
-    print(df.head())
+    print(df.columns)
+    print(df['line_string'].count())
     if len(df) == 0:
         logger.warning('No trips were found for the selected polygons')
         raise HTTPException(status_code=404, detail='No trips were found for the selected polygons')

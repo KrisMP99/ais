@@ -132,7 +132,7 @@ def fill_and_convert_tables(hexagons = True) -> None:
             with conn.cursor() as cursor:
                 cursor.execute(delete_intersecting_geoms)
 
-            sql_transform_geom_to_4326 = f"ALTER TABLE {dim_type}_{dim_size}_dim ALTER COLUMN grid_geom TYPE Geometry(Point, 4326) USING ST_TRANSFORM(grid_geom, 4326)"
+            sql_transform_geom_to_4326 = f"ALTER TABLE {dim_type}_{dim_size}_dim ALTER COLUMN grid_geom TYPE Geometry(Polygon, 4326) USING ST_TRANSFORM(grid_geom, 4326)"
             with conn.cursor() as cursor:
                 cursor.execute(sql_transform_geom_to_4326)
             

@@ -125,7 +125,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     feature_collection = line_string_df.to_json()
 
     for feature in feature_collection['FeatureCollection']['features']:
-        feature['style'] = give_color()
+        feature['properties']['style'] = give_color()
 
     return feature_collection
     

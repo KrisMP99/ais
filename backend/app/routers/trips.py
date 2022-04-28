@@ -117,17 +117,15 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
                                 length=line_string.length
                             ))
 
- 
+    
     print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
     print('what is in the list ', str(point_from_line_string_found_in_hexagon))
     logger.info('Got linestrings')
     
-    feature_collection = line_string_df.to_json()
+    line_string_df['color'] = line_string_df.apply(lambda x: give_color(), axis=1)
 
-    for feature in feature_collection['FeatureCollection']['features']:
-        feature['properties']['color'] = give_color()
-
-    return feature_collection
+   
+    return line_string_df.to_json()
     
     if len(point_from_line_string_found_in_hexagon) == 0: # In case no points were found insecting, find centroids for points closest to both hexagons
         print('No points in either hexagons')

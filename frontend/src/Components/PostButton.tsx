@@ -1,14 +1,13 @@
 import React from 'react';
-import { LatLng } from 'leaflet';
+import L, { LatLng } from 'leaflet';
 import '../App.css';
 import { GridSettingObj } from './GridSetting/GridSetting';
 import { FilterObj } from './Filters/Filters';
 import { Trip } from '../App';
+import { FeatureCollection } from 'geojson';
+import { PostSetting } from './Map/Map';
 
-export interface PostSetting {
-	gridSetting: GridSettingObj | null;
-	activeFilters: FilterObj | null;
-}
+
 
 interface PostButtonProps {
     coordinates: LatLng[];
@@ -27,7 +26,7 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
             <button 
                 className="button btn-find-route" 
                 disabled={this.props.coordinates.length < 2 || this.props.postSetting === null}
-                onClick={(e) => this.postCoordinates(this.props.coordinates)}
+                onClick={() => this.setState({getTrips: true})}// this.postCoordinates(this.props.coordinates)}
             >
                 Find route
             </button>
@@ -70,13 +69,59 @@ export class PostButton extends React.Component<PostButtonProps, PostButtonState
             } 
             else return response.json();
           })
-        .then((data: Trip[]) => {
-            if(data) {
-                return this.props.returnTrips(data);
-            }
-            else alert('No trips were found between the two coordinates')
+        // .then((data: Trip[]) => {
+        //     if(data) {
+        //         return this.props.returnTrips(data);
+        //     }
+        //     else alert('No trips were found between the two coordinates')
+        // })
+        .then((data: FeatureCollection) => {
+            let trips: Trip[] = [];
+            L.geoJSON(data, {
+                onEachFeature: (feature) => {
+                    trips.push({ 
+                        tripId: feature.properties.trip_id,
+                        eta: feature.properties.eta,
+                        color: feature.properties.color,
+                        shipType: feature.properties.ship_type,
+                        mmsi: feature.properties.mmsi,
+                        imo: feature.properties.imo,
+                        typeOfMobile: feature.properties.type_of_mobile,
+                        name: feature.properties.name,
+                        width: feature.properties.width,
+                        length: feature.properties.length
+                    })
+                    
+                }
+            })
+            
+            return;
         })
       };
 }
+// export interface Trip {
+// 	trip_id: number;
+// 	line_string: LatLng[]
+// 	eta: string;
+	// color: string;
+	// ship_type: string;
+	// mmsi?: number;
+	// imo?: number;
+	// type_of_mobile?: string;
+	// name?: string;
+	// width?: number;
+	// length?: number;
+// }
+// self.trip_id = trip_id
+// self.line_string = line_string
+// self.eta = eta
+// self.color = give_color()
+// self.ship_Type = ship_type
+// self.mmsi = mmsi
+// self.imo = imo
+// self.type_of_mobile = type_of_mobile
+// self.name = name,
+// self.width = width,
+// self.length = length
 
 export default PostButton;

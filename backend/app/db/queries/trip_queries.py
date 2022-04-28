@@ -65,7 +65,7 @@ def query_fetch_line_strings_given_polygon() -> str:
     # We select all line strings that intersect with the two hexagons
     return '''
             SELECT
-                DISTINCT std.line_string as line_string, std.simplified_trip_id, 
+                DISTINCT ON (std.simplified_trip_id) std.line_string as line_string, std.simplified_trip_id, 
                 sd.mmsi, sd.type_of_mobile, sd.imo, sd.name, sd.width, sd.length, 
                 ship_type_dim.ship_type,
                 ST_ClosestPoint(ST_GeomFromEWKT(%(centroid1)s), line_string) as p1, 

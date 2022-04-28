@@ -140,7 +140,7 @@ def query_fetch_line_strings_given_polygon() -> str:
                 );
             '''
 def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, logger: Logger) -> pd.DataFrame:
-    sql_query = fetch_closets_points_to_centroid()
+    sql_query = query_fetch_line_strings_given_polygon()
     df = gpd.read_postgis(
             sql_query, 
             engine, 

@@ -82,11 +82,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         if(this.state.mapRef && this.props.fetchTrips) {
             this.fetchTrips();
         }
-        // if (this.props.selectedTripId) {
-        //     this.lineStringLayer.eachLayer((layer: L.Layer) => {
-        //         // this.lineStringLayer.hasLayer()
-        //     });
-        // }
     }
     
     render() {
@@ -224,6 +219,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         if(this.state.points.length !== 2) {
             return;
         }
+        console.log(this.props.postSetting?.activeFilters?.shipTypes);
         const requestOptions = {
             method: 'POST',
             headers: { 
@@ -245,7 +241,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         "lat": this.state.points[1].lat,
                         "is_hexagon": this.props.postSetting?.gridSetting?.isHexagon,
                         "grid_size": this.props.postSetting?.gridSetting?.size
-                }
+                },
+                    "filter":{
+                        "ship_types": this.props.postSetting?.activeFilters?.shipTypes
+                        // "date_range": this.props.postSetting?.activeFilters?.dateRange
+                    }
             })
         };
         let trips: Trip[] = [];

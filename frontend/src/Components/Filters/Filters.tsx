@@ -57,7 +57,7 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
                     <ShipTypeFilter
                         ref={this.shipTypeFilterRef}
                         hasChanged={(hasChanged: boolean) => this.hasChanged(1, hasChanged)}
-                        returnShipTypes={(shipTypes: string[] |null) => {
+                        returnShipTypes={(shipTypes: string[] | null) => {
                             this.filterActive.shipTypes = shipTypes;
                         }}
                     /> 

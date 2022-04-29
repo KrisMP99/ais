@@ -1,4 +1,5 @@
 from logging import Logger
+from app.models.filter import Filter
 from fastapi import HTTPException
 from shapely.geometry import Point
 from app.models.grid_polygon import GridPolygon
@@ -118,9 +119,18 @@ def fetch_closets_points_to_centroid():
             WHERE ST_Equals(point1, data_fact.location) OR ST_Equals(point2, data_fact.location)'''
 
 
-def query_fetch_line_strings_given_polygon() -> str:
+def query_fetch_line_strings_given_polygon(filter: Filter) -> str:
     # We select all line strings that intersect with the two hexagons
-    return '''
+    filter_where = ''
+    if(filter.ship_types != None):
+        filter_where += ' AND ('
+        for ship_type in filter.ship_types[:-1]:
+            print('ship_type ', ship_type)
+            filter_where += f"ship_type_dim.ship_type = '{ship_type}' OR "
+        filter_where += f"ship_type_dim.ship_type = '{filter.ship_types[-1]}')"
+            
+
+    return f'''
             SELECT
                 DISTINCT ON (std.simplified_trip_id) std.line_string as line_string, std.simplified_trip_id, 
                 sd.mmsi, sd.type_of_mobile, sd.imo, sd.name, sd.width, sd.length, 
@@ -137,10 +147,11 @@ def query_fetch_line_strings_given_polygon() -> str:
                 ST_Intersects(
                     std.line_string,
                     ST_GeomFromEWKT(%(poly2)s)
-                );
+                ){filter_where};
             '''
-def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, logger: Logger) -> pd.DataFrame:
-    sql_query = query_fetch_line_strings_given_polygon()
+def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, logger: Logger) -> pd.DataFrame:
+    sql_query = query_fetch_line_strings_given_polygon(filter=filter)
+
     df = gpd.read_postgis(
             sql_query, 
             engine, 

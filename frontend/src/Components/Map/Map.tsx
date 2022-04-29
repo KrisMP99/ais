@@ -2,13 +2,12 @@ import React from 'react';
 import './Map.css';
 import '../../Leaflet.css'; 
 import { MapConsumer, MapContainer, TileLayer } from 'react-leaflet';    
-import L, { LatLngBoundsExpression, LatLng, FeatureGroup } from 'leaflet';
+import L, { LatLngBoundsExpression, LatLng } from 'leaflet';
 import iconUrl from '../../Images/GreenCircle.png';
 import MapEvents from './MapEvents';
 import countries from './countries';
-import { Feature, FeatureCollection, GeoJsonObject } from 'geojson';
-import { GridSettingObj } from '../GridSetting/GridSetting'
-import { Trip } from '../../App';
+import { GeoJsonObject } from 'geojson';
+import { GridSettingObj } from '../GridSetting/GridSetting';
 import { FilterObj } from '../Filters/Filters';
 
 export interface PostSetting {
@@ -22,19 +21,15 @@ interface DKMapProps {
     gridSettings: GridSettingObj;
     retCoords: (coords: LatLng[]) => void;
     retMousePos: (pos: string[]) => void;
-    
+
+    trips: L.LayerGroup;
     selectedTripId: number | null;
     retSelectedTripId: (tripId: number) => void;
-
-    postSetting: PostSetting | null;
-    fetchTrips: boolean;
-    doneFetching: (trips: Trip[]) => void;
 }
 
 interface DKMapStates {
     points: LatLng[];
     hexPolygons: L.Polygon[];
-    fetching: boolean;
     mapRef: L.Map | null;
 }
 
@@ -70,23 +65,13 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.state = {
             points: [],
             hexPolygons: [],
-            fetching: false,
             mapRef: null,
-            // linestrings: [],
-        }
-
-        // this.mapRef = React.createRef();
-    }
-
-    componentDidUpdate() {
-        if(this.state.mapRef && this.props.fetchTrips) {
-            this.fetchTrips();
         }
     }
     
     render() {
         if(this.state.mapRef) {
-            this.lineStringLayer.addTo(this.state.mapRef);
+            this.props.trips.addTo(this.state.mapRef);
         }
         return (
             <MapContainer
@@ -145,7 +130,9 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.lineStringLayer.clearLayers();
         this.markerLayer.clearLayers();
         this.linestrings = [];
-        this.setState({points: [], hexPolygons: [], fetching: false});
+        this.props.trips.clearLayers();
+
+        this.setState({points: [], hexPolygons: []});
     }
 
     protected async fetchPolygon(point: LatLng) {
@@ -214,72 +201,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         }
         layer.bindPopup("You have pressed: " + feature.properties.ADMIN + "<br>Press the water to place a point!");
     }
-
-    protected async fetchTrips(){
-        if(this.state.points.length !== 2) {
-            return;
-        }
-        console.log(this.props.postSetting?.activeFilters?.shipTypes);
-        const requestOptions = {
-            method: 'POST',
-            headers: { 
-                'Accept': 'application/json', 
-                'Content-Type': 'application/json',
-                'x-token':  process.env.REACT_APP_TOKEN!,
-            },
-            body: 
-                JSON.stringify(
-                {
-                    "p1": {
-                        "long": this.state.points[0].lng,
-                        "lat": this.state.points[0].lat,
-                        "is_hexagon": this.props.postSetting?.gridSetting?.isHexagon,
-                        "grid_size": this.props.postSetting?.gridSetting?.size
-                },
-                    "p2":{
-                        "long": this.state.points[1].lng,
-                        "lat": this.state.points[1].lat,
-                        "is_hexagon": this.props.postSetting?.gridSetting?.isHexagon,
-                        "grid_size": this.props.postSetting?.gridSetting?.size
-                },
-                    "filter":{
-                        "ship_types": this.props.postSetting?.activeFilters?.shipTypes
-                        // "date_range": this.props.postSetting?.activeFilters?.dateRange
-                    }
-            })
-        };
-        let trips: Trip[] = [];
-        const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
-        if (response.ok) {
-            const data = await response.json();
-            L.geoJSON(JSON.parse(data), {
-                onEachFeature: (feature, featureLayer) => {               
-                    trips.push({ 
-                        tripId: feature.properties.simplified_trip_id,
-                        eta: feature.properties.eta,
-                        color: feature.properties.color,
-                        shipType: feature.properties.ship_type,
-                        mmsi: feature.properties.mmsi,
-                        imo: feature.properties.imo,
-                        typeOfMobile: feature.properties.type_of_mobile,
-                        name: feature.properties.name,
-                        width: feature.properties.width,
-                        length: feature.properties.length
-                    }); 
-                    featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
-                    featureLayer.addEventListener("click", () => this.props.retSelectedTripId(feature.properties.simplified_trip_id));
-                    this.lineStringLayer.addLayer(featureLayer);        
-                },
-                style: (feature) => {
-                    return {
-                        color: feature?.properties.color,
-                        weight: 4,
-                    }
-                }
-            });
-        }
-        this.props.doneFetching(trips);
-      };
 }
 
 export default DKMap;

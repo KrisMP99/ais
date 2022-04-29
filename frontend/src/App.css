@@ -14,6 +14,7 @@
   flex-direction: column;
   overflow-y: scroll;
   overflow-x: hidden;
+  flex-shrink: 0;
 }
 
 .main-container {

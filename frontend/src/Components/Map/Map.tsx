@@ -8,12 +8,6 @@ import MapEvents from './MapEvents';
 import countries from './countries';
 import { GeoJsonObject } from 'geojson';
 import { GridSettingObj } from '../GridSetting/GridSetting';
-import { FilterObj } from '../Filters/Filters';
-
-export interface PostSetting {
-	gridSetting: GridSettingObj | null;
-	activeFilters: FilterObj | null;
-}
 
 interface DKMapProps {
     mapBounds: LatLngBoundsExpression;

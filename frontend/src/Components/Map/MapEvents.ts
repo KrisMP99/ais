@@ -1,4 +1,4 @@
-import L, { LatLng, Layer, LeafletMouseEvent } from "leaflet";
+import L, { LatLng, LeafletMouseEvent } from "leaflet";
 import { useMapEvents } from "react-leaflet";
 
 interface MapEventsProps {
@@ -35,7 +35,7 @@ export default function MapEvents(props: MapEventsProps) {
 
     function addMarker(e: LeafletMouseEvent) {
         let position: LatLng = new LatLng(e.latlng.lat, e.latlng.lng);
-        props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat + " Lng: " + position.lng));
+        // props.layerGroup.addLayer(L.marker(position, {icon: props.markerIcon}).bindPopup("Lat: " + position.lat + " Lng: " + position.lng));
         props.addPoint(position);
     }
     return null;

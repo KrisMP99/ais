@@ -1,13 +1,17 @@
 import React from 'react';
 import './App.css';
-import { initializeIcons } from '@fluentui/react/lib/Icons';
 import { Label, Spinner, SpinnerSize, IStackProps, Stack } from '@fluentui/react'
 import L, { LatLng, LatLngBoundsExpression } from 'leaflet';
-
+//COMPONENTS
 import ETATrips from './Components/ETATrips/ETATrips';
-import DKMap, { PostSetting } from './Components/Map/Map';
+import DKMap from './Components/Map/Map';
 import Filters, { FilterObj } from './Components/Filters/Filters';
 import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
+
+export interface PostSetting {
+	gridSetting: GridSettingObj | null;
+	activeFilters: FilterObj | null;
+}
 
 export interface Trip {
 	tripId: number;
@@ -22,10 +26,8 @@ export interface Trip {
 	length?: number;
 }
 
-
 interface AppStates {
 	pointCoords: LatLng[];
-	filterShipTypes: string[];
 	mouseCoords: string[];
 	trips: Trip[];
 	postSetting: PostSetting;
@@ -33,8 +35,6 @@ interface AppStates {
 	isFetching: boolean;
 	lineStringLayer: L.LayerGroup;
 }
-
-initializeIcons(undefined, {disableWarnings: true});
 
 export class App extends React.Component<any, AppStates> {
 
@@ -59,7 +59,6 @@ export class App extends React.Component<any, AppStates> {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
-			filterShipTypes: [],
 			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 			selectedTripId: null,
 			lineStringLayer: L.layerGroup(),

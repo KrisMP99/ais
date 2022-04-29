@@ -122,7 +122,7 @@ def fetch_closets_points_to_centroid():
 def query_fetch_line_strings_given_polygon(filter: Filter) -> str:
     # We select all line strings that intersect with the two hexagons
     filter_where = ''
-    if(filter.ship_types.count > 0 or filter.ship_types is not None):
+    if(len(filter.ship_types) > 0 and filter.ship_types is not None):
         filter_where += ' AND ('
         for ship_type in filter.ship_types[:-1]:
             print('ship_type ', ship_type)

@@ -229,7 +229,6 @@ export class App extends React.Component<any, AppStates> {
 			this.setState({isFetching: false});
             return;
         }
-		console.log("HERE");
         const requestOptions = {
             method: 'POST',
             headers: { 
@@ -260,7 +259,6 @@ export class App extends React.Component<any, AppStates> {
         };
         let trips: Trip[] = [];
 		let tempLayer: L.LayerGroup = L.layerGroup();
-		// let selectedTrip
         const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
         if (response.ok) {
             const data = await response.json();
@@ -290,10 +288,7 @@ export class App extends React.Component<any, AppStates> {
                 }
             });
         }
-        // this.fetching = false;
-        // this.props.doneFetching(trips);
 		this.setState({isFetching: false, lineStringLayer: tempLayer})
-		console.log("HERE NOW");
 	};
 }
 

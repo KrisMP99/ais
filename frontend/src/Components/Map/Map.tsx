@@ -218,7 +218,11 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     protected async fetchTrips(){
         if(this.state.points.length !== 2) {
             return;
+        } else if (this.props.postSetting?.activeFilters?.shipTypes?.length === 0) {
+            alert('You must select at least one ship type');
+            return;
         }
+
         console.log(this.props.postSetting?.activeFilters?.shipTypes);
         const requestOptions = {
             method: 'POST',
@@ -279,6 +283,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             });
         }
         this.props.doneFetching(trips);
+
+        if (trips.length === 0) alert("No trips were found for the selected coordinates")
       };
 }
 

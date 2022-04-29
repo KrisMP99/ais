@@ -24,12 +24,14 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     protected dividerIndex: number;
     protected checkBoxSetting: boolean;
     protected appliedFilter: boolean;
+    protected appliedOnce: boolean;
 
     constructor(props: ShipFilterProps) {
         super(props);
         this.dividerIndex = 0;
         this.appliedFilter = false;
         this.checkBoxSetting = true;
+        this.appliedOnce = false;
 
         this.state = {
             preApply: [],
@@ -54,60 +56,31 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             this.checkBoxSetting = false;
         }
         //Sets the columns
-        let col1 = null;
-        let col2 = null;
+        let shipTypes = null;
         if(this.state.shipTypes && this.state.shipTypes.length > 0) {
             this.dividerIndex = Math.floor(this.state.shipTypes.length * 0.5);
-            col1 = (
-                this.state.shipTypes.map((val, key) => {
-                    if (key > this.dividerIndex) {
-                        return null;
-                    }
-                    return (
-                        <li key={key}>
-                            {val.type}
-                            <input 
-                                className="checkbox" 
-                                type={"checkbox"} 
-                                checked={val.checked} 
-                                onChange={() => {
-                                    if(this.state.shipTypes) {
-                                        let temp = this.state.shipTypes;
-                                        temp[key].checked = !temp[key].checked;
-                                        this.setState({shipTypes: temp});
-                                        this.areSimilar();
-                                    }
-                                }}
-                            />
-                        </li>
-                    )
-                })
-            );
-            col2 = (
-                this.state.shipTypes.map((val, key) => {
-                    if (key <= this.dividerIndex) {
-                        return null;
-                    }
-                    return (
-                        <li key={key}>
-                            {val.type}
-                            <input 
-                                className="checkbox" 
-                                type={"checkbox"} 
-                                checked={val.checked} 
-                                onChange={() => {
-                                    if(this.state.shipTypes) {
-                                        let temp = this.state.shipTypes;
-                                        temp[key].checked = !temp[key].checked;
-                                        this.setState({shipTypes: temp});
-                                        this.areSimilar();
-                                    }
-                                }}
-                            />
-                        </li>
-                    )
-                })
-            )
+            shipTypes = this.state.shipTypes.map((val, key) => {
+                return (
+                    <label key={key} className="type-label">
+                        {/* <li key={key}> */}
+                        <p className="text-3" style={{alignSelf: "flex-start", margin: "0px"}}>{val.type}</p>                     
+                        <input 
+                            className="checkbox" 
+                            type={"checkbox"} 
+                            checked={val.checked} 
+                            onChange={() => {
+                                if(this.state.shipTypes) {
+                                    let temp = this.state.shipTypes;
+                                    temp[key].checked = !temp[key].checked;
+                                    this.setState({shipTypes: temp});
+                                    this.areSimilar();
+                                }
+                            }}
+                        />
+                        {/* </li> */}
+                    </label>
+                );
+            })
         }
         return (
             <div className='filter-container'>
@@ -136,12 +109,12 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                     className="body-filter" 
                     style={{display: (this.state.openOnUi ? "" : "none")}}
                 >
-                    <ul className="text-3">
-                        {col1}
-                    </ul>
-                    <ul className="text-3">
+                    <div style={{display: "flex", flexWrap: "wrap"}}>
+                        {shipTypes}
+                    </div>
+                    {/* <ul className="text-3">
                         {col2}
-                    </ul>
+                    </ul> */}
                 </div>
             </div>
         )
@@ -149,6 +122,11 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     public apply() {
         if (this.state.shipTypes) {
+            if (!this.appliedOnce && this.state.shipTypes.every((val) => val.checked)) {
+                this.appliedOnce = true;
+                this.props.returnShipTypes(null);
+                return;
+            }
             let pre: boolean[] = [];
             let ret: string[] = [];
             for (let i = 0; i < this.state.shipTypes.length; i++) {
@@ -212,7 +190,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 return response.json();
         })
         .then((data: string[]) => {
-                // console.log(data)
                 if(data.length < 1) return;
                 data.forEach((val) => {
                     shipTypes.push({type: val, checked: true});

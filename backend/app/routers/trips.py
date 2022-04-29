@@ -1,4 +1,5 @@
 from random import randint
+from app.models.filter import Filter
 from fastapi import APIRouter, Depends, HTTPException
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
@@ -29,7 +30,7 @@ router = APIRouter(
 )
 
 @router.post('/')
-async def get_trips(p1: Coordinate, p2: Coordinate): 
+async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter): 
     gp1 = Point(p1.long, p1.lat)
     gp2 = Point(p2.long, p2.lat)
 
@@ -46,7 +47,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     logger.info('Polygons fetched!')
     
     logger.info('Fetching line strings')
-    line_string_df = get_line_strings(poly1=polygons_list[0], poly2=polygons_list[1], logger=logger)
+    line_string_df = get_line_strings(poly1=polygons_list[0], poly2=polygons_list[1], filter=filter, logger=logger)
     # with open('/srv/data/csv/line_strings.json', 'w') as out_file:
     #     out_file.write(line_string_df.to_json())
 

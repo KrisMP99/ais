@@ -1,4 +1,5 @@
 from logging import Logger
+from app.models.filter import Filter
 from fastapi import HTTPException
 from shapely.geometry import Point
 from app.models.grid_polygon import GridPolygon
@@ -62,9 +63,18 @@ def get_polygons(p1: Point, p2: Point, p1_is_hex: bool, p1_size: int, logger: Lo
 
 
 
-def query_fetch_line_strings_given_polygon() -> str:
+def query_fetch_line_strings_given_polygon(filter: Filter) -> str:
     # We select all line strings that intersect with the two hexagons
-    return '''
+    filter_where = ''
+    if(len(filter.ship_types) > 0 and filter.ship_types is not None):
+        filter_where += ' AND ('
+        for ship_type in filter.ship_types[:-1]:
+            print('ship_type ', ship_type)
+            filter_where += f"ship_type_dim.ship_type = '{ship_type}' OR "
+        filter_where += f"ship_type_dim.ship_type = '{filter.ship_types[-1]}')"
+            
+
+    return f'''
             SELECT
                 DISTINCT ON (std.simplified_trip_id) std.line_string as line_string, std.simplified_trip_id, 
                 sd.mmsi, sd.type_of_mobile, sd.imo, sd.name, sd.width, sd.length, 
@@ -81,7 +91,7 @@ def query_fetch_line_strings_given_polygon() -> str:
                 ST_Intersects(
                     std.line_string,
                     ST_GeomFromEWKT(%(poly2)s)
-                );
+                ){filter_where};
             '''
 
 def query_line_strings_and_data_for_ETA():

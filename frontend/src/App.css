@@ -14,6 +14,7 @@
   flex-direction: column;
   overflow-y: scroll;
   overflow-x: hidden;
+  flex-shrink: 0;
 }
 
 .main-container {
@@ -65,12 +66,13 @@
 
 .button {
   height: 35px;
-  color: #fff;
   border-radius: 6px;
-  font-size: 15px;
   border: none;
   cursor: pointer;
-}
+  color: #fff;
+  font-size: 15px;
+} 
+
 .button:disabled {
   background-color: #d0d0d0;
   opacity: 0.6;
@@ -84,6 +86,7 @@
   transition: transform 200ms;
   transform: scale(1.03);
 }
+
 .btn-clear {
   width: 120px;
   background-color: #af4c4c;
@@ -92,6 +95,16 @@
   background-color: #984141;
   transition: transform 150ms;
   transform: scale(1.04);
+}
+
+@keyframes button-loading-spinner {
+  from {
+      transform: rotate(0turn);
+  }
+
+  to {
+      transform: rotate(1turn);
+  }
 }
 
 hr {

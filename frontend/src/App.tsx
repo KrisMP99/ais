@@ -174,6 +174,7 @@ export class App extends React.Component<any, AppStates> {
 
 	protected clearPoints() {
 		this.DKMapRef.current?.clear();
+		this.ETATripsRef.current?.clear();
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],

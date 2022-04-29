@@ -173,6 +173,10 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
         });
     }
 
+    public clear() {
+        this.setState({ tripChosen: null, startIndexTripsShown: 0})
+    }
+
     protected findTripInList() : Trip | null {
         if(this.props.selectedTripId) {
             let trip = this.props.trips.find((trip) => trip.tripId === this.props.selectedTripId);

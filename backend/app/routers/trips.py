@@ -50,81 +50,19 @@ async def get_trips(p1: Coordinate, p2: Coordinate):
     # with open('/srv/data/csv/line_strings.json', 'w') as out_file:
     #     out_file.write(line_string_df.to_json())
 
-    simplified_trip_ids_array = line_string_df['simplified_trip_id'].to_numpy()
-
-    # logger.info('Getting points in the line strings') <--- idk if we should log this ?
-    if p1.is_hexagon:
-        poly_type = "hex"
-    else:
-        poly_type = "square"
+    # Do the ETA calculations
+    line_string_df['c1_time'] = (pd.to_timedelta((line_string_df['dist_df_loc1_c1'] / line_string_df['df_loc1_sog']),unit='s') + line_string_df['df_loc1_time_id'])
+    line_string_df['c2_time'] = (pd.to_timedelta((line_string_df['dist_df_loc2_c2'] / line_string_df['df_loc2_sog']),unit='s') + line_string_df['df_loc2_time_id'])
     
-    print(f"Type: {poly_type}, size: {p1.grid_size}")
-    points_in_line_string_df = get_points(simplified_trip_ids_array=simplified_trip_ids_array, poly_type=poly_type, poly_size=p1.grid_size)
-    
-    # logger.info("...") <--- same as above
-    line_strings = get_list_of_line_strings_with_points(line_string_df=line_string_df, 
-                                                        points_df=points_in_line_string_df)
-
+    line_string_df['eta'] = (line_string_df['c2_time'] - line_string_df['c1_time']).astype(str)
+    print("-------------")
+    line_string_df = line_string_df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')
     logger.info('Line strings fetched!')
-
-    # Create array with points from line strings and check if either hexagon appears in any of the points
-    trips_array = []
-
-    for l_key in line_strings.copy():
-        line_string = line_strings[l_key]
-        line_string:SimplifiedLineString
-        locations = []
-        point_from_line_string_found_in_hexagon = [GridPolygon]
-
-        for coordinate in line_string.locations:
-            coordinate:Location
-
-            # print('simplified_trip_id ', line_string.simplified_trip_id)
-            # Add points to frontend
-            locations.append([coordinate.location.y, coordinate.location.x])
-
-            # Checks if the points is in the hexagon
-
-            # print('coordinate ', coordinate.hex_10000_column)
-            # print('hex ', polygons[0].column)
-
-            # isSame = coordinate.hex_10000_column is polygons[0].column
-            # print('is same ', isSame)
-
-            # if coordinate.hex_10000_column is polygons[0].column and coordinate.hex_10000_row is polygons[0].row:
-            #     point_from_line_string_found_in_hexagon.append(polygons[0])
-
-            #     print('hex column ' + str(coordinate.hex_10000_column) + ' , hex row ' + str(coordinate.hex_10000_row))
-            #     print('hex column ' + str(polygons[0].column) + ' , hex row ' + str(polygons[0].row))
-
-            # elif coordinate.hex_10000_column is polygons[1].column and coordinate.hex_10000_row is polygons[1].row:
-            #     point_from_line_string_found_in_hexagon.append(polygons[1])
-            #     print('hex column ' + coordinate.hex_10000_column + ' , hex row ' + coordinate.hex_10000_row)
-            #     print('hex column ' + polygons[1].column + ' , hex row ' + polygons[1].row)
-            # else: 
-            #     print('continued')
-            #     continue
-
-        trips_array.append(Trip(trip_id=line_string.simplified_trip_id, 
-                                line_string=locations, 
-                                eta="0", 
-                                ship_type = line_string.ship_type,
-                                mmsi=line_string.mmsi,
-                                imo=line_string.imo,
-                                type_of_mobile=line_string.type_of_mobile,
-                                name=line_string.name,
-                                width=line_string.width,
-                                length=line_string.length
-                            ))
-
-    
-    print('length of list ' + str(len(point_from_line_string_found_in_hexagon)))
-    print('what is in the list ', str(point_from_line_string_found_in_hexagon))
-    logger.info('Got linestrings')
     
     line_string_df['color'] = line_string_df.apply(lambda x: give_color(), axis=1)
 
-   
+    print(line_string_df['line_string'].count())
+
     return line_string_df.to_json()
     
     if len(point_from_line_string_found_in_hexagon) == 0: # In case no points were found insecting, find centroids for points closest to both hexagons

@@ -150,7 +150,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.lineStringLayer.clearLayers();
         this.markerLayer.clearLayers();
         this.linestrings = [];
-        this.setState({points: [], hexPolygons: []});
+        this.setState({points: [], hexPolygons: [], fetching: false});
     }
 
     protected async fetchPolygon(point: LatLng) {
@@ -265,8 +265,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                         name: feature.properties.name,
                         width: feature.properties.width,
                         length: feature.properties.length
-                    });  
-                    console.log(feature.properties.simplified_trip_id);
+                    }); 
                     featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
                     featureLayer.addEventListener("click", () => this.props.retSelectedTripId(feature.properties.simplified_trip_id));
                     this.lineStringLayer.addLayer(featureLayer);        
@@ -274,15 +273,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 style: (feature) => {
                     return {
                         color: feature?.properties.color,
-                        opacity: (!this.props.selectedTripId || this.props.selectedTripId === feature?.properties.simplified_trip_id) ? 1 : 0,
-                        //     if(!this.props.selectedTripId) {
-                        //         return 1;
-                        //     }
-                        //     if(feature?.properties.simplified_trip_id === this.props.selectedTripId) {
-                        //         return 1;
-                        //     }
-                        //     return 0;
-                        // ,
                         weight: 4,
                     }
                 }

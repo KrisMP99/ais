@@ -43,12 +43,14 @@ export class App extends React.Component<any, AppStates> {
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
 	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
+	protected findRouteRef: React.RefObject<HTMLButtonElement>;
 
 	constructor(props: any) {
 		super(props);
 		this.ETATripsRef = React.createRef();
 		this.DKMapRef = React.createRef();
 		this.mousePosRef = React.createRef();
+		this.findRouteRef = React.createRef();
 
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
@@ -110,7 +112,8 @@ export class App extends React.Component<any, AppStates> {
 								</p>
 							</div>
 							<div className='footer'>
-								<button 
+								<button
+									ref={this.findRouteRef} 
 									className="button btn-find-route" 
 									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null}
 									onClick={() => this.setState({getTrips: true})}// this.postCoordinates(this.props.coordinates)}
@@ -122,7 +125,7 @@ export class App extends React.Component<any, AppStates> {
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear point(s)
+									Clear map
 								</button>
 							</div>
 						</div>
@@ -177,6 +180,13 @@ export class App extends React.Component<any, AppStates> {
 			trips: [],
 			selectedTripId: null
 		});
+	}
+
+	protected loadButton(){
+		const node = this.findRouteRef.current	
+		if (node) {
+			node.focus()
+		}
 	}
 
 	protected textIsNotUndefined(index: number, lat: boolean, pos?: string[]): string {

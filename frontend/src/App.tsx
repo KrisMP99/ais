@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import { initializeIcons } from '@fluentui/react/lib/Icons';
+import { Label, Spinner, SpinnerSize, IStackProps, Stack } from '@fluentui/react'
 import { LatLng, LatLngBoundsExpression } from 'leaflet';
 
 import ETATrips from './Components/ETATrips/ETATrips';
@@ -67,6 +68,14 @@ export class App extends React.Component<any, AppStates> {
 	}
 
 	render() {
+		const rowProps: IStackProps = { horizontal: true, verticalAlign: 'center' };
+
+		const tokens = {
+			spinnerStack: {
+			childrenGap: 8,
+			},
+		};
+
 		return (
 			<div className='main'>
 				<div className="main-container">
@@ -114,11 +123,25 @@ export class App extends React.Component<any, AppStates> {
 							<div className='footer'>
 								<button
 									ref={this.findRouteRef} 
-									className="button btn-find-route" 
+									className='button btn-find-route' 
 									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null}
 									onClick={() => this.setState({getTrips: true})}// this.postCoordinates(this.props.coordinates)}
 								>
-									Find route
+									<div style={{display: 'flex', justifyContent: 'center'}}>
+										<Stack {...rowProps} tokens={tokens.spinnerStack} >
+											<Label 
+												style={{color: '#fff', fontSize: '15px', fontWeight: '500'}}
+												aria-setsize={15}>	
+												Find route
+											</Label>
+											<Spinner 
+												size={SpinnerSize.small}
+												ariaLive='assertive'
+												style={{display: 'None'}}
+												className='loader'
+											/>
+										</Stack>
+									</div>
 								</button>
 								<button
 									className={'button btn-clear'}
@@ -185,9 +208,9 @@ export class App extends React.Component<any, AppStates> {
 
 	protected loadButton(){
 		const node = this.findRouteRef.current	
-		if (node) {
-			node.focus()
-		}
+		// if (node) {
+		// 	node.child
+		// }
 	}
 
 	protected textIsNotUndefined(index: number, lat: boolean, pos?: string[]): string {

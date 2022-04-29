@@ -65,12 +65,13 @@
 
 .button {
   height: 35px;
-  color: #fff;
   border-radius: 6px;
-  font-size: 15px;
   border: none;
   cursor: pointer;
-}
+  color: #fff;
+  font-size: 15px;
+} 
+
 .button:disabled {
   background-color: #d0d0d0;
   opacity: 0.6;
@@ -84,6 +85,7 @@
   transition: transform 200ms;
   transform: scale(1.03);
 }
+
 .btn-clear {
   width: 120px;
   background-color: #af4c4c;
@@ -92,21 +94,6 @@
   background-color: #984141;
   transition: transform 150ms;
   transform: scale(1.04);
-}
-
-.button-loading::after {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: auto;
-  border: 4px solid transparent;
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: button-loading-spinner 1s ease infinite;
 }
 
 @keyframes button-loading-spinner {

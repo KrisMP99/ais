@@ -94,8 +94,17 @@ def query_fetch_line_strings_given_polygon(filter: Filter) -> str:
                 ){filter_where};
             '''
 
-def query_line_strings_and_data_for_ETA():
-    return '''WITH centroids_linestrings AS (
+def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
+    filter_where = ''
+    if(len(filter.ship_types) > 0 and filter.ship_types is not None):
+        filter_where += ' AND ('
+        for ship_type in filter.ship_types[:-1]:
+            print('ship_type ', ship_type)
+            filter_where += f"ship_type_dim.ship_type = '{ship_type}' OR "
+        filter_where += f"ship_type_dim.ship_type = '{filter.ship_types[-1]}')"
+            
+
+    return f'''WITH centroids_linestrings AS (
                 SELECT
                     DISTINCT ON (std.simplified_trip_id) 
                     std.line_string as line_string, std.simplified_trip_id as simplified_id, 
@@ -159,7 +168,7 @@ def query_line_strings_and_data_for_ETA():
                 WHERE ST_Equals(
                                 data_fact.location,
                                 ST_ReducePrecision(ST_StartPoint(seg1), 0.0001)
-                            )
+                            ) {filter_where}
             ),
             get_data_2 AS (
                 SELECT DISTINCT on (data_fact.simplified_trip_id)
@@ -180,14 +189,10 @@ def query_line_strings_and_data_for_ETA():
                 gd2.df_loc2, gd2.df_loc2_time_id, gd2.df_loc2_sog, gd2.dist_df_loc2_c2
             FROM get_data_1 as gd1 
             JOIN get_data_2 as gd2 
-            ON (gd1.simplified_trip_id = gd2.simplified_trip_id)'''
+            ON (gd1.simplified_trip_id = gd2.simplified_trip_id);'''
 
-def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, logger: Logger) -> pd.DataFrame:
-    sql_query = query_line_strings_and_data_for_ETA()
-    print(f"Centroid1: {poly1.centroid}")
-    print(f"Centroid2: {poly2.centroid}")
-    print(f"poly1: {wkb.dumps(poly1.polygon, hex=True, srid=4326)}")
-    print(f"Poly2: {wkb.dumps(poly2.polygon, hex=True, srid=4326)}")
+def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, logger: Logger) -> pd.DataFrame:
+    sql_query = query_line_strings_and_data_for_ETA(filter)
     df = gpd.read_postgis(
             sql_query, 
             engine, 
@@ -200,9 +205,6 @@ def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, logger: Logger) -> 
             },
             geom_col='line_string'
         )
-    print(df.columns)
-    print(df.head())
-    print(len(df))
 
     df['df_loc1_time_id'] = pd.to_datetime(df['df_loc1_time_id'].astype(str).str.zfill(6), format="%H%M%S")
     df['df_loc2_time_id'] = pd.to_datetime(df['df_loc2_time_id'].astype(str).str.zfill(6), format="%H%M%S")

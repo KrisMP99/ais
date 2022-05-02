@@ -38,8 +38,6 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     protected hexagons: L.Polygon[];
     protected fetching: boolean;
 
-    // protected mapRef: React.RefObject<L.Map>;
-
     constructor(props: DKMapProps) {
         super(props);
         this.fetching = false;
@@ -69,20 +67,22 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         }
         return (
             <MapContainer
-                whenCreated={(map) => { this.setState({mapRef: map}) }}
+                whenCreated={(map) => {  
+                    this.setState({mapRef: map}); 
+                }}
                 id='map'
                 className="map-container"
                 center={this.props.mapCenter}
-                // bounds={MAP_BOUNDS}
-                zoom={7}
-                minZoom={1}
-                maxZoom={50}
+                bounds={this.props.mapBounds}
+                zoom={8}
+                minZoom={7}
+                maxZoom={15}
                 scrollWheelZoom={true}
-                maxBounds={this.props.mapBounds}
+                maxBounds={this.props.mapBounds}  
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    // bounds={MAP_BOUNDS}
+                    bounds={this.props.mapBounds}
                 />
                 <MapConsumer>
                     {(map) => {
@@ -153,7 +153,10 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 if(!response.ok){
                     return null;
                 } 
-                else return response.json();
+                else {
+                    alert("Could not find any polygon at the given point, clear map and start over!");
+                    return response.json(); 
+                }
             })
             .then((data: L.LatLngExpression[][] | null) => {
                 if (data){

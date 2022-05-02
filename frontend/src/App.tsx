@@ -311,12 +311,12 @@ export class App extends React.Component<any, AppStates> {
 					},
 
 				});
-				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta});
+				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta, selectedTripId: null});
 			}
 		} catch (error) {
 			alert("OOPS...\nCould not fetch trips");
 		}     
-		this.setState({isFetching: false});   
+		this.setState({isFetching: false, selectedTripId: null});   
 	};
 }
 

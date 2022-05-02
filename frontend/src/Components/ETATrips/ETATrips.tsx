@@ -38,6 +38,9 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     this.setState({tripChosen: trip});
                 }
             }
+            else {
+                this.setState({tripChosen: null})
+            }
         }
     }
 

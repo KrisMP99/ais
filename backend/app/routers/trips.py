@@ -52,7 +52,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     line_string_df['eta'] = (line_string_df['c2_time'] - line_string_df['c1_time']).dt.floor('s')
     line_string_df['eta_min'] = str(line_string_df['eta'].min())
     line_string_df['eta_median'] = str(line_string_df['eta'].median())
-    line_string_df['eta_min'] = str(line_string_df['eta'].max())
+    line_string_df['eta_max'] = str(line_string_df['eta'].max())
     line_string_df['eta_avg'] = str(line_string_df['eta'].mean())
     line_string_df['eta'] = line_string_df['eta'].astype(str)
 

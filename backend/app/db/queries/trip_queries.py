@@ -6,7 +6,8 @@ from app.models.grid_polygon import GridPolygon
 import pandas as pd
 import geopandas as gpd
 import shapely.wkb as wkb
-from app.db.database import engine, Session
+from app.db.database import engine
+import numpy as np
 
 def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
     '''We find all hexagons where the points are found in'''
@@ -175,6 +176,9 @@ def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, log
 
     df['df_loc1_time_id'] = pd.to_datetime(df['df_loc1_time_id'].astype(str).str.zfill(6), format="%H%M%S")
     df['df_loc2_time_id'] = pd.to_datetime(df['df_loc2_time_id'].astype(str).str.zfill(6), format="%H%M%S")
+
+    # Switch columns so we dont get negative values
+    df['df_loc1_time_id'], df['df_loc2_time_id'] = np.where(df['df_loc1_time_id'] < df['df_loc2_time_id'], (df['df_loc1_time_id'], df['df_loc2_time_id']), (df['df_loc2_time_id'], df['df_loc1_time_id']))
 
     if len(df) == 0:
         logger.warning('No trips were found for the selected polygons')

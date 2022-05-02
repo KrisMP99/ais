@@ -120,7 +120,10 @@ export class App extends React.Component<any, AppStates> {
 									ref={this.findRouteRef} 
 									className='button btn-find-route' 
 									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null || this.state.isFetching}
-									onClick={() => this.setState({isFetching: true})}
+									onClick={() => {
+										this.state.lineStringLayer?.clearLayers();
+										this.setState({isFetching: true});
+									}}
 								>
 									<div style={{display: 'flex', justifyContent: 'center'}}>
 										<Stack {...rowProps} tokens={tokens.spinnerStack} >

@@ -25,6 +25,12 @@ export interface Trip {
 	width?: number;
 	length?: number;
 }
+export interface ETASummary {
+	min: string;
+	max: string;
+	avg: string;
+	median: string;
+}
 
 interface AppStates {
 	pointCoords: LatLng[];
@@ -34,6 +40,7 @@ interface AppStates {
 	selectedTripId: number | null;
 	isFetching: boolean;
 	lineStringLayer: L.LayerGroup;
+	eta: ETASummary | null;
 }
 
 export class App extends React.Component<any, AppStates> {
@@ -44,6 +51,7 @@ export class App extends React.Component<any, AppStates> {
 	protected DKMapRef: React.RefObject<DKMap>;
 	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
 	protected findRouteRef: React.RefObject<HTMLButtonElement>;
+	protected fetchedOnce: boolean;
 
 	constructor(props: any) {
 		super(props);
@@ -51,6 +59,7 @@ export class App extends React.Component<any, AppStates> {
 		this.DKMapRef = React.createRef();
 		this.mousePosRef = React.createRef();
 		this.findRouteRef = React.createRef();
+		this.fetchedOnce = false;
 
 		this.mapCenter = new LatLng(55.8581, 9.8476);
 		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
@@ -59,6 +68,7 @@ export class App extends React.Component<any, AppStates> {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
+			eta: null,
 			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 			selectedTripId: null,
 			lineStringLayer: L.layerGroup(),
@@ -151,10 +161,11 @@ export class App extends React.Component<any, AppStates> {
 								</button>
 							</div>
 						</div>
-						<hr />
+						{this.fetchedOnce ? <hr /> : <></>}
 						<ETATrips
 							ref={this.ETATripsRef}
 							trips={this.state.trips}
+							eta={this.state.eta}
 							tripsShown={16}
 							selectedTripId={this.state.selectedTripId}
 							returnTripIndex={(fromIndex: number, amount: number) => {
@@ -164,6 +175,7 @@ export class App extends React.Component<any, AppStates> {
 							retSelectedTripId={(tripId: number) => {
 								this.setState({selectedTripId: tripId});
 							}}
+							fetchedOnce={this.fetchedOnce}
 						/>
 						<hr />
 						<GridSetting 
@@ -204,6 +216,7 @@ export class App extends React.Component<any, AppStates> {
 		this.DKMapRef.current?.clear();
 		this.ETATripsRef.current?.clear();
 		this.state.lineStringLayer?.clearLayers();
+		this.fetchedOnce = false;
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
@@ -258,11 +271,12 @@ export class App extends React.Component<any, AppStates> {
                     }
             })
         };
-        
+        this.fetchedOnce = true;
 		try {
 			const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
 			if (response.ok) {
 				let trips: Trip[] = [];
+				let eta: ETASummary = {min:"", max:"", avg:"", median:""};
 				let tempLayer: L.LayerGroup = L.layerGroup();
 				const data = await response.json();
 				L.geoJSON(JSON.parse(data), {
@@ -279,6 +293,12 @@ export class App extends React.Component<any, AppStates> {
 							width: feature.properties.width,
 							length: feature.properties.length
 						}); 
+						eta = {
+							min: feature.properties.eta_min,
+							max: feature.properties.eta_max,
+							avg: feature.properties.eta_avg,
+							median: feature.properties.eta_median
+						}
 						featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
 						featureLayer.addEventListener("click", () => this.setState({selectedTripId: feature.properties.simplified_trip_id}));
 						tempLayer.addLayer(featureLayer);        
@@ -288,9 +308,10 @@ export class App extends React.Component<any, AppStates> {
 							color: feature?.properties.color,
 							weight: 5,
 						}
-					}
+					},
+
 				});
-				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips});
+				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta});
 			}
 		} catch (error) {
 			alert("OOPS...\nCould not fetch trips");

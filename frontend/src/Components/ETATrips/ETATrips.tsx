@@ -1,14 +1,16 @@
 import React from 'react';
 import './ETATrips.css';
-import { Trip } from '../../App';
+import { ETASummary, Trip } from '../../App';
 import '../../App.css';
 
 interface ETATripsProps {
     trips: Trip[];
+    eta: ETASummary | null;
     tripsShown: number;
     returnTripIndex: (fromIndex: number, amount: number) => void;
     selectedTripId: number | null;
     retSelectedTripId: (tripId: number) => void;
+    fetchedOnce: boolean;
 }
 
 interface ETATripsState {
@@ -46,6 +48,21 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
         let body = null;
         let footer = null;
         let header = null;
+        let statHeader = null;
+        if(!noTripsCheck && this.props.eta) {
+            statHeader = (
+                <div>
+                    <p className='text-1'>ETA Summary:</p>
+                    <div className='text-3' style={{display: "flex", flexWrap: "wrap"}}>
+                        <p className='data' style={{marginBottom: 0}}><strong>Min:</strong> {this.props.eta.min}</p>
+                        <p className='data' style={{marginBottom: 0}}><strong>Max:</strong> {this.props.eta.max}</p>
+                        <p className='data' style={{marginBottom: 0}}><strong>Avg:</strong> {this.props.eta.avg}</p>
+                        <p className='data' style={{marginBottom: 0}}><strong>Median:</strong> {this.props.eta.median}</p>
+                    </div>                 
+                    <hr style={{width: "70%", marginRight: "auto", marginLeft: "auto"}}/>
+                </div>
+            );
+        }
         if (!this.state.tripChosen && !noTripsCheck) {
             body = (
                 <div className='eta-body'>
@@ -109,7 +126,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
             );
         }
 
-        if (noTripsCheck || this.props.trips.length === 0) {
+        if (this.props.fetchedOnce && (noTripsCheck || this.props.trips.length === 0)) {
             header = 'No trips found!';
             body = (
                 <p className='text-2'>
@@ -118,17 +135,20 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
             )
         }
         else {
-            header = (this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "Trips found:");
+            header = (this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "");
         }
 
 
         return (
-            <div
-                className={noTripsCheck ? "eta-container" : "eta-container-open"}
-            >
-                <p className='text-1'>{header}</p>
-                {body}
-                {footer}
+            <div>
+                {statHeader}
+                <div
+                    className={noTripsCheck ? "eta-container" : "eta-container-open"}
+                >
+                    <p className='text-1'>{header}</p>
+                    {body}
+                    {footer}
+                </div>
             </div>
         );
     }

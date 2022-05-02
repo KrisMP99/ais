@@ -9,7 +9,7 @@ interface MapEventsProps {
     addPoint: (pos: LatLng) => void;
     clearPoints: () => void;
     markerIcon: L.DivIcon;
-    fetchHexagon: (point: LatLng) => void;
+    fetchGridPolygon: (point: LatLng) => void;
 }
 
 

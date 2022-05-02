@@ -119,8 +119,8 @@ export class App extends React.Component<any, AppStates> {
 								<button
 									ref={this.findRouteRef} 
 									className='button btn-find-route' 
-									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null}
-									onClick={() => this.setState({isFetching: true})}// this.postCoordinates(this.props.coordinates)}
+									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null || this.state.isFetching}
+									onClick={() => this.setState({isFetching: true})}
 								>
 									<div style={{display: 'flex', justifyContent: 'center'}}>
 										<Stack {...rowProps} tokens={tokens.spinnerStack} >
@@ -133,7 +133,6 @@ export class App extends React.Component<any, AppStates> {
 												(<Spinner 
 													size={SpinnerSize.small}
 													ariaLive='assertive'
-													// style={{display: 'None'}}
 													className='loader'
 												/>)
 											}
@@ -258,35 +257,39 @@ export class App extends React.Component<any, AppStates> {
         };
         let trips: Trip[] = [];
 		let tempLayer: L.LayerGroup = L.layerGroup();
-        const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
-        if (response.ok) {
-            const data = await response.json();
-            L.geoJSON(JSON.parse(data), {
-                onEachFeature: (feature, featureLayer) => {               
-                    trips.push({ 
-                        tripId: feature.properties.simplified_trip_id,
-                        eta: feature.properties.eta,
-                        color: feature.properties.color,
-                        shipType: feature.properties.ship_type,
-                        mmsi: feature.properties.mmsi,
-                        imo: feature.properties.imo,
-                        typeOfMobile: feature.properties.type_of_mobile,
-                        name: feature.properties.name,
-                        width: feature.properties.width,
-                        length: feature.properties.length
-                    }); 
-                    featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
-                    featureLayer.addEventListener("click", () => this.setState({selectedTripId: feature.properties.simplified_trip_id}));
-                    tempLayer.addLayer(featureLayer);        
-                },
-                style: (feature) => {
-                    return {
-                        color: feature?.properties.color,
-                        weight: 5,
-                    }
-                }
-            });
-        }
+		try {
+			const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
+			if (response.ok) {
+				const data = await response.json();
+				L.geoJSON(JSON.parse(data), {
+					onEachFeature: (feature, featureLayer) => {               
+						trips.push({ 
+							tripId: feature.properties.simplified_trip_id,
+							eta: feature.properties.eta,
+							color: feature.properties.color,
+							shipType: feature.properties.ship_type,
+							mmsi: feature.properties.mmsi,
+							imo: feature.properties.imo,
+							typeOfMobile: feature.properties.type_of_mobile,
+							name: feature.properties.name,
+							width: feature.properties.width,
+							length: feature.properties.length
+						}); 
+						featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
+						featureLayer.addEventListener("click", () => this.setState({selectedTripId: feature.properties.simplified_trip_id}));
+						tempLayer.addLayer(featureLayer);        
+					},
+					style: (feature) => {
+						return {
+							color: feature?.properties.color,
+							weight: 5,
+						}
+					}
+				});
+			}
+		} catch (error) {
+			alert("OOPS...\nCould not fetch trips");
+		}        
 		this.setState({isFetching: false, lineStringLayer: tempLayer})
 	};
 }

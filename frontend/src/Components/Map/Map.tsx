@@ -100,7 +100,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     layerGroup={this.markerLayer}
                     markerIcon={this.markerIcon}
                     points={this.state.points}
-                    fetchHexagon={(point) => this.fetchPolygon(point)}
+                    fetchGridPolygon={(point) => this.fetchPolygon(point)}
                     retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
                     addPoint={(point) => {
                         this.state.points.push(point);
@@ -147,26 +147,31 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     }
                 )
         };
-        fetch('http://' + process.env.REACT_APP_API! + '/grids/polygon', requestOptions)
-        .then((response) => {
-            if(!response.ok){
-                return null;
-            } 
-            else return response.json();
-        })
-        .then((data: L.LatLngExpression[][] | null) => {
-            if (data){
-                let temp: L.Polygon[] = this.state.hexPolygons;         
-                temp.push(new L.Polygon(data, {
-                    opacity: 0,
-                    fillOpacity: 0.6,
-                }));
-                if(temp.length === 1) {
-                    temp[0].bindPopup("Choose a point further from your first point!");
+        try {
+            fetch('http://' + process.env.REACT_APP_API! + '/grids/polygon', requestOptions)
+            .then((response) => {
+                if(!response.ok){
+                    return null;
+                } 
+                else return response.json();
+            })
+            .then((data: L.LatLngExpression[][] | null) => {
+                if (data){
+                    let temp: L.Polygon[] = this.state.hexPolygons;         
+                    temp.push(new L.Polygon(data, {
+                        opacity: 0,
+                        fillOpacity: 0.6,
+                    }));
+                    if(temp.length === 1) {
+                        temp[0].bindPopup("Choose a point further from your first point!");
+                    }
+                    this.setState({hexPolygons: temp});
                 }
-                this.setState({hexPolygons: temp});
-            }
-        });
+            });
+        }
+        catch {
+            alert("OOPS...\nCould not fetch grid polygon");
+        }
     }
 
     protected addCountryPolygons(map: L.Map) {

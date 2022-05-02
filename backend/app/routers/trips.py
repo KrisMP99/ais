@@ -1,21 +1,15 @@
 from random import randint
 from app.models.filter import Filter
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from app.dependencies import get_token_header, get_logger
 from app.models.coordinate import Coordinate
 from app.models.grid_polygon import GridPolygon
-from app.models.simplified_line_string import SimplifiedLineString
-from app.models.location import Location
-from app.models.trip import Trip
-from app.db.database import engine, Session
-from app.db.queries.trip_queries import query_get_points_in_line_string, get_polygons, get_points, get_line_strings
+from app.db.database import Session
+from app.db.queries.trip_queries import get_polygons, get_line_strings
 from shapely.geometry import Point
 from dotenv import load_dotenv
-import shapely.wkb as wkb
-import geopandas as gpd
 import pandas as pd
 import os
-import json
 
 load_dotenv()
 API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')
@@ -55,7 +49,13 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     line_string_df['c1_time'] = (pd.to_timedelta((line_string_df['dist_df_loc1_c1'] / line_string_df['df_loc1_sog']),unit='s') + line_string_df['df_loc1_time_id'])
     line_string_df['c2_time'] = (pd.to_timedelta((line_string_df['dist_df_loc2_c2'] / line_string_df['df_loc2_sog']),unit='s') + line_string_df['df_loc2_time_id'])
     
-    line_string_df['eta'] = (line_string_df['c2_time'] - line_string_df['c1_time']).astype(str)
+    line_string_df['eta'] = (line_string_df['c2_time'] - line_string_df['c1_time']).dt.floor('s')
+    line_string_df['eta_min'] = str(line_string_df['eta'].min())
+    line_string_df['eta_median'] = str(line_string_df['eta'].median())
+    line_string_df['eta_min'] = str(line_string_df['eta'].max())
+    line_string_df['eta_avg'] = str(line_string_df['eta'].mean())
+    line_string_df['eta'] = line_string_df['eta'].astype(str)
+
     print("-------------")
     line_string_df = line_string_df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')
     logger.info('Line strings fetched!')
@@ -64,70 +64,12 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
 
     return line_string_df.to_json()
 
-
-def get_list_of_line_strings_with_points(line_string_df: gpd.GeoDataFrame, 
-                                  points_df: gpd.GeoDataFrame) -> dict[SimplifiedLineString]:
-
-    simplified_line_strings_list = {}
-    simplified_line_strings_list: list[SimplifiedLineString]
-
-    line_string_df = line_string_df.fillna('')
-    points_df = points_df.fillna('')
-    
-    for simplified_trip_id, line_string, mmsi, type_of_mobile, imo, name, width, length, ship_type in zip(line_string_df.simplified_trip_id, line_string_df.line_string, line_string_df.mmsi, line_string_df.type_of_mobile, line_string_df.imo, line_string_df.name, line_string_df.width, line_string_df.length, line_string_df.ship_type):
-        line_class_object = SimplifiedLineString(simplified_trip_id=simplified_trip_id, 
-                                                line_string=line_string, 
-                                                locations=[],
-                                                mmsi=mmsi,
-                                                imo=imo,
-                                                name=name,
-                                                type_of_mobile=type_of_mobile,
-                                                width=width,
-                                                length=length,
-                                                ship_type=ship_type)
-        simplified_line_strings_list[simplified_trip_id] = line_class_object
-    
-
-    for row, col, location, simplified_trip_id, date_id, time_id, sog in zip(points_df.row, points_df.col, points_df.location, points_df.simplified_trip_id, points_df.date_id, points_df.time_id, points_df.sog):
-        line_class_object = simplified_line_strings_list.get(simplified_trip_id)
-        line_class_object: SimplifiedLineString
-        line_class_object.locations.append(
-            Location(
-                row=row, 
-                column=col, 
-                location=location, 
-                date_id=date_id, 
-                time_id=time_id, 
-                sog=sog)
-            )
-
-    return simplified_line_strings_list
-
 def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
     polygons = []
     
     for table_row in df.itertuples(name=None):
         polygons.append(GridPolygon(column=table_row[2], row=table_row[1], polygon=table_row[3], centroid=table_row[4]))
-    
     return polygons
-
-
-
-
-        # create_point_query = f'''hexagon_centroid AS (
-    #                                 SELECT
-    #                                     DISTINCT date_dim.date_id, time_dim.time, data_fact.sog,
-    #                                     ST_Centroid(hex1.geom) AS geom
-    #                                 FROM
-    #                                     points_in_linestring AS pil, hex1, hex2, data_fact, date_dim, time_dim
-    #                                 WHERE
-    #                                     pil.simplified_trip_id = data_fact.simplified_trip_id AND
-    #                                     data_fact.date_id = date_dim.date_id AND
-    #                                     data_fact.time_id = time_dim.time_id AND
-    #                                     pil.geom = data_fact.location
-    #                                 LIMIT 1
-    #                          )'''
-
 
 def give_color():
             return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'

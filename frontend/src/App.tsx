@@ -255,11 +255,12 @@ export class App extends React.Component<any, AppStates> {
                     }
             })
         };
-        let trips: Trip[] = [];
-		let tempLayer: L.LayerGroup = L.layerGroup();
+        
 		try {
 			const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
 			if (response.ok) {
+				let trips: Trip[] = [];
+				let tempLayer: L.LayerGroup = L.layerGroup();
 				const data = await response.json();
 				L.geoJSON(JSON.parse(data), {
 					onEachFeature: (feature, featureLayer) => {               
@@ -286,11 +287,12 @@ export class App extends React.Component<any, AppStates> {
 						}
 					}
 				});
+				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips});
 			}
 		} catch (error) {
 			alert("OOPS...\nCould not fetch trips");
-		}        
-		this.setState({isFetching: false, lineStringLayer: tempLayer})
+		}     
+		this.setState({isFetching: false});   
 	};
 }
 

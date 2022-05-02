@@ -54,7 +54,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     line_string_df['eta_median'] = str(line_string_df['eta'].median())
     line_string_df['eta_max'] = str(line_string_df['eta'].max())
     line_string_df['eta_avg'] = str(line_string_df['eta'].mean())
-    line_string_df['eta'] = line_string_df['eta'].astype(str)
+    line_string_df['eta'] = line_string_df['eta'].astype(str).str.split("0 days").str[-1]
 
     print("-------------")
     line_string_df = line_string_df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')

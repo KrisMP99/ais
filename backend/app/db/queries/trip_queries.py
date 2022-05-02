@@ -1,4 +1,5 @@
 from logging import Logger
+from re import S
 from app.models.filter import Filter
 from fastapi import HTTPException
 from shapely.geometry import Point
@@ -152,7 +153,8 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                 )
             )
             SELECT gd1.simplified_trip_id, gd1.line_string, gd1.mmsi, gd1.type_of_mobile, 
-                gd1.imo, gd1.name, gd1.callsign, gd1.width, gd1.length, gd1.fixing_device, 
+                gd1.imo, gd1.name, gd1.callsign, gd1.width, gd1.length, gd1.fixing_device,
+                gd1.ship_type,
                 gd1.df_loc1, gd1.df_loc1_time_id, gd1.df_loc1_sog, gd1.dist_df_loc1_c1, 
                 gd2.df_loc2, gd2.df_loc2_time_id, gd2.df_loc2_sog, gd2.dist_df_loc2_c2
             FROM get_data_1 as gd1 
@@ -161,6 +163,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
 
 def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, logger: Logger) -> pd.DataFrame:
     sql_query = query_line_strings_and_data_for_ETA(filter)
+    # print(sql_query)
     df = gpd.read_postgis(
             sql_query, 
             engine, 

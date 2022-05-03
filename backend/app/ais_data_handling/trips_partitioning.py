@@ -5,7 +5,6 @@ import pandas as pd
 import geopandas as gpd
 import pandas.io.sql as psql
 from sqlalchemy import create_engine
-from math import cos, asin, sqrt
 import csv
 from shapely.geometry import Point
 
@@ -18,6 +17,7 @@ HOST_DB = os.getenv('HOST_DB')
 DB_NAME = os.getenv('DB_NAME')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_PATH = os.getenv('CSV_PATH')
+STATS_PATH = os.getenv('STATS_PATH')
 
 # Thresholds
 # Distances are in meters
@@ -27,6 +27,8 @@ MAX_DIST_IN_HARBOR = 2000
 MINIMUM_POINTS_IN_TRIP = 500
 MAX_DIST = 2000
 MIN_TIME = 10
+
+DATA = []
 
 class Trip:
     def __init__(self, mmsi, trip_id = None, simplified_trip_id = None):
@@ -84,14 +86,6 @@ class PointClass:
     
     def get_sog(self):
         return self.sog
-    
-# https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
-# Returns the distance in nautical miles (NM)
-def lat_long_distance(p1, p2):
-    km_to_nm = 0.53
-    p_rad = 0.017        # pi / 180
-    a = 0.5 - cos((p2.latitude - p1.latitude)*p_rad) / 2 + cos(p1.latitude * p_rad) * cos(p2.latitude * p_rad) * (1-cos((p2.longitude - p1.longitude)*p_rad))/2
-    return int((12742 * asin(sqrt(a))) * km_to_nm)
 
 def sog_time_distance(p1, p2):
     time_elapsed = p2.timestamp - p1.timestamp
@@ -129,10 +123,13 @@ def get_trips(df: gpd.GeoDataFrame, logger):
     return trip_list
 
 def partition_trips(trip_list: list[Trip], logger):
-    print(f"Before partiton: {len(trip_list)}")
+    logger.info(f"Before partiton: {len(trip_list)}")
     total_trips_cleansed = []
     trips_removed = 0
     trips_added = 0
+
+    temp_for_avg = 0
+    counter = 0
 
     # Compare distances between each point in each trip
     for trip_key in trip_list.copy():
@@ -140,6 +137,9 @@ def partition_trips(trip_list: list[Trip], logger):
         trip: Trip
         points_in_trip = trip.get_points_in_trip()
         points_in_trip: list[PointClass]
+
+        temp_for_avg += len(points_in_trip)
+        counter += 1
 
         if(len(points_in_trip) < MINIMUM_POINTS_IN_TRIP):
             trip_list.pop(trip_key)
@@ -184,7 +184,6 @@ def partition_trips(trip_list: list[Trip], logger):
             # We define it as a new trip
             if(index == MAX_POINTS_IN_HARBOR):
                 dist_p1_p20 = points_below_threshold[0].Point.distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1].Point)
-                # dist_p1_p20 = lat_long_distance(points_below_threshold[0], points_below_threshold[MAX_POINTS_IN_HARBOR - 1])
                 
                 time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
 
@@ -197,7 +196,6 @@ def partition_trips(trip_list: list[Trip], logger):
             
             if(is_new_trip):
                 dist_to_new_trip = curr_point.Point.distance(point.Point)
-                # dist_to_new_trip += lat_long_distance(curr_point, point)
         
             # If the ship has exceeded our distance cut-off for when a new trip begin
             # we make the trip, and add the points to it by using the cut_point and curr_point.
@@ -242,6 +240,10 @@ def partition_trips(trip_list: list[Trip], logger):
     logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points, and added {trips_added} new trips from splitting.")
     trip_list = total_trips_cleansed
 
+    
+    DATA.append(temp_for_avg / counter)
+    DATA.append(trips_removed)
+
     print(f"After partiton: {len(trip_list)}")
     
     return trip_list
@@ -262,13 +264,11 @@ def remove_outliers(trip_list: list[Trip], logger):
         
         point: PointClass
         for point in points_in_trip[1:]:
-            # change below if it works :)
             lat_long = curr_point.Point.distance(point.Point)
-            # lat_long = lat_long_distance(curr_point, point)
             time_sog = sog_time_distance(curr_point, point)
             diff = abs(lat_long - time_sog)
 
-            if(diff > 2000):
+            if(diff > MAX_DIST):
                 trip.remove_point_from_trip(point)
             else:
                 curr_point = point
@@ -332,7 +332,8 @@ def export_trips_csv(trip_list: list[Trip], logger, CSV_PATH = CSV_PATH):
                 row = [point.get_mmsi(), point.latitude, point.longitude, point.get_timestamp()]
                 writer.writerow(row)
 
-def get_cleansed_data(df: gpd.GeoDataFrame, logger) -> gpd.GeoDataFrame:
+def get_cleansed_data(df: gpd.GeoDataFrame, logger, data) -> gpd.GeoDataFrame:
+    DATA = data
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)

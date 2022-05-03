@@ -18,6 +18,8 @@ LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 
+DATA = []
+
 def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
     Gets the .csv files located in the specified folder.
@@ -188,6 +190,7 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
+    DATA.append(len(df))
     
     df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")
 
@@ -201,7 +204,7 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
             (df['Longitude'] >= 3.2) & (df['Longitude'] <=16.5) &
             (df['SOG'] >= 0.1) & (df['SOG'] <=102)
            ].reset_index()
-
+    DATA.append(len(df))
     # We round the lat and longs as we do not need 15 decimals of precision
     # This will save some computation time later.
     # We also round rot, sog and cog, as we do not need a lot of decimal precision here
@@ -222,9 +225,6 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     
     # lower case names in the columns
     df.columns = map(str.lower, df.columns)
-
-    # Maybe move this to trips_partitioning...
-    # df = df.sort_values(by=['timestamp'], ignore_index=True)
 
     # Convert to geopandas dataframe
     # We use 'EPSG:4326' as this is what we recieve from the AIS site
@@ -324,7 +324,7 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     :param file_name: The .csv file name to add to the log.
     """
     
-    df_cleansed = get_cleansed_data(df, logger)
+    df_cleansed = get_cleansed_data(df, logger, DATA)
 
     df_cleansed = df_cleansed.to_crs(epsg="4326")
     df_cleansed = df_cleansed.rename_geometry('location')

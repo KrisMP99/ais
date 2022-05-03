@@ -13,10 +13,11 @@
 .text-oneline {
     display: flex;
     justify-content: space-around;
+    align-items: center;
     margin-right: 15px;
 }
 .filter-text {
-    margin: 10px 0px;
+    margin: 0px 0px;
 }
 
 .eta-body {
@@ -31,6 +32,7 @@
     border-radius: 5px;
     cursor: pointer;
     width: 48%;
+    height: 40px;
 }
 .trip-button:hover {
     background-color: rgb(228, 227, 227);

@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-
+import { initializeIcons } from '@fluentui/react/lib/Icons';
+initializeIcons(undefined, {disableWarnings: true});
 ReactDOM.render(
   <React.StrictMode>
     <script src="https://unpkg.com/geogrid.js"></script>

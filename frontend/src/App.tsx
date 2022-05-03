@@ -1,17 +1,20 @@
 import React from 'react';
 import './App.css';
-import { initializeIcons } from '@fluentui/react/lib/Icons';
-import { LatLng, LatLngBoundsExpression } from 'leaflet';
-
+import { Label, Spinner, SpinnerSize, IStackProps, Stack } from '@fluentui/react'
+import L, { LatLng, LatLngBounds, LatLngBoundsExpression } from 'leaflet';
+//COMPONENTS
 import ETATrips from './Components/ETATrips/ETATrips';
-import DKMap, { PostSetting } from './Components/Map/Map';
-// import PostButton, { PostSetting } from './Components/PostButton';
+import DKMap from './Components/Map/Map';
 import Filters, { FilterObj } from './Components/Filters/Filters';
 import GridSetting, { GridSettingObj } from './Components/GridSetting/GridSetting';
 
+export interface PostSetting {
+	gridSetting: GridSettingObj | null;
+	activeFilters: FilterObj | null;
+}
+
 export interface Trip {
 	tripId: number;
-	// lineString: LatLng[]
 	eta: string;
 	color: string;
 	shipType: string;
@@ -22,19 +25,23 @@ export interface Trip {
 	width?: number;
 	length?: number;
 }
-
+export interface ETASummary {
+	min: string;
+	max: string;
+	avg: string;
+	median: string;
+}
 
 interface AppStates {
 	pointCoords: LatLng[];
-	filterShipTypes: string[];
 	mouseCoords: string[];
 	trips: Trip[];
 	postSetting: PostSetting;
-	getTrips: boolean;
 	selectedTripId: number | null;
+	isFetching: boolean;
+	lineStringLayer: L.LayerGroup;
+	eta: ETASummary | null;
 }
-
-initializeIcons(undefined, {disableWarnings: true});
 
 export class App extends React.Component<any, AppStates> {
 
@@ -43,28 +50,41 @@ export class App extends React.Component<any, AppStates> {
 	protected ETATripsRef: React.RefObject<ETATrips>;
 	protected DKMapRef: React.RefObject<DKMap>;
 	protected mousePosRef: React.RefObject<HTMLParagraphElement>;
+	protected findRouteRef: React.RefObject<HTMLButtonElement>;
+	protected fetchedOnce: boolean;
 
 	constructor(props: any) {
 		super(props);
 		this.ETATripsRef = React.createRef();
 		this.DKMapRef = React.createRef();
 		this.mousePosRef = React.createRef();
+		this.findRouteRef = React.createRef();
+		this.fetchedOnce = false;
 
-		this.mapCenter = new LatLng(55.8581, 9.8476);
-		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
+		this.mapCenter = new LatLng(56.5, 13);
+		this.mapBoundaries = [[59.6, 3.45], [53.2, 16.2]];
 		
 		this.state = {
 			pointCoords: [],
 			mouseCoords: [],
 			trips: [],
-			filterShipTypes: [],
+			eta: null,
 			postSetting: { gridSetting: {size: 500, isHexagon: true}, activeFilters: null },
 			selectedTripId: null,
-			getTrips: false,
+			lineStringLayer: L.layerGroup(),
+			isFetching: false,
 		}
 	}
 
 	render() {
+		const rowProps: IStackProps = { horizontal: true, verticalAlign: 'center' };
+
+		const tokens = {
+			spinnerStack: {
+			childrenGap: 8,
+			},
+		};
+
 		return (
 			<div className='main'>
 				<div className="main-container">
@@ -85,11 +105,7 @@ export class App extends React.Component<any, AppStates> {
 						retSelectedTripId={(tripId: number) => {
 							this.setState({selectedTripId: tripId});
 						}}
-						postSetting={this.state.postSetting}
-						fetchTrips={this.state.getTrips}
-						doneFetching={(trips: Trip[]) => {
-							this.setState({getTrips: false, trips: trips});
-						}}
+						trips={this.state.lineStringLayer}
 						selectedTripId={this.state.selectedTripId}
 					/>
 					<div className='right-side'>
@@ -110,26 +126,46 @@ export class App extends React.Component<any, AppStates> {
 								</p>
 							</div>
 							<div className='footer'>
-								<button 
-									className="button btn-find-route" 
-									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null}
-									onClick={() => this.setState({getTrips: true})}// this.postCoordinates(this.props.coordinates)}
+								<button
+									ref={this.findRouteRef} 
+									className='button btn-find-route' 
+									disabled={this.state.pointCoords.length < 2 || this.props.postSetting === null || this.state.isFetching}
+									onClick={() => {
+										this.state.lineStringLayer?.clearLayers();
+										this.setState({isFetching: true});
+									}}
 								>
-									Find route
+									<div style={{display: 'flex', justifyContent: 'center'}}>
+										<Stack {...rowProps} tokens={tokens.spinnerStack} >
+											<Label 
+												style={{color: '#fff', fontSize: '15px', fontWeight: '500'}}
+												aria-setsize={15}>	
+												Find route
+											</Label>
+											{!this.state.isFetching ? <div></div> :
+												(<Spinner 
+													size={SpinnerSize.small}
+													ariaLive='assertive'
+													className='loader'
+												/>)
+											}
+										</Stack>
+									</div>
 								</button>
 								<button
 									className={'button btn-clear'}
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear point(s)
+									Clear map
 								</button>
 							</div>
 						</div>
-						<hr />
+						{this.fetchedOnce ? <hr /> : <></>}
 						<ETATrips
 							ref={this.ETATripsRef}
 							trips={this.state.trips}
+							eta={this.state.eta}
 							tripsShown={16}
 							selectedTripId={this.state.selectedTripId}
 							returnTripIndex={(fromIndex: number, amount: number) => {
@@ -139,6 +175,7 @@ export class App extends React.Component<any, AppStates> {
 							retSelectedTripId={(tripId: number) => {
 								this.setState({selectedTripId: tripId});
 							}}
+							fetchedOnce={this.fetchedOnce}
 						/>
 						<hr />
 						<GridSetting 
@@ -169,8 +206,17 @@ export class App extends React.Component<any, AppStates> {
 		);
 	}
 
+	componentDidUpdate() {
+		if(this.state.isFetching) {
+			this.fetchTrips();
+		}
+	}
+
 	protected clearPoints() {
 		this.DKMapRef.current?.clear();
+		this.ETATripsRef.current?.clear();
+		this.state.lineStringLayer?.clearLayers();
+		this.fetchedOnce = false;
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
@@ -191,6 +237,87 @@ export class App extends React.Component<any, AppStates> {
 		}
 		return "0.0000";
 	}
+
+	protected async fetchTrips(){
+        if(this.state.pointCoords.length !== 2) {
+			this.setState({isFetching: false});
+            return;
+        }
+        const requestOptions = {
+            method: 'POST',
+            headers: { 
+                'Accept': 'application/json', 
+                'Content-Type': 'application/json',
+                'x-token':  process.env.REACT_APP_TOKEN!,
+            },
+            body: 
+                JSON.stringify(
+                {
+                    "p1": {
+                        "long": this.state.pointCoords[0].lng,
+                        "lat": this.state.pointCoords[0].lat,
+                        "is_hexagon": this.state.postSetting.gridSetting?.isHexagon,
+                        "grid_size": this.state.postSetting.gridSetting?.size
+                },
+                    "p2":{
+                        "long": this.state.pointCoords[1].lng,
+                        "lat": this.state.pointCoords[1].lat,
+                        "is_hexagon": this.state.postSetting?.gridSetting?.isHexagon,
+                        "grid_size": this.state.postSetting?.gridSetting?.size
+                },
+                    "filter":{
+                        "ship_types": this.state.postSetting?.activeFilters?.shipTypes
+                        // "date_range": this.props.postSetting?.activeFilters?.dateRange
+                    }
+            })
+        };
+        this.fetchedOnce = true;
+		try {
+			const response = await fetch('http://' + process.env.REACT_APP_API! + '/trips', requestOptions);
+			if (response.ok) {
+				let trips: Trip[] = [];
+				let eta: ETASummary = {min:"", max:"", avg:"", median:""};
+				let tempLayer: L.LayerGroup = L.layerGroup();
+				const data = await response.json();
+				L.geoJSON(JSON.parse(data), {
+					onEachFeature: (feature, featureLayer) => {               
+						trips.push({ 
+							tripId: feature.properties.simplified_trip_id,
+							eta: feature.properties.eta,
+							color: feature.properties.color,
+							shipType: feature.properties.ship_type,
+							mmsi: feature.properties.mmsi,
+							imo: feature.properties.imo,
+							typeOfMobile: feature.properties.type_of_mobile,
+							name: feature.properties.name,
+							width: feature.properties.width,
+							length: feature.properties.length
+						}); 
+						eta = {
+							min: feature.properties.eta_min,
+							max: feature.properties.eta_max,
+							avg: feature.properties.eta_avg,
+							median: feature.properties.eta_median
+						}
+						featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
+						featureLayer.addEventListener("click", () => this.setState({selectedTripId: feature.properties.simplified_trip_id}));
+						tempLayer.addLayer(featureLayer);        
+					},
+					style: (feature) => {
+						return {
+							color: feature?.properties.color,
+							weight: 5,
+						}
+					},
+
+				});
+				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta, selectedTripId: null});
+			}
+		} catch (error) {
+			alert("OOPS...\nCould not fetch trips");
+		}     
+		this.setState({isFetching: false, selectedTripId: null});   
+	};
 }
 
 export default App;

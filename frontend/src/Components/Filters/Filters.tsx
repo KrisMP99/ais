@@ -57,7 +57,7 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
                     <ShipTypeFilter
                         ref={this.shipTypeFilterRef}
                         hasChanged={(hasChanged: boolean) => this.hasChanged(1, hasChanged)}
-                        returnShipTypes={(shipTypes: string[] |null) => {
+                        returnShipTypes={(shipTypes: string[] | null) => {
                             this.filterActive.shipTypes = shipTypes;
                         }}
                     /> 
@@ -106,8 +106,9 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
 
     protected hasChanged(index: number, value: boolean) {
         if(this.state.hasChanged.length >= index) {
-            this.state.hasChanged[index] = value;
-            this.setState({hasChanged: this.state.hasChanged});
+            let temp = [...this.state.hasChanged];
+            temp[index] = value;
+            this.setState({hasChanged: temp});
         }
         else {
             console.error("ERROR in Filters.tsx - hasChanged function");

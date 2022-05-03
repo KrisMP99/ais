@@ -151,10 +151,10 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
             fetch('http://' + process.env.REACT_APP_API! + '/grids/polygon', requestOptions)
             .then((response) => {
                 if(!response.ok){
+                    alert("Could not find any polygon at the given point, clear map and start over!");
                     return null;
                 } 
                 else {
-                    alert("Could not find any polygon at the given point, clear map and start over!");
                     return response.json(); 
                 }
             })

@@ -123,7 +123,7 @@ def get_trips(df: gpd.GeoDataFrame, logger):
     return trip_list
 
 def partition_trips(trip_list: list[Trip], logger):
-    print(f"Before partiton: {len(trip_list)}")
+    logger.info(f"Before partiton: {len(trip_list)}")
     total_trips_cleansed = []
     trips_removed = 0
     trips_added = 0
@@ -268,7 +268,7 @@ def remove_outliers(trip_list: list[Trip], logger):
             time_sog = sog_time_distance(curr_point, point)
             diff = abs(lat_long - time_sog)
 
-            if(diff > 2000):
+            if(diff > MAX_DIST):
                 trip.remove_point_from_trip(point)
             else:
                 curr_point = point

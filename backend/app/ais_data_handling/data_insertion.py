@@ -289,7 +289,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     vacuum_and_analyze_tables()
     time_end_sql = datetime.datetime.now()
     time_delta = (time_end_sql - time_begin_sql)
-    DATA.append(str((time_delta.total_seconds() / 60)))
+    DATA.append((time_delta.total_seconds() / 60))
 
 
     df_data = pd.DataFrame()
@@ -306,9 +306,9 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
 
                         '''
     df_data = pd.read_sql(sql_query_trips, con=engine)
-    total_before_simplification = str(df_data['trip_points'].sum())
-    after_simplification = str(df_data['simplified_points'].sum())
-    line_perc_reduction = str(((total_before_simplification - after_simplification) / total_before_simplification) * 100)
+    total_before_simplification = df_data['trip_points'].sum()
+    after_simplification = df_data['simplified_points'].sum()
+    line_perc_reduction = ((total_before_simplification - after_simplification) / total_before_simplification) * 100
     DATA.append(total_before_simplification)
     DATA.append(after_simplification)
     DATA.append(line_perc_reduction)

@@ -22,8 +22,8 @@ CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 # Thresholds
 # Distances are in meters
 MAX_SPEED_IN_HARBOR = 0.5
-MAX_POINTS_IN_HARBOR = 50
-MAX_DIST_IN_HARBOR = 2000
+# MAX_POINTS_IN_HARBOR = 50
+# MAX_DIST_IN_HARBOR = 2000
 MINIMUM_POINTS_IN_TRIP = 500
 MAX_DIST = 2000
 MIN_TIME = 5
@@ -242,7 +242,7 @@ def partition_trips(trip_list: list[Trip], logger):
         # A new trip would then be cut, containing the points inside the '[]'
         # [----]|[----]|[-----]|-----
         # As seen in the example, we also need the last part.
-        if index_cut_begin == 0 and index_cut_end == 0:
+        if index_cut_begin == 0 and index_cut_end == 0 and not possibly_new_trip:
             total_trips_cleansed.append(trip)
         elif index_cut_end != (len(points_in_trip) - 1) and (points_left_over or not skip):
             new_trip = Trip(curr_point.get_mmsi())
@@ -376,13 +376,11 @@ def get_cleansed_data(df: gpd.GeoDataFrame, logger, file_name: str) -> gpd.GeoDa
               'median_points_in_trip_before', 'number_of_trips_removed', 'new_trips_added', 
               'avg_points_in_trip_after', 'median_points_in_trip_after', 'number_of_trips_removed_2',
               'outliers_total_removed', 'outliers_avg_removed_per_trip','number_of_trips_removed_3',
-              'max_speed_in_harbor', 'max_points_in_harbor','max_dist_in_harbor', 'minimum_points_in_trip',
+              'max_speed_in_harbor', 'minimum_points_in_trip',
               'max_dist', 'min_time'
                ]
 
     DATA.append(MAX_SPEED_IN_HARBOR)
-    DATA.append(MAX_POINTS_IN_HARBOR)
-    DATA.append(MAX_DIST_IN_HARBOR)
     DATA.append(MINIMUM_POINTS_IN_TRIP)
     
     with open(CSV_FILES_PATH + file_name + '_stats_2.csv', 'w', encoding="UTF8", newline='') as f:

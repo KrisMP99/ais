@@ -150,22 +150,18 @@ def partition_trips(trip_list: list[Trip], logger):
         # Cutting points used when splitting trips into multiple trips
         curr_point = points_in_trip[0]
         cut_point_begin = points_in_trip[0]
-        index_curr = 0
-        index_cut = 0
+        cut_point_end = points_in_trip[0]
+        index_cut_begin = 0
+        index_cut_end = 0
 
         # Used for counting number of points below the threshold
         index = 0
 
         # Used to define if we are going to split into a new trip
-        is_new_trip = False
         possibly_new_trip = False
         skip = False
         cut_trip = False
-        
-        # Used to keep track of how far a ship has travelled when a new trip is being made
-        # Basically, if a ship is at a still-stand (e.g., in harbor or at anker) we wait untill the ship has sailed
-        # at least MAX_DIST_IN_HARBOR before we consider it a new trip (so we don't get multiple trips while the ship is still at port/standstill)
-        dist_to_new_trip = 0
+        points_left_over = False
 
         # Temp list to hold points that is below a given threshold
         points_below_threshold = []
@@ -173,16 +169,19 @@ def partition_trips(trip_list: list[Trip], logger):
 
         # Skip the first iteration, as that is assigned to curr_point
         point: PointClass
-        for point in points_in_trip[1:]:
+        for point in points_in_trip:
             # Add points in which they have a speed below the maximum allowed speed in danish harbors
             # We want MAX_SPEED_IN_HARBOR points in sequence to be below the threshold, before we consider a ship 'stopped'
             if (point.get_sog() < MAX_SPEED_IN_HARBOR):
+                if not possibly_new_trip:
+                    cut_point_end = point
+                
                 points_below_threshold.append(point)
                 index += 1
                 possibly_new_trip = True
+                skip = True
             else:
-                possibly_new_trip = False
-                points_below_threshold.clear()
+                skip = False
                 index = 0
             
             # If we achieve the amount of points in our cut off, we calculate the distance between the first and last point
@@ -190,47 +189,49 @@ def partition_trips(trip_list: list[Trip], logger):
             # We define it as a new trip
             if(possibly_new_trip and not skip):
                 # dist_p1_p20 = points_below_threshold[0].Point.distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1].Point)
-                
                 time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
+                possibly_new_trip = False
 
                 if(time_diff >= MIN_TIME):
-                    is_new_trip = True
+                    cut_trip = True
+                    points_left_over = False
                 else:
-                    is_new_trip = False
-                    points_below_threshold = []
+                    points_left_over = True
+                    possibly_new_trip = False
+                    points_below_threshold.clear()
                     index = 0
             
-            if(is_new_trip):
-                skip = True
-                if(point.get_sog() > MAX_SPEED_IN_HARBOR):
-                    cut_trip = True
-                else:
-                    cut_trip = False
+            # if(is_new_trip):
+            #     skip = True
+            #     if(point.get_sog() > MAX_SPEED_IN_HARBOR):
+            #         cut_trip = True
+            #     else:
+            #         cut_trip = False
                 # dist_to_new_trip = curr_point.Point.distance(point.Point)
         
             # If the ship has exceeded our distance cut-off for when a new trip begin
             # we make the trip, and add the points to it by using the cut_point and curr_point.
             if(cut_trip):
                 trips_added += 1
-                new_trip = Trip(curr_point.get_mmsi())
+                new_trip = Trip(point.get_mmsi())
 
-                index_cut = points_in_trip.index(cut_point_begin)
-                index_curr = points_in_trip.index(curr_point)
+                index_cut_begin = points_in_trip.index(cut_point_begin)
+                index_cut_end = points_in_trip.index(cut_point_end)
 
-                new_trip.insert_point_list(points_in_trip[index_cut:index_curr])
+                new_trip.insert_point_list(points_in_trip[index_cut_begin:index_cut_end])
 
                 # Update our cut points for a (potential) new trip later
-                cut_point_begin = curr_point
+                cut_point_begin = point
+                cut_point_end = point
                 total_trips_cleansed.append(new_trip)
             
                 # Reset our distance and new trip variables (as there can be several trips)
-                dist_to_new_trip = 0
-                is_new_trip = False
                 cut_trip = False
                 skip = False
                 possibly_new_trip = False
+                points_below_threshold.clear()
 
-            # Update our current point
+            # Update our current point (might not be needed anymore?)
             curr_point = point
 
         # If cut_point != curr_point after going through all the points,
@@ -241,15 +242,15 @@ def partition_trips(trip_list: list[Trip], logger):
         # A new trip would then be cut, containing the points inside the '[]'
         # [----]|[----]|[-----]|-----
         # As seen in the example, we also need the last part.
-        if index_cut == 0 and index_curr == 0:
+        if index_cut_begin == 0 and index_cut_end == 0:
             total_trips_cleansed.append(trip)
-        elif index_cut != index_curr:
+        elif index_cut_end != (len(points_in_trip) - 1) and (points_left_over or not skip):
             new_trip = Trip(curr_point.get_mmsi())
-            new_trip.insert_point_list(points_in_trip[index_cut:index_curr])
+            new_trip.insert_point_list(points_in_trip[index_cut_begin:-1])
             total_trips_cleansed.append(new_trip)
 
         # Remove the trip we just went trough (saves memory)
-        trip_list.pop(trip_key)
+        # trip_list.pop(trip_key)  <--- can this be done safely?
 
     logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points, and added {trips_added} new trips from splitting.")
     trip_list = total_trips_cleansed
@@ -392,3 +393,34 @@ def get_cleansed_data(df: gpd.GeoDataFrame, logger, file_name: str) -> gpd.GeoDa
     DATA.clear()
 
     return trip_list
+
+
+
+'''
+- Number of rows before any cleansing at all
+- Number of rows after removing:
+    - Class B ship types
+    - Rows with NULL in MMSI
+    - Rows with NULL in timestamp
+    - Lat,long outside our area of interest
+    - 0.1 <= SOG <= 102
+- Number of trips before trip partitioning
+- Average number of points in each trip before trip partitioning
+    - and median?
+
+- Number of trips removed before trip partitioning (points < 500)
+- Number of new trips added from trips partitioning
+- Number of trips removed after trips partitioning (points < 500)
+- Total number of points removed from each trip after trips partitioning ((dist(p1,p2) - time_dist(p1,p2)) > 2km)
+    - (and avg)
+- Number of trips removed after point removal (points < 500)
+    - (Total number of trips after partitioning)
+- Total time taken for the csv file
+- Total time taken for inserting into database
+- Total time taken for rounding coordinates, generating line strings, adding hex/square ids, vacuuming and analyzing
+- Points before and after line simplification (Douglas Peucker) (total numbers and in percent)
+- Query time taken to fetch data for front end
+- Total time from clicking 'get trips' on front end until stuff is displayed
+
+
+'''

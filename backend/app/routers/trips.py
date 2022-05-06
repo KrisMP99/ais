@@ -10,6 +10,7 @@ from shapely.geometry import Point
 from dotenv import load_dotenv
 import pandas as pd
 import os
+import numpy as np
 
 load_dotenv()
 API_LOG_FILE_PATH = os.getenv('API_LOG_FILE_PATH')
@@ -41,28 +42,40 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     logger.info('Polygons fetched!')
     
     logger.info('Fetching line strings')
-    line_string_df = get_line_strings(poly1=polygons_list[0], poly2=polygons_list[1], filter=filter, logger=logger)
+    df = get_line_strings(poly1=polygons_list[0], poly2=polygons_list[1], filter=filter, logger=logger)
     # with open('/srv/data/csv/line_strings.json', 'w') as out_file:
-    #     out_file.write(line_string_df.to_json())
+    #     out_file.write(df.to_json())
 
     # Do the ETA calculations
-    line_string_df['c1_time'] = (pd.to_timedelta((line_string_df['dist_df_loc1_c1'] / line_string_df['df_loc1_sog']),unit='s') + line_string_df['df_loc1_time_id'])
-    line_string_df['c2_time'] = (pd.to_timedelta((line_string_df['dist_df_loc2_c2'] / line_string_df['df_loc2_sog']),unit='s') + line_string_df['df_loc2_time_id'])
+
+    df['df_loc1_time_id'] = pd.to_datetime(df['df_loc1_time_id'].astype(str).str.zfill(6), format="%H%M%S")
+    df['df_loc2_time_id'] = pd.to_datetime(df['df_loc2_time_id'].astype(str).str.zfill(6), format="%H%M%S")
     
-    line_string_df['eta'] = (line_string_df['c2_time'] - line_string_df['c1_time']).dt.floor('s')
-    line_string_df['eta_min'] = str(line_string_df['eta'].min())
-    line_string_df['eta_median'] = str(line_string_df['eta'].median())
-    line_string_df['eta_max'] = str(line_string_df['eta'].max())
-    line_string_df['eta_avg'] = str(line_string_df['eta'].mean())
-    line_string_df['eta'] = line_string_df['eta'].astype(str)
+    df['direction'] = np.where(df['df_loc1_time_id'] < df['df_loc2_time_id'], ('Forward'), ('Backwards'))
+   
+    df['c1_time'] = (pd.to_timedelta((df['dist_df_loc1_c1'] / df['df_loc1_sog']),unit='s') + df['df_loc1_time_id'])
+    df['c2_time'] = (pd.to_timedelta((df['dist_df_loc2_c2'] / df['df_loc2_sog']),unit='s') + df['df_loc2_time_id'])
+
+    df['c1_time'], df['c2_time'] = np.where(df['c1_time'] < df['c2_time'], (df['c1_time'], df['c2_time']), (df['c2_time'], df['c1_time']))
+
+    
+    df['eta'] = (df['c2_time'] - df['c1_time']).dt.floor('s')
+
+    df = df.sort_values(by=['eta'])
+    df['eta_min'] = str(df['eta'].min()).split("0 days")[-1]
+    df['eta_median'] = str(df['eta'].median()).split("0 days")[-1]
+    df['eta_max'] = str(df['eta'].max()).split("0 days")[-1]
+    df['eta_avg'] = str(df['eta'].mean()).split("0 days")[-1].split(".")[0]
+    df['eta'] = df['eta'].astype(str).str.split("0 days").str[-1]
 
     print("-------------")
-    line_string_df = line_string_df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')
+    print(df['direction'])
+    df = df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')
     logger.info('Line strings fetched!')
     
-    line_string_df['color'] = line_string_df.apply(lambda x: give_color(), axis=1)
+    df['color'] = df.apply(lambda x: give_color(), axis=1)
 
-    return line_string_df.to_json()
+    return df.to_json()
 
 def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
     polygons = []
@@ -72,4 +85,4 @@ def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
     return polygons
 
 def give_color():
-            return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'
+    return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'

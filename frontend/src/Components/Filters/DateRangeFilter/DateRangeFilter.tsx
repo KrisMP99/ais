@@ -49,7 +49,7 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
             <div className="filter-container">
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
-                    <p className="text-2 filter-header-text"><strong>Date range</strong></p>
+                    <p className="text-2 filter-header-text"><strong>Date range (WIP)</strong></p>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
                 </button>
                 <div className="filter-date-range-body" style={{display: (this.state.openOnUi ? '' : 'none')}}>

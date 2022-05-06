@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import { Label, Spinner, SpinnerSize, IStackProps, Stack } from '@fluentui/react'
-import L, { LatLng, LatLngBoundsExpression } from 'leaflet';
+import L, { LatLng, LatLngBounds, LatLngBoundsExpression } from 'leaflet';
 //COMPONENTS
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';
@@ -61,8 +61,8 @@ export class App extends React.Component<any, AppStates> {
 		this.findRouteRef = React.createRef();
 		this.fetchedOnce = false;
 
-		this.mapCenter = new LatLng(55.8581, 9.8476);
-		this.mapBoundaries = [[58.5, 3.2], [53.5, 16.5]];
+		this.mapCenter = new LatLng(56.5, 10);
+		this.mapBoundaries = [[59.6, 3.45], [53.2, 16.2]];
 		
 		this.state = {
 			pointCoords: [],
@@ -311,12 +311,12 @@ export class App extends React.Component<any, AppStates> {
 					},
 
 				});
-				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta});
+				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta, selectedTripId: null});
 			}
 		} catch (error) {
 			alert("OOPS...\nCould not fetch trips");
 		}     
-		this.setState({isFetching: false});   
+		this.setState({isFetching: false, selectedTripId: null});   
 	};
 }
 

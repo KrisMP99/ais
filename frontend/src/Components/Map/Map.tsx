@@ -23,7 +23,7 @@ interface DKMapProps {
 
 interface DKMapStates {
     points: LatLng[];
-    hexPolygons: L.Polygon[];
+    polygons: L.Polygon[];
     mapRef: L.Map | null;
 }
 
@@ -37,12 +37,12 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     protected ignoreCountries: L.Layer[];
     protected hexagons: L.Polygon[];
     protected fetching: boolean;
-
-    // protected mapRef: React.RefObject<L.Map>;
+    protected polygonFetchSuccess: boolean;
 
     constructor(props: DKMapProps) {
         super(props);
         this.fetching = false;
+        this.polygonFetchSuccess = false;
         this.ignoreCountries = [];
         this.countriesAdded = false;
         this.hexagons = [];
@@ -58,7 +58,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
 
         this.state = {
             points: [],
-            hexPolygons: [],
+            polygons: [],
             mapRef: null,
         }
     }
@@ -69,27 +69,29 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         }
         return (
             <MapContainer
-                whenCreated={(map) => { this.setState({mapRef: map}) }}
+                whenCreated={(map) => {  
+                    this.setState({mapRef: map}); 
+                }}
                 id='map'
                 className="map-container"
                 center={this.props.mapCenter}
-                // bounds={MAP_BOUNDS}
+                bounds={this.props.mapBounds}
                 zoom={7}
-                minZoom={1}
-                maxZoom={50}
+                minZoom={7}
+                maxZoom={15}
                 scrollWheelZoom={true}
-                maxBounds={this.props.mapBounds}
+                maxBounds={this.props.mapBounds}  
             >
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    // bounds={MAP_BOUNDS}
+                    bounds={this.props.mapBounds}
                 />
                 <MapConsumer>
                     {(map) => {
                         if(!this.countriesAdded) { 
                             this.addCountryPolygons(map);                        
                         }
-                        this.state.hexPolygons.map((poly) => {
+                        this.state.polygons.map((poly) => {
                             return poly.addTo(map); 
                         });
                         return null;
@@ -98,16 +100,17 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 <MapEvents 
                     ignoreLayers={this.ignoreCountries}
                     layerGroup={this.markerLayer}
-                    markerIcon={this.markerIcon}
+                    // markerIcon={this.markerIcon}
                     points={this.state.points}
-                    fetchGridPolygon={(point) => this.fetchPolygon(point)}
                     retMouseCoords={(pos: string[]) => this.props.retMousePos(pos)}
-                    addPoint={(point) => {
-                        this.state.points.push(point);
-                        this.fetchPolygon(point);
-                        this.props.retCoords(this.state.points);
-                        this.setState({points: this.state.points});
+                    addPoint={async (point) => {
+                        await this.fetchPolygon(point)
+                        if (this.polygonFetchSuccess) {
+                            this.state.points.push(point);
+                            this.props.retCoords(this.state.points);
+                            this.setState({points: this.state.points});
                         }}
+                    }
                     clearPoints={() => this.clear}
                 ></MapEvents>
             </MapContainer>
@@ -115,7 +118,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
     }
 
     public clear() {
-        this.state.hexPolygons.forEach((hex)=>{
+        this.state.polygons.forEach((hex)=>{
             hex.remove();
         });
         this.linestrings.forEach((linestring) => {
@@ -126,7 +129,7 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
         this.linestrings = [];
         this.props.trips.clearLayers();
 
-        this.setState({points: [], hexPolygons: []});
+        this.setState({points: [], polygons: []});
     }
 
     protected async fetchPolygon(point: LatLng) {
@@ -148,24 +151,38 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 )
         };
         try {
-            fetch('http://' + process.env.REACT_APP_API! + '/grids/polygon', requestOptions)
+            await fetch('http://' + process.env.REACT_APP_API! + '/grids/polygon', requestOptions)
             .then((response) => {
                 if(!response.ok){
+                    this.polygonFetchSuccess = false;
+                    alert("Could not find any polygon at the given point");
                     return null;
                 } 
-                else return response.json();
+                else {
+                    return response.json(); 
+                }
             })
             .then((data: L.LatLngExpression[][] | null) => {
-                if (data){
-                    let temp: L.Polygon[] = this.state.hexPolygons;         
+                if (data && this.state.polygons.length < 2){
+                    let temp: L.Polygon[] = this.state.polygons;         
                     temp.push(new L.Polygon(data, {
                         opacity: 0,
                         fillOpacity: 0.6,
                     }));
-                    if(temp.length === 1) {
+                    if (temp.length === 1) {
                         temp[0].bindPopup("Choose a point further from your first point!");
                     }
-                    this.setState({hexPolygons: temp});
+                    else if (temp.length === 2) {
+                        temp[0].unbindPopup();
+                    }
+                    if (this.state.polygons.length < 2 && temp.length <= 2) {
+                        this.polygonFetchSuccess = true;
+                        this.setState({polygons: temp});
+                        return true;
+                    }
+                }
+                else {
+                    this.polygonFetchSuccess = false;
                 }
             });
         }
@@ -184,8 +201,8 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                     fillColor: "#90959e"
                 }
             }).addTo(map);
-        if(this.state.hexPolygons.length === 1) {
-            layer.addData(this.state.hexPolygons[0] as unknown as GeoJsonObject)
+        if(this.state.polygons.length === 1) {
+            layer.addData(this.state.polygons[0] as unknown as GeoJsonObject)
         }
         this.countriesAdded = true;
     }

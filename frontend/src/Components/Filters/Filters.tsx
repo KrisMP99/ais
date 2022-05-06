@@ -44,7 +44,7 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
 
     render() {
         return (
-            <div className='filter-container'>
+            <div className='filters-container'>
                 <p className='text-1'><b>Filters:</b></p>
                 <div className="filter-body" ref={this.filtersRef}>
                     <DateRangeFilter 

@@ -268,7 +268,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     time_end = datetime.datetime.now()
     time_delta = time_end - time_begin
     logger.info("Done inserting into star schema")
-    logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M%S"))
+    logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M:%S"))
     logger.info(f"Took approx (star schema): {time_delta.total_seconds() / 60} minutes")
     DATA.append(str(time_delta.total_seconds() / 60))
     

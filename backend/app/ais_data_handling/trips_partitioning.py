@@ -21,7 +21,7 @@ CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 
 # Thresholds
 # Distances are in meters
-MAX_SPEED_IN_HARBOR = 0.5
+MAX_SPEED = 1
 # MAX_POINTS_IN_HARBOR = 50
 # MAX_DIST_IN_HARBOR = 2000
 MINIMUM_POINTS_IN_TRIP = 500
@@ -172,7 +172,7 @@ def partition_trips(trip_list: list[Trip], logger):
         for point in points_in_trip:
             # Add points in which they have a speed below the maximum allowed speed in danish harbors
             # We want MAX_SPEED_IN_HARBOR points in sequence to be below the threshold, before we consider a ship 'stopped'
-            if (point.get_sog() < MAX_SPEED_IN_HARBOR):
+            if (point.get_sog() < MAX_SPEED):
                 if not possibly_new_trip:
                     cut_point_end = point
                 
@@ -189,7 +189,7 @@ def partition_trips(trip_list: list[Trip], logger):
             # We define it as a new trip
             if(possibly_new_trip and not skip):
                 # dist_p1_p20 = points_below_threshold[0].Point.distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1].Point)
-                time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
+                time_diff = abs((points_below_threshold[-1].get_timestamp() - points_below_threshold[0].get_timestamp()).total_seconds()/60)
                 possibly_new_trip = False
 
                 if(time_diff >= MIN_TIME):
@@ -376,12 +376,14 @@ def get_cleansed_data(df: gpd.GeoDataFrame, logger, file_name: str) -> gpd.GeoDa
               'median_points_in_trip_before', 'number_of_trips_removed', 'new_trips_added', 
               'avg_points_in_trip_after', 'median_points_in_trip_after', 'number_of_trips_removed_2',
               'outliers_total_removed', 'outliers_avg_removed_per_trip','number_of_trips_removed_3',
-              'max_speed_in_harbor', 'minimum_points_in_trip',
+              'max_speed', 'minimum_points_in_trip',
               'max_dist', 'min_time'
                ]
 
-    DATA.append(MAX_SPEED_IN_HARBOR)
+    DATA.append(MAX_SPEED)
     DATA.append(MINIMUM_POINTS_IN_TRIP)
+    DATA.append(MAX_DIST)
+    DATA.append(MIN_TIME)
     
     with open(CSV_FILES_PATH + file_name + '_stats_2.csv', 'w', encoding="UTF8", newline='') as f:
         writer = csv.writer(f)

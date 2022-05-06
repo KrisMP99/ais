@@ -177,12 +177,6 @@ def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, log
             geom_col='line_string'
         )
 
-    df['df_loc1_time_id'] = pd.to_datetime(df['df_loc1_time_id'].astype(str).str.zfill(6), format="%H%M%S")
-    df['df_loc2_time_id'] = pd.to_datetime(df['df_loc2_time_id'].astype(str).str.zfill(6), format="%H%M%S")
-
-    # Switch columns so we dont get negative values
-    df['df_loc1_time_id'], df['df_loc2_time_id'] = np.where(df['df_loc1_time_id'] < df['df_loc2_time_id'], (df['df_loc1_time_id'], df['df_loc2_time_id']), (df['df_loc2_time_id'], df['df_loc1_time_id']))
-
     if len(df) == 0:
         logger.warning('No trips were found for the selected polygons')
         raise HTTPException(status_code=404, detail='No trips were found for the selected polygons')

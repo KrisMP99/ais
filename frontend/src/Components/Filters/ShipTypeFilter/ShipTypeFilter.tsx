@@ -162,16 +162,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     protected async fetchShipTypes() {
-        // let testArr: ShipType[] = [];
-        // let testArr2: boolean[] = [];
-        // for (let i = 0; i < 13; i++) {
-        //     testArr.push({type: ("test"+i), checked: true});
-        //     testArr2.push(true);
-        // }
-        // // console.log(testArr)
-        // // console.log(testArr2)
-        // this.setState({shipTypes: testArr, preApply: testArr2}); //FOR TESTING ONLY
-
         const requestOptions = {
             method: 'GET',
             headers: {

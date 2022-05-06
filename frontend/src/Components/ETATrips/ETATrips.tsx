@@ -61,7 +61,9 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                         <p className='data' style={{marginBottom: 0}}><strong>Max:</strong> {this.props.eta.max}</p>
                         <p className='data' style={{marginBottom: 0}}><strong>Avg:</strong> {this.props.eta.avg}</p>
                         <p className='data' style={{marginBottom: 0}}><strong>Median:</strong> {this.props.eta.median}</p>
-                    </div>                 
+                        <p className='data' style={{marginBottom: 0}}><strong>Trips found:</strong> {this.props.trips.length}</p>
+                    </div>   
+                    <div></div>              
                     <hr style={{width: "70%", marginRight: "auto", marginLeft: "auto"}}/>
                 </div>
             );
@@ -178,6 +180,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     className='trip-button'
                     onClick={() => {
                         this.props.retSelectedTripId(trip.tripId);
+                        this.setState({tripChosen: trip});
                     }}
                 >
                     <label style={{ cursor: 'pointer' }}>

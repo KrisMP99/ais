@@ -61,7 +61,7 @@ export class App extends React.Component<any, AppStates> {
 		this.findRouteRef = React.createRef();
 		this.fetchedOnce = false;
 
-		this.mapCenter = new LatLng(56.5, 13);
+		this.mapCenter = new LatLng(56.5, 10);
 		this.mapBoundaries = [[59.6, 3.45], [53.2, 16.2]];
 		
 		this.state = {

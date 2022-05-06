@@ -11,9 +11,8 @@
 }
 .filter-header-text {
     margin: auto 0;
-    width: 100px;
-    /* flex-grow: 2; */
+    width: 150px;
 }
-/* .filter-header-arrow {
-    flex-grow: 1;
-} */
+.filters-container {
+    margin-bottom: 50px;
+}

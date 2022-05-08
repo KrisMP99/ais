@@ -42,7 +42,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         }
     }
     componentDidUpdate(prevProps: ShipFilterProps, prevStates: ShipFilterStates) {
-        if(this.state.shipTypes) {
+        if(this.state.shipTypes !== prevStates.shipTypes) {
             this.areSimilar();
         }
     }
@@ -98,7 +98,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                             if(this.state.shipTypes) {
                                 this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting);
                                 this.setState({shipTypes: this.state.shipTypes});
-                                this.areSimilar();
+                                // this.areSimilar();
                             }
                         }}
                     />

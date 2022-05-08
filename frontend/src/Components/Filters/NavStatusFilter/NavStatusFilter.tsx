@@ -41,6 +41,11 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
             this.fetchNavStatuses();
         }
     }
+    componentDidUpdate(prevPros: NavStatusFilterProps, prevStates: NavStatusFilterStates) {
+        if(JSON.stringify(this.state.navStatuses) !== JSON.stringify(prevStates.navStatuses)) {
+            this.areSimilar();
+        }
+    }
 
     render() {
         let openSymbol = this.state.openOnUi ? "˄" : "˅";
@@ -68,7 +73,7 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
                                     let temp = this.state.navStatuses;
                                     temp[key].checked = !temp[key].checked;
                                     this.setState({navStatuses: temp});
-                                    this.areSimilar();
+                                    // this.areSimilar();
                                 }
                             }}
                         />
@@ -94,7 +99,7 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
                             if(this.state.navStatuses) {
                                 this.state.navStatuses.forEach(s => s.checked = this.checkBoxSetting);
                                 this.setState({navStatuses: this.state.navStatuses});
-                                this.areSimilar();
+                                // this.areSimilar();
                             }
                         }}
                     />

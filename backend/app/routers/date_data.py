@@ -23,6 +23,7 @@ router = APIRouter(
 
 @router.get('/dates')
 async def get_ship_types():
+    print("DDDDD")
     date_dim = Table('date_dim')
     query = Query.from_(date_dim).select(date_dim.date).distinct().where(date_dim.date.notnull())
     loop = asyncio.get_event_loop()
@@ -32,7 +33,4 @@ async def get_ship_types():
         raise HTTPException(status_code=404, detail='Could not find any dates')
 
     date_data = df['date'].to_list()
-    date_data.sort()
-    ret = [date_data[0], date_data[-1]]
-    print(ret)
     return jsonable_encoder(date_data)

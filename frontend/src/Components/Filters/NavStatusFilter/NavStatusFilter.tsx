@@ -168,7 +168,6 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
         await fetch('http://' + process.env.REACT_APP_API! + '/navigational_attributes/nav-attrs', requestOptions)
         .then((response) => {
                 if (!response.ok) {
-                    console.log("NAV STATUS RESPONSE NOT OK")
                     return this.setState({navStatuses: [], preApply: []});
                 }
                 return response.json();

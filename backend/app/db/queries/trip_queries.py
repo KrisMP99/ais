@@ -76,8 +76,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
         for nav_status in filter.nav_stats[:-1]:
             filter_nav_stats += f"nav_dim.navigational_status = '{nav_status}' OR "
         filter_nav_stats += f"nav_dim.navigational_status = '{filter.nav_stats[-1]}')"
-            
-    print(filter_nav_stats)
+
     return f'''WITH centroids_linestrings AS (
                 SELECT
                     DISTINCT ON (std.simplified_trip_id) 

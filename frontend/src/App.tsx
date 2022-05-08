@@ -241,7 +241,6 @@ export class App extends React.Component<any, AppStates> {
 	}
 
 	protected async fetchTrips(){
-		console.log(JSON.stringify(this.state.postSetting.activeFilters));
         if(this.state.pointCoords.length !== 2) {
 			this.setState({isFetching: false});
             return;

@@ -23,9 +23,11 @@ interface DateRangeFilterStates {
  
 class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFilterStates> {
 
+    protected fetchedOnce: boolean;
 
     constructor(props: DateRangeFilterProps) {
         super(props);
+        this.fetchedOnce = false;
         this.state = {
             openOnUi: false,
             minDate: null,
@@ -38,8 +40,9 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
     }
 
     componentDidMount() {
-        if(!this.state.minDate || !this.state.maxDate) {
+        if((!this.state.minDate || !this.state.maxDate) && !this.fetchedOnce) {
             this.fetchDateInterval();
+            this.fetchedOnce = true;
         }
     }
 
@@ -157,26 +160,30 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
                 'x-token': process.env.REACT_APP_TOKEN!,
             }
         };
-        await fetch('http://' + process.env.REACT_APP_API! + '/date_data/dates', requestOptions)
+        await fetch('http://' + process.env.REACT_APP_API! + '/dates/dates', requestOptions)
         .then((response) => {
                 if (!response.ok) {
                     return null;
                 }
                 return response.json();
         })
-        .then((data: number[]) => {
-                if(!data || data.length < 2) return;
-                let minDate = Math.min.apply(null, data);
-                let maxDate = Math.max.apply(null, data);
-                this.setState({
-                    minDate: new Date(minDate),
-                    maxDate: new Date(maxDate),
-                    startDate: new Date(minDate),
-                    endDate: new Date(maxDate),
-                    preApplyStartDate: new Date(minDate),
-                    preApplyEndDate: new Date(maxDate) 
-                });
-                return;
+        .then((data: string[]) => {
+            if(!data) return;
+            let temp: number[] = [];
+            data.forEach(elem => {
+                temp.push(new Date(elem).getTime());
+            });
+            let minDate = new Date(Math.min.apply(null, temp));
+            let maxDate = new Date(Math.max.apply(null, temp));
+            this.setState({
+                minDate: minDate,
+                maxDate: maxDate,
+                startDate: minDate,
+                endDate: maxDate,
+                preApplyStartDate: minDate,
+                preApplyEndDate: maxDate 
+            });
+            return;
         });    
     }
 }

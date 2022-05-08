@@ -28,8 +28,8 @@ middleware = [
 ]
 
 app = FastAPI(middleware=middleware)
-app.include_router(trips.router)
 app.include_router(grids.router)
 app.include_router(ship_attributes.router)
 app.include_router(navigational_attributes.router)
 app.include_router(date_data.router)
+app.include_router(trips.router)

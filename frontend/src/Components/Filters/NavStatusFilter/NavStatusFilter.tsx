@@ -1,56 +1,51 @@
 import React from "react"
 import '../../../App.css';
-import './ShipTypeFilter.css';
+import './NavStatusFilter.css';
 import '../Filters.css';
 
-interface ShipType {
+interface NavStatus {
     type: string;
     checked: boolean;
 }
 
-interface ShipFilterProps {
+interface NavStatusFilterProps {
     hasChanged: (hasChanged: boolean) => void;
-    returnShipTypes: (shipTypes: string[] | null) => void;
+    returnNavStatuses: (statuses: string[] | null) => void;
 }
 
-interface ShipFilterStates {
+interface NavStatusFilterStates {
     preApply: boolean[];
-    shipTypes: ShipType[] | null;
+    navStatuses: NavStatus[] | null;
     openOnUi: boolean;
 }
 
-export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterStates>{
+export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavStatusFilterStates>{
 
     protected checkBoxSetting: boolean;
     protected appliedOnce: boolean;
 
-    constructor(props: ShipFilterProps) {
+    constructor(props: NavStatusFilterProps) {
         super(props);
         this.checkBoxSetting = true;
         this.appliedOnce = false;
 
         this.state = {
             preApply: [],
-            shipTypes: null,
+            navStatuses: null,
             openOnUi: false,
         }
     }
 
     componentDidMount() {
-        if(!this.state.shipTypes) {
-            this.fetchShipTypes();
-        }
-    }
-    componentDidUpdate(prevProps: ShipFilterProps, prevStates: ShipFilterStates) {
-        if(this.state.shipTypes) {
-            this.areSimilar();
+        if(!this.state.navStatuses) {
+            this.fetchNavStatuses();
         }
     }
 
     render() {
         let openSymbol = this.state.openOnUi ? "˄" : "˅";
         
-        if (this.state.shipTypes && this.state.shipTypes.every((val) => val.checked)){
+        if (this.state.navStatuses && this.state.navStatuses.every((val) => val.checked)){
             this.checkBoxSetting = true;
         }
         else  {
@@ -58,21 +53,22 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         }
         //Sets the columns
         let shipTypes = null;
-        if(this.state.shipTypes && this.state.shipTypes.length > 0) {
-            shipTypes = this.state.shipTypes.map((val, key) => {
+        if(this.state.navStatuses && this.state.navStatuses.length > 0) {
+            shipTypes = this.state.navStatuses.map((val, key) => {
                 return (
                     <label key={key} className="type-label">
+                        {/* <li key={key}> */}
                         <p className="text-3" style={{alignSelf: "flex-start", margin: "0px"}}>{val.type}</p>                     
                         <input 
                             className="checkbox" 
                             type={"checkbox"} 
                             checked={val.checked} 
                             onChange={() => {
-                                if(this.state.shipTypes) {
-                                    let temp = this.state.shipTypes;
+                                if(this.state.navStatuses) {
+                                    let temp = this.state.navStatuses;
                                     temp[key].checked = !temp[key].checked;
-                                    this.setState({shipTypes: temp});
-                                    // this.areSimilar();
+                                    this.setState({navStatuses: temp});
+                                    this.areSimilar();
                                 }
                             }}
                         />
@@ -84,7 +80,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             <div className='filter-container'>
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
-                    <p className='text-2 filter-header-text'><b>Ship type</b></p>
+                    <p className='text-2 filter-header-text'><b>Navigational Status</b></p>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
                 </button>
                 <div className="check-all" style={{display: this.state.openOnUi ? 'flex' : 'none'}}>
@@ -95,9 +91,9 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                         checked={this.checkBoxSetting} 
                         onChange={(e) => {
                             this.checkBoxSetting = !this.checkBoxSetting; 
-                            if(this.state.shipTypes) {
-                                this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting);
-                                this.setState({shipTypes: this.state.shipTypes});
+                            if(this.state.navStatuses) {
+                                this.state.navStatuses.forEach(s => s.checked = this.checkBoxSetting);
+                                this.setState({navStatuses: this.state.navStatuses});
                                 this.areSimilar();
                             }
                         }}
@@ -116,42 +112,42 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     public apply() {
-        if (this.state.shipTypes) {
-            if (!this.appliedOnce && this.state.shipTypes.every((val) => val.checked)) {
+        if (this.state.navStatuses) {
+            if (!this.appliedOnce && this.state.navStatuses.every((val) => val.checked)) {
                 this.appliedOnce = true;
-                this.props.returnShipTypes(null);
+                this.props.returnNavStatuses(null);
                 return;
             }
             let pre: boolean[] = [];
             let ret: string[] = [];
-            for (let i = 0; i < this.state.shipTypes.length; i++) {
-                if (this.state.shipTypes[i].checked) {
-                    ret.push(this.state.shipTypes[i].type);
+            for (let i = 0; i < this.state.navStatuses.length; i++) {
+                if (this.state.navStatuses[i].checked) {
+                    ret.push(this.state.navStatuses[i].type);
                 }
-                pre.push(this.state.shipTypes[i].checked);    
+                pre.push(this.state.navStatuses[i].checked);    
             }
-            this.props.returnShipTypes(ret); 
+            this.props.returnNavStatuses(ret); 
             this.setState({preApply: [...pre]});
         }
         else {
-            this.props.returnShipTypes(null);
+            this.props.returnNavStatuses(null);
         }
     }
 
     protected areSimilar() {
         let isSimilar = true;
-        if(!this.state.shipTypes) {
+        if(!this.state.navStatuses) {
             return;
         }
-        for (let i = 0; i < this.state.shipTypes.length; i++) {
-            if(this.state.shipTypes[i].checked !== this.state.preApply[i]) {
+        for (let i = 0; i < this.state.navStatuses.length; i++) {
+            if(this.state.navStatuses[i].checked !== this.state.preApply[i]) {
                 isSimilar = false;
             }
         }
-        this.props.hasChanged(!isSimilar); 
+        this.props.hasChanged(!isSimilar);
     }
 
-    protected async fetchShipTypes() {
+    protected async fetchNavStatuses() {
         const requestOptions = {
             method: 'GET',
             headers: {
@@ -160,26 +156,26 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 'x-token': process.env.REACT_APP_TOKEN!,
             }
         };
-        let shipTypes: ShipType[] = [];
+        let statuses: NavStatus[] = [];
         let pre: boolean[] = [];
-        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions)
+        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions) // SKAL ÆNDRES!!!
         .then((response) => {
                 if (!response.ok) {
-                    return this.setState({shipTypes: [], preApply: []});
+                    return this.setState({navStatuses: [], preApply: []});
                 }
                 return response.json();
         })
         .then((data: string[]) => {
-                if(data.length < 1) return;
+                if(data.length < 1 || !data) return;
                 data.forEach((val) => {
-                    shipTypes.push({type: val, checked: true});
+                    statuses.push({type: val, checked: true});
                     pre.push(true);
                 });
                 return;
         });    
-        this.setState({shipTypes: shipTypes, preApply: pre});
+        this.setState({navStatuses: statuses, preApply: pre});
     }
 }
     
 
-export default ShipTypeFilter;
+export default NavStatusFilter;

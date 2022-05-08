@@ -29,7 +29,7 @@ async def get_ship_types():
     df = await loop.run_in_executor(None, pd.read_sql_query, str(query), engine)
 
     if len(df) == 0:
-        raise HTTPException(status_code=404, detail='Could not find any ship types')
+        raise HTTPException(status_code=404, detail='Could not find any dates')
 
     date_data = df['date'].to_list()
     return jsonable_encoder(date_data)

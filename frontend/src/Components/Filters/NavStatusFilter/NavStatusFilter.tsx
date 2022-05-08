@@ -158,7 +158,7 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
         };
         let statuses: NavStatus[] = [];
         let pre: boolean[] = [];
-        fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions) // SKAL ÆNDRES!!!
+        await fetch('http://' + process.env.REACT_APP_API! + '/navigational_attributes/nav-attrs', requestOptions)
         .then((response) => {
                 if (!response.ok) {
                     return this.setState({navStatuses: [], preApply: []});

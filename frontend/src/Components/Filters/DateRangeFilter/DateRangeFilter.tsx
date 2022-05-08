@@ -157,7 +157,7 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
                 'x-token': process.env.REACT_APP_TOKEN!,
             }
         };
-        await fetch('http://' + process.env.REACT_APP_API! + '/ship_attributes/ship-types', requestOptions) //SKAL ÆNDRES
+        await fetch('http://' + process.env.REACT_APP_API! + '/date_data/dates', requestOptions)
         .then((response) => {
                 if (!response.ok) {
                     return null;

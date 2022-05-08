@@ -7,7 +7,7 @@ import NavStatusFilter from "./NavStatusFilter/NavStatusFilter";
 import DirectionFilter from "./DirectionFilter/DirectionFilter";
 
 export interface FilterObj {
-    dateRange: Date[];
+    dateRange: Date[] | null;
     shipTypes: string[] | null;
     navStatuses: string[] | null;
     direction: boolean | null;
@@ -42,7 +42,7 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
         this.navStatusFilterRef = React.createRef();
         this.directionFilterRef = React.createRef();
         this.filterActive = { 
-            dateRange: [], 
+            dateRange: null, 
             shipTypes: null,
             navStatuses: null,
             direction: null 

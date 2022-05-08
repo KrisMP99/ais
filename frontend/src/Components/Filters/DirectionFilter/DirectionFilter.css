@@ -35,7 +35,7 @@ ul {
     margin-right: 10px;
     margin-left: auto;
 }
-.type-label {
+/* .type-label {
     width: 130px;
     display: flex;
     place-content: center;
@@ -45,4 +45,4 @@ ul {
 }
 .type-label:hover {
     background-color: rgb(227, 227, 227);
-}
+} */

@@ -23,11 +23,13 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
 
     protected checkBoxSetting: boolean;
     protected appliedOnce: boolean;
+    protected fetchedOnce: boolean;
 
     constructor(props: ShipFilterProps) {
         super(props);
         this.checkBoxSetting = true;
         this.appliedOnce = false;
+        this.fetchedOnce = false;
 
         this.state = {
             preApply: [],
@@ -37,8 +39,9 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
     }
 
     componentDidMount() {
-        if(!this.state.shipTypes) {
+        if(!this.state.shipTypes && !this.fetchedOnce) {
             this.fetchShipTypes();
+            this.fetchedOnce = true;
         }
     }
 
@@ -57,7 +60,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             shipTypes = this.state.shipTypes.map((val, key) => {
                 return (
                     <label key={key} className="type-label">
-                        <p className="text-3" style={{alignSelf: "flex-start", margin: "0px"}}>{val.type}</p>                     
+                        <p className="text-3" style={{margin: "0px"}}>{val.type}</p>                     
                         <input 
                             className="checkbox" 
                             type={"checkbox"} 

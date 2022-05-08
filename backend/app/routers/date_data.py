@@ -32,4 +32,7 @@ async def get_ship_types():
         raise HTTPException(status_code=404, detail='Could not find any dates')
 
     date_data = df['date'].to_list()
+    date_data.sort()
+    ret = [date_data[0], date_data[-1]]
+    print(ret)
     return jsonable_encoder(date_data)

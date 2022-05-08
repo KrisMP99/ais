@@ -38,9 +38,9 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
     }
 
     componentDidMount() {
-        // if(!this.state.minDate || !this.state.maxDate) {
-        //     this.fetchDateInterval();
-        // }
+        if(!this.state.minDate || !this.state.maxDate) {
+            this.fetchDateInterval();
+        }
     }
 
     componentDidUpdate(prevProps: DateRangeFilterProps, prevStates: DateRangeFilterStates) {
@@ -164,15 +164,17 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
                 }
                 return response.json();
         })
-        .then((data: Date[]) => {
-                if(data.length < 2 || !data) return;
+        .then((data: number[]) => {
+                if(!data || data.length < 2) return;
+                let minDate = Math.min.apply(null, data);
+                let maxDate = Math.max.apply(null, data);
                 this.setState({
-                    minDate: data[0],
-                    maxDate: data[1],
-                    startDate: data[0],
-                    endDate: data[1],
-                    preApplyStartDate: data[0],
-                    preApplyEndDate: data[1] 
+                    minDate: new Date(minDate),
+                    maxDate: new Date(maxDate),
+                    startDate: new Date(minDate),
+                    endDate: new Date(maxDate),
+                    preApplyStartDate: new Date(minDate),
+                    preApplyEndDate: new Date(maxDate) 
                 });
                 return;
         });    

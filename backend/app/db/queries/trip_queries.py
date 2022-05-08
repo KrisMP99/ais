@@ -64,14 +64,20 @@ def get_polygons(p1: Point, p2: Point, p1_is_hex: bool, p1_size: int, logger: Lo
     return df
 
 def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
-    filter_where = ''
-    if(len(filter.ship_types) > 0 and filter.ship_types is not None):
-        filter_where += ' AND ('
+    filter_ship_type = ''
+    if(filter.ship_types is not None and len(filter.ship_types) > 0):
+        filter_ship_type += ' AND ('
         for ship_type in filter.ship_types[:-1]:
-            filter_where += f"ship_type_dim.ship_type = '{ship_type}' OR "
-        filter_where += f"ship_type_dim.ship_type = '{filter.ship_types[-1]}')"
+            filter_ship_type += f"ship_type_dim.ship_type = '{ship_type}' OR "
+        filter_ship_type += f"ship_type_dim.ship_type = '{filter.ship_types[-1]}')"
+    filter_nav_stats = ''
+    if(filter.nav_stats is not None and len(filter.nav_stats) > 0):
+        filter_nav_stats += ' AND ('
+        for nav_status in filter.nav_stats[:-1]:
+            filter_nav_stats += f"nav_dim.navigational_status = '{nav_status}' OR "
+        filter_nav_stats += f"nav_dim.navigational_status = '{filter.nav_stats[-1]}')"
             
-
+    print(filter_nav_stats)
     return f'''WITH centroids_linestrings AS (
                 SELECT
                     DISTINCT ON (std.simplified_trip_id) 
@@ -124,6 +130,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                         ship_dim.length,
                         ship_dim.type_of_position_fixing_device as fixing_device,
                         ship_type_dim.ship_type,
+                        nav_dim.navigational_status,
                         data_fact.location as df_loc1,
                         data_fact.time_id as df_loc1_time_id,
                         data_fact.sog as df_loc1_sog,
@@ -133,10 +140,11 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                 ON (result_seg_1.id1 = data_fact.simplified_trip_id)
                 NATURAL JOIN ship_dim
                 NATURAL JOIN ship_type_dim
+                NATURAL JOIN nav_dim
                 WHERE ST_Equals(
                                 data_fact.location,
                                 ST_ReducePrecision(ST_StartPoint(seg1), 0.0001)
-                            ) {filter_where}
+                            ) {filter_ship_type} {filter_nav_stats} 
             ),
             get_data_2 AS (
                 SELECT DISTINCT on (data_fact.simplified_trip_id)
@@ -153,7 +161,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
             )
             SELECT gd1.simplified_trip_id, gd1.line_string, gd1.mmsi, gd1.type_of_mobile, 
                 gd1.imo, gd1.name, gd1.callsign, gd1.width, gd1.length, gd1.fixing_device,
-                gd1.ship_type,
+                gd1.ship_type, gd1.navigational_status,
                 gd1.df_loc1, gd1.df_loc1_time_id, gd1.df_loc1_sog, gd1.dist_df_loc1_c1, 
                 gd2.df_loc2, gd2.df_loc2_time_id, gd2.df_loc2_sog, gd2.dist_df_loc2_c2
             FROM get_data_1 as gd1 

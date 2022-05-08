@@ -23,11 +23,13 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
 
     protected checkBoxSetting: boolean;
     protected appliedOnce: boolean;
+    protected fetchedOnce: boolean;
 
     constructor(props: NavStatusFilterProps) {
         super(props);
         this.checkBoxSetting = true;
         this.appliedOnce = false;
+        this.fetchedOnce = false;
 
         this.state = {
             preApply: [],
@@ -37,8 +39,9 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
     }
 
     componentDidMount() {
-        if(!this.state.navStatuses) {
+        if(!this.state.navStatuses && !this.fetchedOnce) {
             this.fetchNavStatuses();
+            this.fetchedOnce = true;
         }
     }
     componentDidUpdate(prevPros: NavStatusFilterProps, prevStates: NavStatusFilterStates) {
@@ -57,13 +60,12 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
             this.checkBoxSetting = false;
         }
         //Sets the columns
-        let shipTypes = null;
+        let navs = null;
         if(this.state.navStatuses && this.state.navStatuses.length > 0) {
-            shipTypes = this.state.navStatuses.map((val, key) => {
+            navs = this.state.navStatuses.map((val, key) => {
                 return (
-                    <label key={key} className="type-label">
-                        {/* <li key={key}> */}
-                        <p className="text-3" style={{alignSelf: "flex-start", margin: "0px"}}>{val.type}</p>                     
+                    <label key={key} className="nav-label">
+                        <p className="text-3" style={{margin: "0px"}}>{val.type}</p>                     
                         <input 
                             className="checkbox" 
                             type={"checkbox"} 
@@ -73,7 +75,7 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
                                     let temp = this.state.navStatuses;
                                     temp[key].checked = !temp[key].checked;
                                     this.setState({navStatuses: temp});
-                                    // this.areSimilar();
+                                    this.areSimilar();
                                 }
                             }}
                         />
@@ -99,7 +101,7 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
                             if(this.state.navStatuses) {
                                 this.state.navStatuses.forEach(s => s.checked = this.checkBoxSetting);
                                 this.setState({navStatuses: this.state.navStatuses});
-                                // this.areSimilar();
+                                this.areSimilar();
                             }
                         }}
                     />
@@ -109,7 +111,7 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
                     style={{display: (this.state.openOnUi ? "" : "none")}}
                 >
                     <div style={{display: "flex", flexWrap: "wrap"}}>
-                        {shipTypes}
+                        {navs}
                     </div>
                 </div>
             </div>

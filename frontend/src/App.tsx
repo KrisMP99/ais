@@ -25,6 +25,7 @@ export interface Trip {
 	width?: number;
 	length?: number;
 	navStatus?: string;
+	direction?: string;
 }
 export interface ETASummary {
 	min: string;
@@ -79,7 +80,6 @@ export class App extends React.Component<any, AppStates> {
 
 	render() {
 		const rowProps: IStackProps = { horizontal: true, verticalAlign: 'center' };
-
 		const tokens = {
 			spinnerStack: {
 			childrenGap: 8,
@@ -221,6 +221,7 @@ export class App extends React.Component<any, AppStates> {
 		this.setState({
 			pointCoords: [],
 			mouseCoords: [],
+			eta: null,
 			trips: [],
 			selectedTripId: null
 		});
@@ -240,6 +241,7 @@ export class App extends React.Component<any, AppStates> {
 	}
 
 	protected async fetchTrips(){
+		console.log(JSON.stringify(this.state.postSetting.activeFilters));
         if(this.state.pointCoords.length !== 2) {
 			this.setState({isFetching: false});
             return;
@@ -267,10 +269,10 @@ export class App extends React.Component<any, AppStates> {
                         "grid_size": this.state.postSetting?.gridSetting?.size
                 },
                     "filter":{
-                        "ship_types": this.state.postSetting?.activeFilters?.shipTypes,
                         // "date_range": this.state.postSetting?.activeFilters?.dateRange,
-						// "nav_statuses": this.state.postSetting?.activeFilters?.navStatuses,
-						// "direction": this.state.postSetting?.activeFilters?.direction,
+                        "ship_types": this.state.postSetting?.activeFilters?.shipTypes,
+						"nav_stats": this.state.postSetting?.activeFilters?.navStatuses,
+						"direction": this.state.postSetting?.activeFilters?.direction,
                     }
             })
         };
@@ -294,14 +296,16 @@ export class App extends React.Component<any, AppStates> {
 							typeOfMobile: feature.properties.type_of_mobile,
 							name: feature.properties.name,
 							width: feature.properties.width,
-							length: feature.properties.length
+							length: feature.properties.length,
+							navStatus: feature.properties.navigational_status,
+							direction: feature.properties.direction,
 						}); 
 						eta = {
 							min: feature.properties.eta_min,
 							max: feature.properties.eta_max,
 							avg: feature.properties.eta_avg,
 							median: feature.properties.eta_median
-						}
+						};
 						featureLayer.bindPopup("ID: " + feature.properties.simplified_trip_id);
 						featureLayer.addEventListener("click", () => this.setState({selectedTripId: feature.properties.simplified_trip_id}));
 						tempLayer.addLayer(featureLayer);        
@@ -315,6 +319,9 @@ export class App extends React.Component<any, AppStates> {
 
 				});
 				this.setState({isFetching: false, lineStringLayer: tempLayer, trips: trips, eta: eta, selectedTripId: null});
+			}
+			else {
+				this.setState({trips: [], eta: null});
 			}
 		} catch (error) {
 			alert("OOPS...\nCould not fetch trips");

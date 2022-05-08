@@ -41,11 +41,6 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             this.fetchShipTypes();
         }
     }
-    componentDidUpdate(prevProps: ShipFilterProps, prevStates: ShipFilterStates) {
-        if(this.state.shipTypes !== prevStates.shipTypes) {
-            this.areSimilar();
-        }
-    }
 
     render() {
         let openSymbol = this.state.openOnUi ? "˄" : "˅";
@@ -72,7 +67,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                                     let temp = this.state.shipTypes;
                                     temp[key].checked = !temp[key].checked;
                                     this.setState({shipTypes: temp});
-                                    // this.areSimilar();
+                                    this.areSimilar();
                                 }
                             }}
                         />
@@ -98,7 +93,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                             if(this.state.shipTypes) {
                                 this.state.shipTypes.forEach(s => s.checked = this.checkBoxSetting);
                                 this.setState({shipTypes: this.state.shipTypes});
-                                // this.areSimilar();
+                                this.areSimilar();
                             }
                         }}
                     />
@@ -170,7 +165,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 return response.json();
         })
         .then((data: string[]) => {
-                if(data.length < 1) return;
+                if(!data || data.length < 1) return;
                 data.forEach((val) => {
                     shipTypes.push({type: val, checked: true});
                     pre.push(true);

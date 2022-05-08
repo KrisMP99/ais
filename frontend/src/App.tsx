@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import { Label, Spinner, SpinnerSize, IStackProps, Stack } from '@fluentui/react'
-import L, { LatLng, LatLngBounds, LatLngBoundsExpression } from 'leaflet';
+import L, { LatLng, LatLngBoundsExpression } from 'leaflet';
 //COMPONENTS
 import ETATrips from './Components/ETATrips/ETATrips';
 import DKMap from './Components/Map/Map';

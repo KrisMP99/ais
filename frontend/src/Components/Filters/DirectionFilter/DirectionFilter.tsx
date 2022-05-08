@@ -58,7 +58,7 @@ export class DirectionFilter extends React.Component<DirectionFilterProps, Direc
                                 type={"checkbox"} 
                                 checked={this.state.directionIsForward !== false} 
                                 onChange={() => {
-                                    if (this.state.directionIsForward === false || this.state.directionIsForward == true) {
+                                    if (this.state.directionIsForward === false || this.state.directionIsForward === true) {
                                         this.setState({directionIsForward: null});
                                     }
                                     else if (this.state.directionIsForward === null) {

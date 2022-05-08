@@ -3,7 +3,7 @@ import './DateRangeFilter.css';
 import '../ShipTypeFilter/ShipTypeFilter.css';
 import '../../../App.css';
 import '../Filters.css';
-import { DatePicker, addMonths, DefaultButton } from "@fluentui/react";
+import { DatePicker, DefaultButton } from "@fluentui/react";
 
 interface DateRangeFilterProps {
     hasChanged: (hasChanged: boolean) => void;
@@ -38,9 +38,9 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
     }
 
     componentDidMount() {
-        if(!this.state.minDate || !this.state.maxDate) {
-            this.fetchDateInterval();
-        }
+        // if(!this.state.minDate || !this.state.maxDate) {
+        //     this.fetchDateInterval();
+        // }
     }
 
     componentDidUpdate(prevProps: DateRangeFilterProps, prevStates: DateRangeFilterStates) {
@@ -113,14 +113,14 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
 
     public apply() {
         if (this.dateIsDefined(this.state.endDate) && this.dateIsDefined(this.state.startDate)) {
-            this.props.returnDateRange(new Array(this.state.startDate!, this.state.endDate!));
+            this.props.returnDateRange([this.state.startDate!, this.state.endDate!]);
             this.setState({
                 preApplyStartDate: this.state.startDate,
                 preApplyEndDate: this.state.endDate,
             });
         }
         else {
-            this.props.returnDateRange(new Array(this.state.minDate!, this.state.maxDate!));
+            this.props.returnDateRange([this.state.minDate!, this.state.maxDate!]);
             this.setState({
                 startDate: null, 
                 endDate: null, 

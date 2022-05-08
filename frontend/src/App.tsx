@@ -24,6 +24,7 @@ export interface Trip {
 	name?: string;
 	width?: number;
 	length?: number;
+	navStatus?: string;
 }
 export interface ETASummary {
 	min: string;

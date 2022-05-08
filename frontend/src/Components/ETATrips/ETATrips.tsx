@@ -115,6 +115,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     <p className='data'><strong>Length (m):</strong> {this.state.tripChosen.length || "undefined"}</p>
                     <p className='data'><strong>Width (m):</strong> {this.state.tripChosen.width || "undefined"}</p>
                     <p className='data'><strong>Name:</strong> {this.state.tripChosen.name || "undefined"}</p>
+                    <p className='data'><strong>Navigational status:</strong> {this.state.tripChosen.navStatus || "undefined"}</p>
                 </div>
             );
             footer = (

@@ -68,7 +68,6 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
     if(len(filter.ship_types) > 0 and filter.ship_types is not None):
         filter_where += ' AND ('
         for ship_type in filter.ship_types[:-1]:
-            print('ship_type ', ship_type)
             filter_where += f"ship_type_dim.ship_type = '{ship_type}' OR "
         filter_where += f"ship_type_dim.ship_type = '{filter.ship_types[-1]}')"
             

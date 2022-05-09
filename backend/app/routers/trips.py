@@ -52,14 +52,10 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     df['df_loc2_time_id'] = pd.to_datetime(df['df_loc2_time_id'].astype(str).str.zfill(6), format="%H%M%S")
     
     df['direction'] = np.where(df['df_loc1_time_id'] < df['df_loc2_time_id'], ('Forward'), ('Backwards'))
-    print("Filter:")
-    print(filter.direction)
 
     if(filter.direction):
-        print("none")
         df = df[df['direction'] == 'Forward']
     elif(filter.direction is not None):
-        print("Backwards")
         df = df[df['direction'] == 'Backwards']
 
     df['c1_time'] = (pd.to_timedelta((df['dist_df_loc1_c1'] / df['df_loc1_sog']),unit='s') + df['df_loc1_time_id'])
@@ -77,8 +73,6 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     df['eta_avg'] = str(df['eta'].mean()).split("0 days")[-1].split(".")[0]
     df['eta'] = df['eta'].astype(str).str.split("0 days").str[-1]
 
-    print("-------------")
-    print(df['direction'])
     df = df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')
     logger.info('Line strings fetched!')
     

@@ -1,6 +1,10 @@
 version: '3.3'
 services:
   db:
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
     image: postgis/postgis
     container_name: postgres_db
     volumes:
@@ -9,8 +13,11 @@ services:
         target: /var/lib/postgresql/data
     ports:
       - '5432:5432'
-    env_file: ../.env
     restart: always
+    environment:
+      - TZ=Europe/Copenhagen
+    env_file: ../backend/.env
+    shm_size: 16gb
     
   api:
     build:
@@ -29,6 +36,8 @@ services:
     restart: always
     ports:
       - 8080:8000
+    environment:
+      - TZ=Europe/Copenhagen
     
   client:
     build:
@@ -44,3 +53,29 @@ services:
     restart: always
     ports:
       - 3000:3000
+    environment:
+      - TZ=Europe/Copenhagen
+
+  cleansing:
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.Cleansing
+    tty: true
+    # command: python main.py -f True
+    image: ais_cleansing
+    container_name: ais_cleansing
+    volumes:
+      - type: bind
+        source: ../
+        target: /srv/data/ais
+      - type: bind
+        source: /srv/data/csv
+        target: /srv/data/csv
+    restart: always
+    environment:
+      - TZ=Europe/Copenhagen
+    shm_size: 16gb

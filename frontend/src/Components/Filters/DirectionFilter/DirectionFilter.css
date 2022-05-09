@@ -1,0 +1,48 @@
+.filter-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}  
+
+.body-filter {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    width: 100%;
+    padding: 0;
+}
+
+.check-all {
+    justify-content: center;
+    align-items: flex-start;
+    height: 25px;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    width: 150px;
+    padding-right: 10px;
+}
+
+.checkbox {
+    justify-self: flex-end;
+    margin-right: 10px;
+    margin-left: auto;
+}
+/* .type-label {
+    width: 130px;
+    display: flex;
+    place-content: center;
+    padding-left: 10px; 
+    height: 20px;
+    border-radius: 2px;
+}
+.type-label:hover {
+    background-color: rgb(227, 227, 227);
+} */

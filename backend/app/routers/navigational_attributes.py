@@ -15,21 +15,21 @@ session = Session()
 logger = get_logger(API_LOG_FILE_PATH)
 
 router = APIRouter(
-    prefix="/ship_attributes",
-    tags=["ship_attributes"],
+    prefix="/navigational_attributes",
+    tags=["navigational_attributes"],
     dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
 
-@router.get('/ship-types')
+@router.get('/nav-attrs')
 async def get_ship_types():
-    ship_type_dim = Table('ship_type_dim')
-    query = Query.from_(ship_type_dim).select(ship_type_dim.ship_type).distinct().where(ship_type_dim.ship_type.notnull())
+    nav_dim = Table('nav_dim')
+    query = Query.from_(nav_dim).select(nav_dim.navigational_status).distinct().where(nav_dim.navigational_status.notnull())
     loop = asyncio.get_event_loop()
     df = await loop.run_in_executor(None, pd.read_sql_query, str(query), engine)
 
     if len(df) == 0:
-        raise HTTPException(status_code=404, detail='Could not find any ship types')
+        raise HTTPException(status_code=404, detail='Could not find any nav statuses')
 
-    ship_types = df['ship_type'].to_list()
-    return jsonable_encoder(ship_types)
+    nav_stats = df['navigational_status'].to_list()
+    return jsonable_encoder(nav_stats)

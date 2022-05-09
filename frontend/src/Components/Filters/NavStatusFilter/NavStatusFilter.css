@@ -1,0 +1,40 @@
+.filter-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}  
+
+.body-filter {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    width: 100%;
+    padding: 0;
+}
+
+.check-all {
+    justify-content: center;
+    align-items: flex-start;
+    height: 25px;
+}
+
+.checkbox {
+    justify-self: flex-end;
+    margin-right: 10px;
+    margin-left: auto;
+}
+.nav-label {
+    width: 130px;
+    display: flex;
+    place-content: center;
+    align-items: center;
+    height: 45px;
+    justify-content: center;
+    padding-left: 10px;
+    border-radius: 2px;
+}
+.nav-label:hover {
+    background-color: rgb(227, 227, 227);
+}

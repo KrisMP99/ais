@@ -5,18 +5,17 @@ import os
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
-ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 
 async def get_token_header(x_token: str = Header(...)):
     if x_token != TOKEN:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-def get_logger():
+def get_logger(path):
     Log_Format = "[%(levelname)s] -  %(asctime)s - %(message)s"
     logging.basicConfig(format = Log_Format,
                         force = True,
                         handlers = [
-                            logging.FileHandler(ERROR_LOG_FILE_PATH),
+                            logging.FileHandler(path),
                             logging.StreamHandler()
                         ],
                         level = logging.INFO)

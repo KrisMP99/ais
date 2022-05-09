@@ -1,6 +1,21 @@
 .main {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  overflow:hidden;
+  
+}
+.data {
+  margin-right: 20px;
+  margin-bottom: 0;
+}
+.right-side {
+  width: 300px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  flex-shrink: 0;
 }
 
 .main-container {
@@ -11,21 +26,23 @@
   height: 100%;
 }
 
-.filter-container {
-  min-width: 300px;
-}
-
 .text-1 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bolder;
   margin-bottom: 0;
+  margin-top: 5px;
   padding-bottom: 0;
 }
 
 .text-2 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: normal;
   margin-top: 0;
+}
+
+.text-3 {
+  font-size: 12px;
+  font-weight: normal;
 }
 
 .ship-type-header {
@@ -36,39 +53,61 @@
   margin-top: 0;
   text-align: center;
 }
-
-/* Below is ShipTypeFilter CSS */
-
-.shorter-hr {
-  width: 60%;
-}
-
-.align-filter-options {
+.footer {
   display: flex;
+  justify-content: space-around;
+  align-items: center;
 }
 
-.verticalLine {
-  border-left: 2px solid;
-  height: 250px;
+.positions-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.rightCheckBoxContainer {
-  width: 200px;
+.button {
+  height: 35px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-size: 15px;
+} 
+
+.button:disabled {
+  background-color: #d0d0d0;
+  opacity: 0.6;
+}
+.btn-find-route {
+  width: 130px;
+  background-color: #4CAF50;
+}
+.btn-find-route:hover:enabled {
+  background-color: #419844;
+  transition: transform 200ms;
+  transform: scale(1.03);
 }
 
-.leftCheckBoxContainer {
-  width: 150px;
+.btn-clear {
+  width: 120px;
+  background-color: #af4c4c;
+}
+.btn-clear:hover:enabled {
+  background-color: #984141;
+  transition: transform 150ms;
+  transform: scale(1.04);
 }
 
-.ul {
-  list-style-type: none;
-  padding-left: 5px;
+@keyframes button-loading-spinner {
+  from {
+      transform: rotate(0turn);
+  }
+
+  to {
+      transform: rotate(1turn);
+  }
 }
 
-.liRight {
-  text-align: right;
-}
-
-.liLeft {
-  text-align: left;
+hr {
+  width: 100%;
 }

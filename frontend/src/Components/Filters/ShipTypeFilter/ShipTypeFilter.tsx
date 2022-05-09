@@ -120,6 +120,10 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
                 this.props.returnShipTypes(null);
                 return;
             }
+            else if (this.state.shipTypes.every((val) => val.checked)) {
+                this.props.returnShipTypes(null);
+                return;
+            }
             let pre: boolean[] = [];
             let ret: string[] = [];
             for (let i = 0; i < this.state.shipTypes.length; i++) {

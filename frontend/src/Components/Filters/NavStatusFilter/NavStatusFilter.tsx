@@ -125,6 +125,10 @@ export class NavStatusFilter extends React.Component<NavStatusFilterProps, NavSt
                 this.props.returnNavStatuses(null);
                 return;
             }
+            else if (this.state.navStatuses.every((val) => val.checked)) {
+                this.props.returnNavStatuses(null);
+                return;
+            }
             let pre: boolean[] = [];
             let ret: string[] = [];
             for (let i = 0; i < this.state.navStatuses.length; i++) {

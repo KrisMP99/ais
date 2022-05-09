@@ -18,8 +18,7 @@ interface FiltersProps {
 }
 
 interface FiltersStates {
-    hasChanged: boolean[];
-    
+    hasChanged: boolean[]; 
 }
 
 export class Filters extends React.Component<FiltersProps, FiltersStates>{

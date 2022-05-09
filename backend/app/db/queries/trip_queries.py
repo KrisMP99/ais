@@ -169,7 +169,6 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
 
 def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, logger: Logger) -> pd.DataFrame:
     sql_query = query_line_strings_and_data_for_ETA(filter)
-    # print(sql_query)
     df = gpd.read_postgis(
             sql_query, 
             engine, 

@@ -1,6 +1,6 @@
 # AIS
 ## Introduction
-This project's primary goal was to calculate the estimated time of arrival (ETA) of ships, and present it in a user-friendly vizual form.
+This project's primary goal is to calculate the estimated time of arrival (ETA) of ships, and present it in a user-friendly vizual form.
 The project uses data from the automatic identification system (AIS).
 
 The pipeline works by first (automatically) downloading AIS-data from an FTP-server, which is then loaded into memory. From here, erroneous data is removed (such as ships sailing faster than physically possible or missing data which is needed for the project (e.g., a timestamp)) and then it is split into trips. A trip is defined by consisting of only valid points, along with being within some given thresholds. The data is then loaded into a star-schema in Postgres using the PygramETL library, and finally some additional attributes are calculated and updated for the tables, such as each point's location in a given hexagon or square grid.
@@ -12,14 +12,13 @@ The entire project (frontend + backend) is setup in Docker, using 4 different co
 This project is a bachelors project, developed by the group `cs-22-sw-6-11` at Aalborg University, 2022. 
 
 
-## Getting started
+## Getting started [WIP]
 Wether you're setting up locally or on a server, the following is required to be installed on your system:
 1. Docker
 2. Git
 
 Begin by cloning the project to a location you can easily access. We used `/srv/data/ais/` on our server.
 ```git clone https://github.com/KrisMP99/ais.git```
-
 
 
 ## Running Docker on server
@@ -127,52 +126,4 @@ On windows with:
 
 ## Database setup map-bounds and hexagrid
 ### Initial setup
-1. Create table 
-    ```SQL
-    CREATE TABLE map_bounds(gid serial PRIMARY KEY, country_name varchar, geom geometry(MULTIPOLYGON, 4326));
-    ```
-1. Insert the boundaries, covering the area of concern (in our case, it's Denmarks waters + a little extra)
-    ```SQL
-    INSERT INTO map_bounds(geom) VALUES('POLYGON((3.24 58.35, 3.24 53.32, 16.49 53.32, 16.49 56.23, 13.31 56.68, 10.97 60.03, 7.48 58.35, 3.24 58.35))');
-    ```
-1. Convert the table to SRID 3857 
-    ```SQL
-    ALTER TABLE map_bounds ALTER COLUMN geom TYPE Geometry(Polygon, 3857) USING ST_Transform(geom, 3857); 
-    ```
-
-1. Analayze the table 
-    ```SQL
-    ANALYZE map_bounds;
-    ```
-
-### Tables for hexagons
-We create two hexagon tables, one with radius = 500 meters, and the other with radius = 10.000 meters.
-1. Create the two tables:
-    ```SQL
-    CREATE TABLE hex_500_dim (hex_500_row INTEGER, hex_500_column INTEGER, PRIMARY KEY(hex_500_row, hex_500_column), hexagon geometry);
-    CREATE TABLE hex_10000_dim (hex_10000_row INTEGER, hex_10000_column INTEGER, PRIMARY KEY(hex_10000_row, hex_10000_column), hexagon geometry);
-    ```
-
-1. Fill the two tables by running the two queries below:
-    ``` SQL
-    INSERT INTO hex_500_dim(hex_500_row, hex_500_column, hexagon)
-    SELECT hexes.j, hexes.i, hexes.geom  
-    FROM ST_HexagonGrid(500, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
-    INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom);
-    ```
-
-    ``` SQL
-    INSERT INTO hex_10000_dim(hex_10000_row, hex_10000_column, hexagon)
-    SELECT hexes.j, hexes.i, hexes.geom  
-    FROM ST_HexagonGrid(10000, ST_SetSRID(ST_EstimatedExtent('map_bounds','geom'), 3857)) AS hexes  
-    INNER JOIN map_bounds AS MB ON ST_Intersects(mb.geom, hexes.geom);
-    ```
-1. Convert back to 4326:
-    ```SQL
-    ALTER TABLE hex_500_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) 
-    USING ST_Transform(hexagon, 4326);
-    ```
-
-    ```SQL
-    ALTER TABLE hex_10000_dim ALTER COLUMN hexagon TYPE Geometry(Polygon, 4326) USING ST_Transform(hexagon, 4326);
-    ```
+....

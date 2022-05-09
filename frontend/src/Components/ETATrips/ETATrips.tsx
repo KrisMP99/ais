@@ -110,11 +110,13 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     <p className='data'><strong>ETA:</strong> {this.state.tripChosen.eta}</p>
                     <p className='data'><strong>MMSI:</strong> {this.state.tripChosen.mmsi || "undefined"}</p>
                     <p className='data'><strong>IMO:</strong> {this.state.tripChosen.imo || "undefined"}</p>
+                    <p className='data'><strong>Name:</strong> {this.state.tripChosen.name || "undefined"}</p>
+                    <p className='data'><strong>Type of mobile:</strong> {this.state.tripChosen.typeOfMobile || "undefined"}</p>
                     <p className='data'><strong>Ship type:</strong> {this.state.tripChosen.shipType || "undefined"}</p>
-                    <p className='data'><strong>Type of mobile (class):</strong> {this.state.tripChosen.typeOfMobile || "undefined"}</p>
+                    <p className='data'><strong>Navigational status:</strong> {this.state.tripChosen.navStatus || "undefined"}</p>
                     <p className='data'><strong>Length (m):</strong> {this.state.tripChosen.length || "undefined"}</p>
                     <p className='data'><strong>Width (m):</strong> {this.state.tripChosen.width || "undefined"}</p>
-                    <p className='data'><strong>Name:</strong> {this.state.tripChosen.name || "undefined"}</p>
+                    <p className='data'><strong>Direction:</strong> {this.state.tripChosen.direction || "undefined"}</p>
                 </div>
             );
             footer = (

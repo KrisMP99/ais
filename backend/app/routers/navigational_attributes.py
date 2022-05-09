@@ -29,7 +29,7 @@ async def get_ship_types():
     df = await loop.run_in_executor(None, pd.read_sql_query, str(query), engine)
 
     if len(df) == 0:
-        raise HTTPException(status_code=404, detail='Could not find any ship types')
+        raise HTTPException(status_code=404, detail='Could not find any nav statuses')
 
     nav_stats = df['navigational_status'].to_list()
     return jsonable_encoder(nav_stats)

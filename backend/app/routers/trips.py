@@ -25,7 +25,7 @@ router = APIRouter(
 )
 
 @router.post('/')
-async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter): 
+async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     gp1 = Point(p1.long, p1.lat)
     gp2 = Point(p2.long, p2.lat)
 

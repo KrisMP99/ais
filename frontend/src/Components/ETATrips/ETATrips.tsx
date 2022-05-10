@@ -42,6 +42,9 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 this.setState({tripChosen: null})
             }
         }
+        if(prevProps.trips !== this.props.trips) {
+            this.setState({startIndexTripsShown: 0});
+        }
     }
 
     render() {

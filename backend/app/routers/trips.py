@@ -25,7 +25,7 @@ router = APIRouter(
 )
 
 @router.post('/')
-async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter): 
+async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     gp1 = Point(p1.long, p1.lat)
     gp2 = Point(p2.long, p2.lat)
 
@@ -47,6 +47,17 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     #     out_file.write(df.to_json())
 
     # Do the ETA calculations
+
+    df['df_loc1_time_id'] = pd.to_datetime(df['df_loc1_time_id'].astype(str).str.zfill(6), format="%H%M%S")
+    df['df_loc2_time_id'] = pd.to_datetime(df['df_loc2_time_id'].astype(str).str.zfill(6), format="%H%M%S")
+    
+    df['direction'] = np.where(df['df_loc1_time_id'] < df['df_loc2_time_id'], ('Forward'), ('Backwards'))
+
+    if(filter.direction):
+        df = df[df['direction'] == 'Forward']
+    elif(filter.direction is not None):
+        df = df[df['direction'] == 'Backwards']
+
     df['c1_time'] = (pd.to_timedelta((df['dist_df_loc1_c1'] / df['df_loc1_sog']),unit='s') + df['df_loc1_time_id'])
     df['c2_time'] = (pd.to_timedelta((df['dist_df_loc2_c2'] / df['df_loc2_sog']),unit='s') + df['df_loc2_time_id'])
 
@@ -54,6 +65,7 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
 
     
     df['eta'] = (df['c2_time'] - df['c1_time']).dt.floor('s')
+
     df = df.sort_values(by=['eta'])
     df['eta_min'] = str(df['eta'].min()).split("0 days")[-1]
     df['eta_median'] = str(df['eta'].median()).split("0 days")[-1]
@@ -61,7 +73,6 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     df['eta_avg'] = str(df['eta'].mean()).split("0 days")[-1].split(".")[0]
     df['eta'] = df['eta'].astype(str).str.split("0 days").str[-1]
 
-    print("-------------")
     df = df.drop(columns=['df_loc1', 'df_loc1_time_id', 'df_loc1_sog', 'dist_df_loc1_c1', 'df_loc2', 'df_loc2_time_id', 'df_loc2_sog', 'dist_df_loc2_c2', 'c1_time', 'c2_time'],axis=1, errors='ignore')
     logger.info('Line strings fetched!')
     
@@ -77,4 +88,4 @@ def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
     return polygons
 
 def give_color():
-            return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'
+    return f'rgb({randint(0, 255)}, {randint(0, 255)}, {randint(0, 255)})'

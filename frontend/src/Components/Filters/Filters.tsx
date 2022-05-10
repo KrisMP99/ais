@@ -3,10 +3,14 @@ import '../../App.css';
 import DateRangeFilter from "./DateRangeFilter/DateRangeFilter";
 import './ShipTypeFilter/ShipTypeFilter.css';
 import ShipTypeFilter from "./ShipTypeFilter/ShipTypeFilter";
+import NavStatusFilter from "./NavStatusFilter/NavStatusFilter";
+import DirectionFilter from "./DirectionFilter/DirectionFilter";
 
 export interface FilterObj {
-    dateRange: Date[];
+    dateRange: number[] | null;
     shipTypes: string[] | null;
+    navStatuses: string[] | null;
+    direction: boolean | null;
 }
 
 interface FiltersProps {
@@ -14,8 +18,7 @@ interface FiltersProps {
 }
 
 interface FiltersStates {
-    hasChanged: boolean[];
-    
+    hasChanged: boolean[]; 
 }
 
 export class Filters extends React.Component<FiltersProps, FiltersStates>{
@@ -27,13 +30,22 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
 
     protected dateRangeFilterRef: React.RefObject<DateRangeFilter>;
     protected shipTypeFilterRef: React.RefObject<ShipTypeFilter>;
+    protected navStatusFilterRef: React.RefObject<NavStatusFilter>;
+    protected directionFilterRef: React.RefObject<DirectionFilter>;
     
     constructor(props: FiltersProps) {
         super(props);
         this.filtersRef = React.createRef();
         this.dateRangeFilterRef = React.createRef();
         this.shipTypeFilterRef = React.createRef();
-        this.filterActive = { dateRange: [], shipTypes: null };
+        this.navStatusFilterRef = React.createRef();
+        this.directionFilterRef = React.createRef();
+        this.filterActive = { 
+            dateRange: null, 
+            shipTypes: null,
+            navStatuses: null,
+            direction: null 
+        };
         this.dividerIndex = 0;
         this.checkBoxSetting = true;
 
@@ -44,13 +56,13 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
 
     render() {
         return (
-            <div className='filter-container'>
+            <div className='filters-container'>
                 <p className='text-1'><b>Filters:</b></p>
                 <div className="filter-body" ref={this.filtersRef}>
                     <DateRangeFilter 
                         ref={this.dateRangeFilterRef}
                         hasChanged={(hasChanged: boolean) => this.hasChanged(0, hasChanged)}
-                        returnDateRange={(range: Date[]) => {
+                        returnDateRange={(range: number[] | null) => {
                             this.filterActive.dateRange = range;
                         }}
                     />
@@ -61,6 +73,20 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
                             this.filterActive.shipTypes = shipTypes;
                         }}
                     /> 
+                    <NavStatusFilter 
+                        ref={this.navStatusFilterRef}
+                        hasChanged={(hasChanged: boolean) => this.hasChanged(2, hasChanged)}
+                        returnNavStatuses={(statuses: string[] | null) => {
+                            this.filterActive.navStatuses = statuses;
+                        }}
+                    />
+                    <DirectionFilter 
+                        ref={this.directionFilterRef}
+                        hasChanged={(hasChanged: boolean) => this.hasChanged(3, hasChanged)}
+                        returnDirection={(dirIsForward: boolean | null) => {
+                            this.filterActive.direction = dirIsForward;
+                        }}
+                    />
                 </div>
                 <div className="footer">
                     <button 
@@ -86,20 +112,16 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
             this.applyFilter();
         }
     }
-    componentDidUpdate() {
-        if(!this.filterActive.shipTypes) {
-            this.applyFilter();
-        }
-    }
 
     protected applyFilter() {
         let temp: boolean[] = [];
         for (let i = 0; i < this.state.hasChanged.length; i++) {
             temp.push(false);
         }
-
-        this.dateRangeFilterRef.current?.apply();
+        this.directionFilterRef.current?.apply();
+        this.navStatusFilterRef.current?.apply();
         this.shipTypeFilterRef.current?.apply();
+        this.dateRangeFilterRef.current?.apply();
         this.props.returnFilters(this.filterActive);
         this.setState({hasChanged: temp});
     }

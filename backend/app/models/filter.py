@@ -1,7 +1,8 @@
-from array import array
 from pydantic import BaseModel
 
 
 class Filter(BaseModel):
-    ship_types: list[str]
-        # self.date_range = date_range
+    ship_types: list[str]  | None
+    nav_stats: list[str] | None
+    direction: bool | None
+    date_range: list[int] | None

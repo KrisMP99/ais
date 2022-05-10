@@ -12,13 +12,14 @@ from data_insertion import calculate_date_tim_dim_and_hex, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
 import numpy as np
+import csv
 
 load_dotenv()
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 
-DATA = []
+time_cleansing_begin = datetime.datetime.now()
 
 def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
@@ -165,6 +166,8 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     :param file_name: File name to cleanse. Example: 'aisdk-2022-01-01.csv'
     :return: A cleansed geodataframe, sorted by timestamp (ascending)
     """
+    DATA = []
+    DATA.append(file_name)
 
     types = {
         '# Timestamp': str,
@@ -186,11 +189,12 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     }
     logger.info(f"Loading, converting and cleansing {file_name}")
     df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types)
+    DATA.append(len(df))
 
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
+    time_cleansing_begin = datetime.datetime.now()
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
-    DATA.append(len(df))
     
     df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")
 
@@ -205,6 +209,14 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
             (df['SOG'] >= 0.1) & (df['SOG'] <=102)
            ].reset_index()
     DATA.append(len(df))
+
+    HEADER = [file_name,'Total_rows_in_csv', 'rows_after_filter']
+
+    with open(CSV_FILES_PATH + file_name + '_stats_1.csv', 'w', encoding="utf-8", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(HEADER)
+        writer.writerow(DATA)
+
     # We round the lat and longs as we do not need 15 decimals of precision
     # This will save some computation time later.
     # We also round rot, sog and cog, as we do not need a lot of decimal precision here
@@ -324,14 +336,18 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     :param file_name: The .csv file name to add to the log.
     """
     
-    df_cleansed = get_cleansed_data(df, logger, DATA)
+    df_cleansed = get_cleansed_data(df, logger, file_name)
 
     df_cleansed = df_cleansed.to_crs(epsg="4326")
     df_cleansed = df_cleansed.rename_geometry('location')
     df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
 
+    time_cleansing_end = datetime.datetime.now()
+    time_delta = time_cleansing_end - time_cleansing_begin
+    cleansing_time_taken = str(time_delta.total_seconds() / 60)
+
     df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
-    insert_into_star(df_cleansed, logger)
+    insert_into_star(df_cleansed, logger, file_name, cleansing_time_taken)
     add_new_file_to_log(file_name, logger=logger)
 
 

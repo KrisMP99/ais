@@ -111,6 +111,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 <div className='text-3' style={{display: "flex", flexWrap: "wrap"}}>
                     <p className='data'><strong>Trip ID:</strong> {this.state.tripChosen.tripId}</p>
                     <p className='data'><strong>ETA:</strong> {this.state.tripChosen.eta}</p>
+                    <p className='data'><strong>Date:</strong> {this.state.tripChosen.date ? this.dateToString(this.state.tripChosen.date) : "undefined"}</p>
                     <p className='data'><strong>MMSI:</strong> {this.state.tripChosen.mmsi || "undefined"}</p>
                     <p className='data'><strong>IMO:</strong> {this.state.tripChosen.imo || "undefined"}</p>
                     <p className='data'><strong>Name:</strong> {this.state.tripChosen.name || "undefined"}</p>
@@ -161,6 +162,10 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 </div>
             </div>
         );
+    }
+    dateToString(date: number): string {
+        let strDate = date.toString();
+        return strDate.slice(0, 4) + '-' + strDate.slice(4, 6) + '-' + strDate.slice(6, 8);
     }
 
 

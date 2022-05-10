@@ -133,6 +133,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                         ship_dim.type_of_position_fixing_device as fixing_device,
                         ship_type_dim.ship_type,
                         nav_dim.navigational_status,
+                        data_fact.date_id as date,
                         data_fact.location as df_loc1,
                         data_fact.time_id as df_loc1_time_id,
                         data_fact.sog as df_loc1_sog,
@@ -163,7 +164,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
             )
             SELECT gd1.simplified_trip_id, gd1.line_string, gd1.mmsi, gd1.type_of_mobile, 
                 gd1.imo, gd1.name, gd1.callsign, gd1.width, gd1.length, gd1.fixing_device,
-                gd1.ship_type, gd1.navigational_status,
+                gd1.ship_type, gd1.navigational_status, gd1.date,
                 gd1.df_loc1, gd1.df_loc1_time_id, gd1.df_loc1_sog, gd1.dist_df_loc1_c1, 
                 gd2.df_loc2, gd2.df_loc2_time_id, gd2.df_loc2_sog, gd2.dist_df_loc2_c2
             FROM get_data_1 as gd1 

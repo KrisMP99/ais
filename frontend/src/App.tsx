@@ -17,7 +17,7 @@ export interface Trip {
 	tripId: number;
 	eta: string;
 	color: string;
-	shipType: string;
+	shipType?: string;
 	mmsi?: number;
 	imo?: number;
 	typeOfMobile?: string;
@@ -26,6 +26,7 @@ export interface Trip {
 	length?: number;
 	navStatus?: string;
 	direction?: string;
+	date?: number;
 }
 export interface ETASummary {
 	min: string;
@@ -298,6 +299,7 @@ export class App extends React.Component<any, AppStates> {
 							length: feature.properties.length,
 							navStatus: feature.properties.navigational_status,
 							direction: feature.properties.direction,
+							date: feature.properties.date,
 						}); 
 						eta = {
 							min: feature.properties.eta_min,

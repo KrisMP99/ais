@@ -141,7 +141,7 @@ export class App extends React.Component<any, AppStates> {
 											<Label 
 												style={{color: '#fff', fontSize: '15px', fontWeight: '500'}}
 												aria-setsize={15}>	
-												Find route
+												Find Trips
 											</Label>
 											{!this.state.isFetching ? <div></div> :
 												(<Spinner 
@@ -158,7 +158,7 @@ export class App extends React.Component<any, AppStates> {
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear map
+									Clear Map
 								</button>
 							</div>
 						</div>

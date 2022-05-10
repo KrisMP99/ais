@@ -202,8 +202,8 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
             data.forEach(elem => {
                 temp.push(new Date(elem).getTime());
             });
-            let minDate = new Date(Math.min.apply(null, temp));
-            let maxDate = new Date(Math.max.apply(null, temp));
+            let minDate = new Date(Math.min(...temp));
+            let maxDate = new Date(Math.max(...temp));
             this.setState({
                 minDate: minDate,
                 maxDate: maxDate,

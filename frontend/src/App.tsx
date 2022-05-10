@@ -245,7 +245,6 @@ export class App extends React.Component<any, AppStates> {
 			this.setState({isFetching: false});
             return;
         }
-		console.log(this.state.postSetting.activeFilters?.dateRange);
         const requestOptions = {
             method: 'POST',
             headers: { 

@@ -204,6 +204,8 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
             });
             let minDate = new Date(Math.min(...temp));
             let maxDate = new Date(Math.max(...temp));
+            console.log(temp[0] + " AND " + temp[1]);
+            console.log(minDate + " AND " + maxDate);
             this.setState({
                 minDate: minDate,
                 maxDate: maxDate,

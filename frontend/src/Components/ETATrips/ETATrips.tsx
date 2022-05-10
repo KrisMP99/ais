@@ -42,6 +42,9 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 this.setState({tripChosen: null})
             }
         }
+        if(prevProps.trips !== this.props.trips) {
+            this.setState({startIndexTripsShown: 0});
+        }
     }
 
     render() {
@@ -142,7 +145,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
             )
         }
         else {
-            header = (this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "");
+            header = '';//(this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "");
         }
 
 
@@ -193,7 +196,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                             >
                                 <b>{trip.tripId}:</b>
                             </p>
-                            <p className='text-3 filter-text'>Time: {trip.eta}</p>
+                            <p className='text-3 filter-text'>{trip.eta}</p>
                         </div>
                     </label>
                 </button>

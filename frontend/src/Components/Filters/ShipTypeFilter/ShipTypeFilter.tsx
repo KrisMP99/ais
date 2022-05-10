@@ -82,7 +82,7 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
             <div className='filter-container'>
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
-                    <p className='text-2 filter-header-text'><b>Ship type</b></p>
+                    <p className='text-2 filter-header-text'><b>Ship Type</b></p>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
                 </button>
                 <div className="check-all" style={{display: this.state.openOnUi ? 'flex' : 'none'}}>
@@ -117,6 +117,10 @@ export class ShipTypeFilter extends React.Component<ShipFilterProps, ShipFilterS
         if (this.state.shipTypes) {
             if (!this.appliedOnce && this.state.shipTypes.every((val) => val.checked)) {
                 this.appliedOnce = true;
+                this.props.returnShipTypes(null);
+                return;
+            }
+            else if (this.state.shipTypes.every((val) => val.checked)) {
                 this.props.returnShipTypes(null);
                 return;
             }

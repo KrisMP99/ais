@@ -43,7 +43,7 @@ def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
             for file in file_paths:
                 file_names.append(file.split(CSV_FILES_PATH)[-1])
     
-    return file_names
+    return sorted(file_names)
 
 def get_csv_files_from_log(logger):
     """

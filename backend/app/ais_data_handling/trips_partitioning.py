@@ -21,12 +21,12 @@ CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 
 # Thresholds
 # Distances are in meters
-MAX_SPEED_IN_HARBOR = 0.5
+MAX_SPEED_IN_HARBOR = 1.5
 # MAX_POINTS_IN_HARBOR = 50
 # MAX_DIST_IN_HARBOR = 2000
-MINIMUM_POINTS_IN_TRIP = 500
+MINIMUM_POINTS_IN_TRIP = 100
 MAX_DIST = 2000
-MIN_TIME = 5
+MIN_TIME = 4
 
 DATA = []
 
@@ -130,7 +130,6 @@ def partition_trips(trip_list: list[Trip], logger):
     total_trips_cleansed = []
     trips_removed = 0
     trips_added = 0
-
     stats_points_in_trip = []
 
     # Compare distances between each point in each trip
@@ -200,14 +199,6 @@ def partition_trips(trip_list: list[Trip], logger):
                     possibly_new_trip = False
                     points_below_threshold.clear()
                     index = 0
-            
-            # if(is_new_trip):
-            #     skip = True
-            #     if(point.get_sog() > MAX_SPEED_IN_HARBOR):
-            #         cut_trip = True
-            #     else:
-            #         cut_trip = False
-                # dist_to_new_trip = curr_point.Point.distance(point.Point)
         
             # If the ship has exceeded our distance cut-off for when a new trip begin
             # we make the trip, and add the points to it by using the cut_point and curr_point.

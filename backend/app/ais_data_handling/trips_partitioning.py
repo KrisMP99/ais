@@ -235,7 +235,7 @@ def partition_trips(trip_list: list[Trip], logger):
         # As seen in the example, we also need the last part.
         if index_cut_begin == 0 and index_cut_end == 0 and not possibly_new_trip:
             total_trips_cleansed.append(trip)
-        elif index_cut_end != (len(points_in_trip) - 1) and (points_left_over or not skip):
+        elif index_cut_end != (len(points_in_trip) - 1) and (points_left_over and not possibly_new_trip):
             new_trip = Trip(curr_point.get_mmsi())
             new_trip.insert_point_list(points_in_trip[index_cut_begin:-1])
             total_trips_cleansed.append(new_trip)
@@ -374,7 +374,7 @@ def get_cleansed_data(df: gpd.GeoDataFrame, logger, file_name: str) -> gpd.GeoDa
     DATA.append(MAX_SPEED_IN_HARBOR)
     DATA.append(MINIMUM_POINTS_IN_TRIP)
     
-    with open(CSV_FILES_PATH + file_name + '_stats_2.csv', 'w', encoding="UTF8", newline='') as f:
+    with open(CSV_FILES_PATH + "/stats/" + file_name + '_stats_2.csv', 'w', encoding="UTF8", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(HEADER)
         writer.writerow(DATA)

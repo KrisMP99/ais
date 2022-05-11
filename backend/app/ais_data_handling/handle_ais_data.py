@@ -212,7 +212,7 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
 
     HEADER = [file_name,'Total_rows_in_csv', 'rows_after_filter']
 
-    with open(CSV_FILES_PATH + file_name + '_stats_1.csv', 'w', encoding="utf-8", newline='') as f:
+    with open(CSV_FILES_PATH + "/stats/" + file_name + '_stats_1.csv', 'w', encoding="utf-8", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(HEADER)
         writer.writerow(DATA)

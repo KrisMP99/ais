@@ -321,7 +321,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
               'total_time_round_line_grids_vacuum','before_line_simplification','after_line_simplification', 'line_perc_reduction'
              ]
 
-    with open(CSV_FILES_PATH + file_name + '_stats_3.csv', 'w', encoding="utf-8", newline='') as f:
+    with open(CSV_FILES_PATH + "/stats/" + file_name + '_stats_3.csv', 'w', encoding="utf-8", newline='') as f:
         writer = csv.writer(f)
         writer.writerow(HEADER)
         writer.writerow(DATA)

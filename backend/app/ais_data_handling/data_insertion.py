@@ -277,7 +277,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     round_coordinates(trip_id=trip_id)
 
     logger.info("Generating line strings, simplified line strings, and updating data_fact with the corresponding keys...")
-    create_line_strings(trip_id=trip_id, threshold=1000)
+    create_line_strings(trip_id=trip_id, threshold=500)
 
     logger.info("Done with line strings, adding (col,row) on data_fact for the hexagons dimensions...")
     hex_str_dims = get_resolutions_from_config_file(hexagons=True).split(",")

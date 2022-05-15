@@ -269,7 +269,7 @@ export class App extends React.Component<any, AppStates> {
                         "grid_size": this.state.postSetting?.gridSetting?.size
                 },
                     "filter":{
-                        "date_range": this.state.postSetting?.activeFilters?.dateRange,
+                        "date_range": null, //this.state.postSetting?.activeFilters?.dateRange,
                         "ship_types": this.state.postSetting?.activeFilters?.shipTypes,
 						"nav_stats": this.state.postSetting?.activeFilters?.navStatuses,
 						"direction": this.state.postSetting?.activeFilters?.direction,

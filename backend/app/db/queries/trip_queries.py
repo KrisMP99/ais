@@ -76,9 +76,6 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
         for nav_status in filter.nav_stats[:-1]:
             filter_nav_stats += f"nav_dim.navigational_status = '{nav_status}' OR "
         filter_nav_stats += f"nav_dim.navigational_status = '{filter.nav_stats[-1]}')"
-    filter_date = ''
-    if(len(filter.date_range) == 2):
-        filter_date += f' AND (data_fact.date_id >= {filter.date_range[0]}) AND (data_fact.date_id <= {filter.date_range[1]})'
 
     return f'''WITH centroids_linestrings AS (
                 SELECT
@@ -147,7 +144,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                 WHERE ST_Equals(
                                 data_fact.location,
                                 ST_ReducePrecision(ST_StartPoint(seg1), 0.0001)
-                            ) {filter_ship_type} {filter_nav_stats} {filter_date}
+                            ) {filter_ship_type} {filter_nav_stats}
             ),
             get_data_2 AS (
                 SELECT DISTINCT on (data_fact.simplified_trip_id)

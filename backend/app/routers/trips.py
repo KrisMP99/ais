@@ -81,9 +81,12 @@ async def get_trips(p1: Coordinate, p2: Coordinate, filter: Filter):
     return df.to_json()
 
 def add_polygons_to_list(df: pd.DataFrame) -> list[GridPolygon]:
+    import shapely.wkb as wkb
     polygons = []
     
     for table_row in df.itertuples(name=None):
+        print("Polygon:", wkb.dumps(table_row[3], hex=True, srid=4326))
+        print("Centroid:", table_row[4])
         polygons.append(GridPolygon(column=table_row[2], row=table_row[1], polygon=table_row[3], centroid=table_row[4]))
     return polygons
 

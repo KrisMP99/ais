@@ -164,9 +164,10 @@ def get_fact_table_key_refs() -> str:
 
 def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time_taken: str):
     # Establish db connection
+    
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB)
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
-
+    
     logger.info("Converting back to 4326")
     trip_id = df['trip_id'].min()
 
@@ -285,8 +286,8 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     create_hex_ids(square_resolutions=square_str_dims, hex_resolutions=hex_str_dims, simplified_trip_id=trip_id)
 
     logger.info("Adding hex (col, row) finished!")
-    logger.info("Vacuuming and analyzing the tables...")
-    vacuum_and_analyze_tables()
+    #logger.info("Vacuuming and analyzing the tables...")
+    #vacuum_and_analyze_tables()
     time_end_sql = datetime.datetime.now()
     time_delta = (time_end_sql - time_begin_sql)
     DATA.append((time_delta.total_seconds() / 60))
@@ -312,8 +313,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     DATA.append(total_before_simplification)
     DATA.append(after_simplification)
     DATA.append(line_perc_reduction)
-
-    logger.info("Finished vacuuming and analyzing!")
+    #logger.info("Finished vacuuming and analyzing!")
     logger.info("Finished!")
 
 

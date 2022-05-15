@@ -193,7 +193,8 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
 
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
-    time_cleansing_begin = datetime.datetime.now()
+    global time_cleansing_begin 
+    time_cleansing_begin =  datetime.datetime.now()
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
     
     df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")

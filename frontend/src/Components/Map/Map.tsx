@@ -88,9 +88,9 @@ export class DKMap extends React.Component<DKMapProps, DKMapStates> {
                 />
                 <MapConsumer>
                     {(map) => {
-                        if(!this.countriesAdded) { 
-                            this.addCountryPolygons(map);                        
-                        }
+                        // if(!this.countriesAdded) { 
+                        //     this.addCountryPolygons(map);                        
+                        // }
                         this.state.polygons.map((poly) => {
                             return poly.addTo(map); 
                         });

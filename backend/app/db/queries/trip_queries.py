@@ -4,6 +4,7 @@ from app.models.filter import Filter
 from fastapi import HTTPException
 from shapely.geometry import Point
 from app.models.grid_polygon import GridPolygon
+from app.models.coordinate import Coordinate
 import pandas as pd
 import geopandas as gpd
 import shapely.wkb as wkb
@@ -36,28 +37,24 @@ def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
                     {grid_type}_{size}_dim as h                           
                 WHERE                                                           
                     ST_Within(
-                        %(p1)s::geometry, h.grid_geom
-                    ) OR     
-                    ST_Within(
-                        %(p2)s::geometry, h.grid_geom
+                        %(p)s::geometry, h.grid_geom
                     );
             '''
 
-def get_polygons(p1: Point, p2: Point, p1_is_hex: bool, p1_size: int, logger: Logger) -> pd.DataFrame:
+def get_polygon(p: Point, c: Coordinate, logger: Logger) -> pd.DataFrame:
     '''Returns the polygons where p1 and p2 can be found within'''
-    sql_query = query_fetch_polygons_given_two_points(p1_is_hex, p1_size)
+    sql_query = query_fetch_polygons_given_two_points(c.is_hexagon, c.grid_size)
 
     df = gpd.read_postgis(
             sql_query, 
             engine,
             params={
-                "p1": wkb.dumps(p1, hex=True, srid=4326),
-                "p2": wkb.dumps(p2, hex=True, srid=4326)
+                "p": wkb.dumps(p, hex=True, srid=4326)
             },
             geom_col='geom'
         )
 
-    if len(df) < 2:
+    if len(df) < 1:
         logger.error('The two coordinates intersect with each other')
         return []
 

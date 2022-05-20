@@ -12,7 +12,6 @@ from data_insertion import calculate_date_tim_dim_and_hex, insert_into_star
 from trips_partitioning import get_cleansed_data
 import geopandas as gpd
 import numpy as np
-import csv
 
 load_dotenv()
 LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
@@ -191,6 +190,12 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
     
     df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")
+
+    length_before = len(df)
+    df = df[df["Type of mobile"] == "Class B"]
+    length_after = len(df)
+    print(f"Amount of Class B ships: {length_before - length_after}")
+    quit()
 
     # Remove all the rows which does not satisfy our conditions
     df = df[

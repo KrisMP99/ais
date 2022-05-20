@@ -14,10 +14,8 @@ import pandas as pd
 from hex_line_string_queries import create_line_strings, create_hex_ids, vacuum_and_analyze_tables, round_coordinates
 import configparser
 from pathlib import Path
-import csv
 
 load_dotenv()
-CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')

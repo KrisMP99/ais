@@ -19,8 +19,6 @@ LOG_FILE_PATH = os.getenv('LOG_FILE_PATH')
 ERROR_LOG_FILE_PATH = os.getenv('ERROR_LOG_FILE_PATH')
 CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 
-time_cleansing_begin = datetime.datetime.now()
-
 def get_downloaded_csv_files_from_folder(logger, month_file_name = None):
     """
     Gets the .csv files located in the specified folder.
@@ -166,8 +164,6 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     :param file_name: File name to cleanse. Example: 'aisdk-2022-01-01.csv'
     :return: A cleansed geodataframe, sorted by timestamp (ascending)
     """
-    DATA = []
-    DATA.append(file_name)
 
     types = {
         '# Timestamp': str,
@@ -189,12 +185,9 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     }
     logger.info(f"Loading, converting and cleansing {file_name}")
     df = pd.read_csv(CSV_FILES_PATH + file_name, parse_dates=['# Timestamp'], na_values=['Unknown','Undefined'], dtype=types)
-    DATA.append(len(df))
 
     # Remove unwanted columns containing data we do not need. This saves a little bit of memory.
     # errors='ignore' is sat because older ais data files may not contain these columns.
-    global time_cleansing_begin 
-    time_cleansing_begin =  datetime.datetime.now()
     df = df.drop(['A','B','C','D','ETA','Cargo type','Data source type'],axis=1, errors='ignore')
     
     df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")
@@ -209,14 +202,6 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
             (df['Longitude'] >= 3.2) & (df['Longitude'] <=16.5) &
             (df['SOG'] >= 0.1) & (df['SOG'] <=102)
            ].reset_index()
-    DATA.append(len(df))
-
-    HEADER = [file_name,'Total_rows_in_csv', 'rows_after_filter']
-
-    with open(CSV_FILES_PATH + "/stats/" + file_name + '_stats_1.csv', 'w', encoding="utf-8", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(HEADER)
-        writer.writerow(DATA)
 
     # We round the lat and longs as we do not need 15 decimals of precision
     # This will save some computation time later.
@@ -343,12 +328,8 @@ def partition_trips_and_insert(file_name: str, df: gpd.GeoDataFrame, logger):
     df_cleansed = df_cleansed.rename_geometry('location')
     df_cleansed = df_cleansed.drop(['point'],axis=1, errors='ignore')
 
-    time_cleansing_end = datetime.datetime.now()
-    time_delta = time_cleansing_end - time_cleansing_begin
-    cleansing_time_taken = str(time_delta.total_seconds() / 60)
-
     df_cleansed = calculate_date_tim_dim_and_hex(df_cleansed, logger)
-    insert_into_star(df_cleansed, logger, file_name, cleansing_time_taken)
+    insert_into_star(df_cleansed, logger)
     add_new_file_to_log(file_name, logger=logger)
 
 
@@ -403,7 +384,6 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
     :param cont: If True, will continue to download and process data from the latest file entry of the log file. Default is 'False'
     :param only_from_folder: Will only process and insert data from a folder. Default is 'False'
     """
-    time_begin = datetime.datetime.now()
     if all:
         download_all_and_process_everything(logger)
     elif cont:
@@ -414,8 +394,3 @@ def start(logger, interval_to_download = None, file_to_download = None, all = Fa
         download_cleanse_insert(file_to_download, logger)
     elif only_from_folder is not None:
         check_if_csv_is_in_log(logger)
-    
-    time_end = datetime.datetime.now()
-    time_delta = time_end - time_begin
-    print("Time end: " + time_end.strftime("%d%m%Y, %H:%M%S"))
-    print(f"Took approx: {time_delta.total_seconds() / 60} minutes")

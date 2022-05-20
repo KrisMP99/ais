@@ -162,7 +162,7 @@ def get_fact_table_key_refs() -> str:
     
     return result
 
-def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time_taken: str):
+def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
     
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB)
@@ -176,10 +176,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     df = df.astype(object).where(pd.notnull(df),None)
 
     fact_table_key_refs = get_fact_table_key_refs()
-
-    DATA = []
-    DATA.append(file_name)
-    DATA.append(cleansing_time_taken)
 
     ais_source = PandasSource(df)
 
@@ -271,9 +267,7 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     logger.info("Done inserting into star schema")
     logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M:%S"))
     logger.info(f"Took approx (star schema): {time_delta.total_seconds() / 60} minutes")
-    DATA.append(str(time_delta.total_seconds() / 60))
     
-    time_begin_sql = datetime.datetime.now()
     logger.info("Rounding location coordinates to 4 decimals...")
     round_coordinates(trip_id=trip_id)
 
@@ -286,12 +280,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     create_hex_ids(square_resolutions=square_str_dims, hex_resolutions=hex_str_dims, simplified_trip_id=trip_id)
 
     logger.info("Adding hex (col, row) finished!")
-    #logger.info("Vacuuming and analyzing the tables...")
-    #vacuum_and_analyze_tables()
-    time_end_sql = datetime.datetime.now()
-    time_delta = (time_end_sql - time_begin_sql)
-    DATA.append((time_delta.total_seconds() / 60))
-
 
     df_data = pd.DataFrame()
     db_conn = f'postgresql://{USER}:{PASS}@db/aisdb'    
@@ -306,23 +294,5 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
                         FROM data_points
 
                         '''
-    df_data = pd.read_sql(sql_query_trips, con=engine)
-    total_before_simplification = df_data['trip_points'].sum()
-    after_simplification = df_data['simplified_points'].sum()
-    line_perc_reduction = ((total_before_simplification - after_simplification) / total_before_simplification) * 100
-    DATA.append(total_before_simplification)
-    DATA.append(after_simplification)
-    DATA.append(line_perc_reduction)
-    #logger.info("Finished vacuuming and analyzing!")
+
     logger.info("Finished!")
-
-
-    HEADER = [file_name,'cleansing_time_taken','total_time_insert_db',
-              'total_time_round_line_grids_vacuum','before_line_simplification','after_line_simplification', 'line_perc_reduction'
-             ]
-
-    with open(CSV_FILES_PATH + "/stats/" + file_name + '_stats_3.csv', 'w', encoding="utf-8", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(HEADER)
-        writer.writerow(DATA)
-    DATA.clear()

@@ -15,11 +15,14 @@ interface ETATripsProps {
 
 interface ETATripsState {
     tripChosen: Trip | null;
-    startIndexTripsShown: number; 
+
+    //Which index in the list does the shown linestring info start from
+    startIndexTripsShown: number;  
 }
 
 export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
 
+    //The 16 displayed trips
     protected tripsDisplayed: any;
 
     constructor(props: ETATripsProps) {
@@ -81,7 +84,6 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 <div className='footer'>
                     <button
                         className='button button-shift'
-                        style={{ display: (this.tripsDisplayed.length > 0 ? '' : 'none') }}
                         disabled={this.state.startIndexTripsShown === 0}
                         onClick={() => {
                             this.setState({
@@ -96,7 +98,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     </button>
                     <button
                         className='button button-shift'
-                        disabled={this.tripsDisplayed.length !== this.props.tripsShown}
+                        disabled={(this.props.tripsShown + this.state.startIndexTripsShown) >= this.props.trips.length}
                         onClick={() => {
                             this.setState({ startIndexTripsShown: this.state.startIndexTripsShown + this.props.tripsShown });
                         }}
@@ -145,9 +147,6 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 </p>
             )
         }
-        else {
-            header = '';//(this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "");
-        }
 
 
         return (
@@ -168,7 +167,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
         return strDate.slice(0, 4) + '-' + strDate.slice(4, 6) + '-' + strDate.slice(6, 8);
     }
 
-
+    //Fill tripsDisplayed with the correct items
     protected fillTripList() {
         this.tripsDisplayed = [];
         let temp: Trip[] = [];

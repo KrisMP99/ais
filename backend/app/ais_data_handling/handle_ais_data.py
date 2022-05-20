@@ -191,12 +191,6 @@ def cleanse_csv_file_and_convert_to_df(file_name: str, logger):
     
     df['# Timestamp'] = pd.to_datetime(df['# Timestamp'], format="%d/%m/%Y %H:%M:%S", errors="coerce")
 
-    length_before = len(df)
-    df = df[df["Type of mobile"] == "Class B"]
-    length_after = len(df)
-    print(f"Amount of Class B ships: {length_before - length_after}")
-    quit()
-
     # Remove all the rows which does not satisfy our conditions
     df = df[
             (df["Type of mobile"] != "Class B") &

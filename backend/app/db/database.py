@@ -7,7 +7,7 @@ load_dotenv()
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 
-SQLALCHEMY_DATABASE_URL = f'postgresql://postgres:admin@host.docker.internal/aisdb'
+SQLALCHEMY_DATABASE_URL = f'postgresql://{USER}:{PASS}@db/aisdb'
 engine = create_engine(SQLALCHEMY_DATABASE_URL, convert_unicode=True )
 
 Session = sessionmaker(bind=engine)

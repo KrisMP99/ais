@@ -22,13 +22,9 @@ CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 # Thresholds
 # Distances are in meters
 MAX_SPEED_IN_HARBOR = 1.5
-# MAX_POINTS_IN_HARBOR = 50
-# MAX_DIST_IN_HARBOR = 2000
 MINIMUM_POINTS_IN_TRIP = 100
 MAX_DIST = 2000
 MIN_TIME = 4
-
-DATA = []
 
 class Trip:
     def __init__(self, mmsi, trip_id = None, simplified_trip_id = None):
@@ -124,8 +120,6 @@ def get_trips(df: gpd.GeoDataFrame, logger):
 
 def partition_trips(trip_list: list[Trip], logger):
     logger.info(f"Before partiton: {len(trip_list)}")
-
-    DATA.append(len(trip_list))
 
     total_trips_cleansed = []
     trips_removed = 0
@@ -246,12 +240,6 @@ def partition_trips(trip_list: list[Trip], logger):
     logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points, and added {trips_added} new trips from splitting.")
     trip_list = total_trips_cleansed
 
-    
-    DATA.append(np.mean(stats_points_in_trip))
-    DATA.append(np.median(stats_points_in_trip))
-    DATA.append(trips_removed)
-    DATA.append(trips_added)
-
     print(f"After partiton: {len(trip_list)}")
     
     return trip_list
@@ -268,10 +256,6 @@ def remove_outliers(trip_list: list[Trip], logger):
         stats_points_len.append(len(points_in_trip))
         if(len(points_in_trip) > MINIMUM_POINTS_IN_TRIP):
             trips_outliers_removed.append(trip)
-    
-    DATA.append(np.mean(stats_points_len))
-    DATA.append(np.median(stats_points_len))
-    DATA.append(len(trip_list) - len(trips_outliers_removed))
 
     trip_list = trips_outliers_removed
 
@@ -293,8 +277,6 @@ def remove_outliers(trip_list: list[Trip], logger):
                 curr_point = point
         outliers_removed.append(temp)
     
-    DATA.append(np.sum(outliers_removed))
-    DATA.append(np.average(outliers_removed))
 
     # This might not work correctly, remember to revisit
     trips_outliers_removed_second = []
@@ -303,7 +285,6 @@ def remove_outliers(trip_list: list[Trip], logger):
         if(len(trip.get_points_in_trip()) > MINIMUM_POINTS_IN_TRIP):
             trips_outliers_removed_second.append(trip)
 
-    DATA.append(len(trip_list) - len(trips_outliers_removed_second))
     trip_list = trips_outliers_removed_second
     logger.info(f"Removed unrealistic points for all trips. Adding trips keys")
     print(f"len of trip_list: {len(trip_list)}")
@@ -357,59 +338,7 @@ def export_trips_csv(trip_list: list[Trip], logger, CSV_PATH = CSV_FILES_PATH):
                 writer.writerow(row)
 
 def get_cleansed_data(df: gpd.GeoDataFrame, logger, file_name: str) -> gpd.GeoDataFrame:
-    DATA.clear()
-    DATA.append(file_name)
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)
-
-    HEADER = [file_name, 'trips_before_partitioning', 'avg_points_in_trip_before', 
-              'median_points_in_trip_before', 'number_of_trips_removed', 'new_trips_added', 
-              'avg_points_in_trip_after', 'median_points_in_trip_after', 'number_of_trips_removed_2',
-              'outliers_total_removed', 'outliers_avg_removed_per_trip','number_of_trips_removed_3',
-              'max_speed_in_harbor', 'minimum_points_in_trip',
-              'max_dist', 'min_time'
-               ]
-
-    DATA.append(MAX_SPEED_IN_HARBOR)
-    DATA.append(MINIMUM_POINTS_IN_TRIP)
-    
-    with open(CSV_FILES_PATH + "/stats/" + file_name + '_stats_2.csv', 'w', encoding="UTF8", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(HEADER)
-        writer.writerow(DATA)
-    
-    DATA.clear()
-
     return trip_list
-
-
-
-'''
-- Number of rows before any cleansing at all
-- Number of rows after removing:
-    - Class B ship types
-    - Rows with NULL in MMSI
-    - Rows with NULL in timestamp
-    - Lat,long outside our area of interest
-    - 0.1 <= SOG <= 102
-- Number of trips before trip partitioning
-- Average number of points in each trip before trip partitioning
-    - and median?
-
-- Number of trips removed before trip partitioning (points < 500)
-- Number of new trips added from trips partitioning
-- Number of trips removed after trips partitioning (points < 500)
-- Total number of points removed from each trip after trips partitioning ((dist(p1,p2) - time_dist(p1,p2)) > 2km)
-    - (and avg)
-- Number of trips removed after point removal (points < 500)
-    - (Total number of trips after partitioning)
-- Total time taken for the csv file
-- Total time taken for inserting into database
-- Total time taken for rounding coordinates, generating line strings, adding hex/square ids, vacuuming and analyzing
-- Points before and after line simplification (Douglas Peucker) (total numbers and in percent)
-- Query time taken to fetch data for front end
-- Total time from clicking 'get trips' on front end until stuff is displayed
-
-
-'''

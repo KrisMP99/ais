@@ -11,3 +11,8 @@ SQLALCHEMY_DATABASE_URL = f'postgresql://{USER}:{PASS}@db/aisdb'
 engine = create_engine(SQLALCHEMY_DATABASE_URL, convert_unicode=True )
 
 Session = sessionmaker(bind=engine)
+
+
+
+
+

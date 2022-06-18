@@ -175,13 +175,13 @@ def partition_trips(trip_list: list[Trip], logger):
                 skip = True
             else:
                 skip = False
+                possibly_new_trip = True
                 index = 0
             
             # If we achieve the amount of points in our cut off, we calculate the distance between the first and last point
             # And the time difference between them. If more than MIN_TIME minutes has passed, and it has sailed less MAX_DIST
             # We define it as a new trip
             if(possibly_new_trip and not skip):
-                # dist_p1_p20 = points_below_threshold[0].Point.distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1].Point)
                 time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
                 possibly_new_trip = False
 
@@ -233,9 +233,6 @@ def partition_trips(trip_list: list[Trip], logger):
             new_trip = Trip(curr_point.get_mmsi())
             new_trip.insert_point_list(points_in_trip[index_cut_begin:-1])
             total_trips_cleansed.append(new_trip)
-
-        # Remove the trip we just went trough (saves memory)
-        # trip_list.pop(trip_key)  <--- can this be done safely?
 
     logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points, and added {trips_added} new trips from splitting.")
     trip_list = total_trips_cleansed

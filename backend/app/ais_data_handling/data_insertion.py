@@ -55,6 +55,10 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       line_string INTEGER)" 
 
 def calculate_date_tim_dim_and_hex(df: gpd.GeoDataFrame,logger):
+    """
+    Calculates the attributes needed for the time and date dimensions
+    :param df: The dataframe which contains the AIS data
+    """
     logger.info("Calculating attributes for date_dim and time_dim...")
 
     # Calculations for date_dim
@@ -72,8 +76,7 @@ def calculate_date_tim_dim_and_hex(df: gpd.GeoDataFrame,logger):
     df['quarter_hour'] = ((df['timestamp'] - df['timestamp'].dt.normalize()) / pd.Timedelta('15Min')).astype(int)
     df['five_minutes'] = ((df['timestamp'] - df['timestamp'].dt.normalize()) / pd.Timedelta('5Min')).astype(int)
 
-    logger.info("Converting back to 4326...")
-  
+    # We convert to int16 here, otherwise pygrametl complains when inserting into the db
     df[['heading', 'width','length']] = df[['heading', 'width','length']].astype('Int16', errors='ignore')
 
     logger.info("Converting to hex...")

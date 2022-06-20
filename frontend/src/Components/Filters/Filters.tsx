@@ -7,7 +7,7 @@ import NavStatusFilter from "./NavStatusFilter/NavStatusFilter";
 import DirectionFilter from "./DirectionFilter/DirectionFilter";
 
 export interface FilterObj {
-    dateRange: Date[] | null;
+    dateRange: number[] | null;
     shipTypes: string[] | null;
     navStatuses: string[] | null;
     direction: boolean | null;
@@ -18,8 +18,7 @@ interface FiltersProps {
 }
 
 interface FiltersStates {
-    hasChanged: boolean[];
-    
+    hasChanged: boolean[]; 
 }
 
 export class Filters extends React.Component<FiltersProps, FiltersStates>{
@@ -63,7 +62,7 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
                     <DateRangeFilter 
                         ref={this.dateRangeFilterRef}
                         hasChanged={(hasChanged: boolean) => this.hasChanged(0, hasChanged)}
-                        returnDateRange={(range: Date[]) => {
+                        returnDateRange={(range: number[] | null) => {
                             this.filterActive.dateRange = range;
                         }}
                     />
@@ -121,8 +120,8 @@ export class Filters extends React.Component<FiltersProps, FiltersStates>{
         }
         this.directionFilterRef.current?.apply();
         this.navStatusFilterRef.current?.apply();
-        this.dateRangeFilterRef.current?.apply();
         this.shipTypeFilterRef.current?.apply();
+        this.dateRangeFilterRef.current?.apply();
         this.props.returnFilters(this.filterActive);
         this.setState({hasChanged: temp});
     }

@@ -17,7 +17,7 @@ export interface Trip {
 	tripId: number;
 	eta: string;
 	color: string;
-	shipType: string;
+	shipType?: string;
 	mmsi?: number;
 	imo?: number;
 	typeOfMobile?: string;
@@ -26,6 +26,7 @@ export interface Trip {
 	length?: number;
 	navStatus?: string;
 	direction?: string;
+	date?: number;
 }
 export interface ETASummary {
 	min: string;
@@ -141,7 +142,7 @@ export class App extends React.Component<any, AppStates> {
 											<Label 
 												style={{color: '#fff', fontSize: '15px', fontWeight: '500'}}
 												aria-setsize={15}>	
-												Find route
+												Find Trips
 											</Label>
 											{!this.state.isFetching ? <div></div> :
 												(<Spinner 
@@ -158,7 +159,7 @@ export class App extends React.Component<any, AppStates> {
 									disabled={this.state.pointCoords.length <= 0}
 									onClick={() => this.clearPoints()}
 								>
-									Clear map
+									Clear Map
 								</button>
 							</div>
 						</div>
@@ -268,7 +269,7 @@ export class App extends React.Component<any, AppStates> {
                         "grid_size": this.state.postSetting?.gridSetting?.size
                 },
                     "filter":{
-                        // "date_range": this.state.postSetting?.activeFilters?.dateRange,
+                        "date_range": null, //this.state.postSetting?.activeFilters?.dateRange,
                         "ship_types": this.state.postSetting?.activeFilters?.shipTypes,
 						"nav_stats": this.state.postSetting?.activeFilters?.navStatuses,
 						"direction": this.state.postSetting?.activeFilters?.direction,
@@ -298,6 +299,7 @@ export class App extends React.Component<any, AppStates> {
 							length: feature.properties.length,
 							navStatus: feature.properties.navigational_status,
 							direction: feature.properties.direction,
+							date: feature.properties.date,
 						}); 
 						eta = {
 							min: feature.properties.eta_min,

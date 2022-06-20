@@ -4,6 +4,7 @@ from app.models.filter import Filter
 from fastapi import HTTPException
 from shapely.geometry import Point
 from app.models.grid_polygon import GridPolygon
+from app.models.coordinate import Coordinate
 import pandas as pd
 import geopandas as gpd
 import shapely.wkb as wkb
@@ -36,28 +37,24 @@ def query_fetch_polygons_given_two_points(p1_is_hex: bool, p1_size: int) -> str:
                     {grid_type}_{size}_dim as h                           
                 WHERE                                                           
                     ST_Within(
-                        %(p1)s::geometry, h.grid_geom
-                    ) OR     
-                    ST_Within(
-                        %(p2)s::geometry, h.grid_geom
+                        %(p)s::geometry, h.grid_geom
                     );
             '''
 
-def get_polygons(p1: Point, p2: Point, p1_is_hex: bool, p1_size: int, logger: Logger) -> pd.DataFrame:
+def get_polygon(p: Point, c: Coordinate, logger: Logger) -> pd.DataFrame:
     '''Returns the polygons where p1 and p2 can be found within'''
-    sql_query = query_fetch_polygons_given_two_points(p1_is_hex, p1_size)
+    sql_query = query_fetch_polygons_given_two_points(c.is_hexagon, c.grid_size)
 
     df = gpd.read_postgis(
             sql_query, 
             engine,
             params={
-                "p1": wkb.dumps(p1, hex=True, srid=4326),
-                "p2": wkb.dumps(p2, hex=True, srid=4326)
+                "p": wkb.dumps(p, hex=True, srid=4326)
             },
             geom_col='geom'
         )
 
-    if len(df) < 2:
+    if len(df) < 1:
         logger.error('The two coordinates intersect with each other')
         return []
 
@@ -130,6 +127,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                         ship_dim.type_of_position_fixing_device as fixing_device,
                         ship_type_dim.ship_type,
                         nav_dim.navigational_status,
+                        data_fact.date_id as date,
                         data_fact.location as df_loc1,
                         data_fact.time_id as df_loc1_time_id,
                         data_fact.sog as df_loc1_sog,
@@ -143,7 +141,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
                 WHERE ST_Equals(
                                 data_fact.location,
                                 ST_ReducePrecision(ST_StartPoint(seg1), 0.0001)
-                            ) {filter_ship_type} {filter_nav_stats} 
+                            ) {filter_ship_type} {filter_nav_stats}
             ),
             get_data_2 AS (
                 SELECT DISTINCT on (data_fact.simplified_trip_id)
@@ -160,7 +158,7 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
             )
             SELECT gd1.simplified_trip_id, gd1.line_string, gd1.mmsi, gd1.type_of_mobile, 
                 gd1.imo, gd1.name, gd1.callsign, gd1.width, gd1.length, gd1.fixing_device,
-                gd1.ship_type, gd1.navigational_status,
+                gd1.ship_type, gd1.navigational_status, gd1.date,
                 gd1.df_loc1, gd1.df_loc1_time_id, gd1.df_loc1_sog, gd1.dist_df_loc1_c1, 
                 gd2.df_loc2, gd2.df_loc2_time_id, gd2.df_loc2_sog, gd2.dist_df_loc2_c2
             FROM get_data_1 as gd1 
@@ -169,7 +167,6 @@ def query_line_strings_and_data_for_ETA(filter: Filter) -> str:
 
 def get_line_strings(poly1: GridPolygon, poly2: GridPolygon, filter: Filter, logger: Logger) -> pd.DataFrame:
     sql_query = query_line_strings_and_data_for_ETA(filter)
-    # print(sql_query)
     df = gpd.read_postgis(
             sql_query, 
             engine, 

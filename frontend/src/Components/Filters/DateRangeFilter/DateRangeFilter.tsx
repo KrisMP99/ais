@@ -7,7 +7,7 @@ import { DatePicker, DefaultButton } from "@fluentui/react";
 
 interface DateRangeFilterProps {
     hasChanged: (hasChanged: boolean) => void;
-    returnDateRange: (dates: Date[]) => void;
+    returnDateRange: (dates: number[] | null) => void;
 }
  
 interface DateRangeFilterStates {
@@ -58,7 +58,7 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
             <div className="filter-container">
                 <button className="filter-header" onClick={() => {this.setState({openOnUi: !this.state.openOnUi})}}>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
-                    <p className="text-2 filter-header-text"><strong>Date range</strong></p>
+                    <p className="text-2 filter-header-text"><strong>Date Range (WIP)</strong></p>
                     <p className="filter-header-arrow"><strong>{openSymbol}</strong></p>
                 </button>
                 <div className="filter-date-range-body" style={{display: (this.state.openOnUi ? '' : 'none')}}>
@@ -116,14 +116,24 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
 
     public apply() {
         if (this.dateIsDefined(this.state.endDate) && this.dateIsDefined(this.state.startDate)) {
-            this.props.returnDateRange([this.state.startDate!, this.state.endDate!]);
+            let dateStringArr = this.dateToNumber(this.state.startDate!, this.state.endDate!);
+            this.props.returnDateRange(dateStringArr);
             this.setState({
                 preApplyStartDate: this.state.startDate,
                 preApplyEndDate: this.state.endDate,
             });
         }
-        else {
-            this.props.returnDateRange([this.state.minDate!, this.state.maxDate!]);
+        else if (this.dateIsDefined(this.state.preApplyStartDate) && this.dateIsDefined(this.state.preApplyEndDate)) {
+            let dateStringArr = this.dateToNumber(this.state.preApplyStartDate!, this.state.preApplyEndDate!);
+            this.props.returnDateRange(dateStringArr)
+            this.setState({
+                startDate: this.state.preApplyStartDate, 
+                endDate: this.state.preApplyEndDate
+            });
+        }
+        else if (this.dateIsDefined(this.state.minDate) && this.dateIsDefined(this.state.maxDate)) {
+            let dateStringArr = this.dateToNumber(this.state.minDate!, this.state.maxDate!);
+            this.props.returnDateRange(dateStringArr);
             this.setState({
                 startDate: null, 
                 endDate: null, 
@@ -131,7 +141,26 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
                 preApplyEndDate: null
             });
         }
+        else {
+            this.props.returnDateRange(null);
+        }
+        
     }
+    protected addZeroes(num: number): string {
+        if (num < 10) {
+            return '0' + num;
+        }
+        return num.toString();
+    }
+    protected dateToNumber(start: Date, end: Date): number[] {
+        let strArr: string[] = [];
+        if(start && end) {
+            strArr.push(start.getFullYear().toString() + this.addZeroes(start.getMonth() + 1) + this.addZeroes(start.getDate()));
+            strArr.push(end.getFullYear().toString() + this.addZeroes(end.getMonth() + 1) + this.addZeroes(end.getDate()));
+        }
+        return strArr.map((val) => { return Number(val) });
+    }
+
     protected dateIsDefined(val: Date | null | undefined): boolean {
         return (val !== null && val !== undefined);
     }
@@ -173,8 +202,8 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
             data.forEach(elem => {
                 temp.push(new Date(elem).getTime());
             });
-            let minDate = new Date(Math.min.apply(null, temp));
-            let maxDate = new Date(Math.max.apply(null, temp));
+            let minDate = new Date(Math.min(...temp));
+            let maxDate = new Date(Math.max(...temp));
             this.setState({
                 minDate: minDate,
                 maxDate: maxDate,
@@ -183,6 +212,7 @@ class DateRangeFilter extends React.Component<DateRangeFilterProps, DateRangeFil
                 preApplyStartDate: minDate,
                 preApplyEndDate: maxDate 
             });
+            this.apply();
             return;
         });    
     }

@@ -21,14 +21,10 @@ CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 
 # Thresholds
 # Distances are in meters
-MAX_SPEED = 1
-# MAX_POINTS_IN_HARBOR = 50
-# MAX_DIST_IN_HARBOR = 2000
-MINIMUM_POINTS_IN_TRIP = 500
+MAX_SPEED_IN_HARBOR = 1.5
+MINIMUM_POINTS_IN_TRIP = 100
 MAX_DIST = 2000
-MIN_TIME = 5
-
-DATA = []
+MIN_TIME = 4
 
 class Trip:
     def __init__(self, mmsi, trip_id = None, simplified_trip_id = None):
@@ -125,12 +121,9 @@ def get_trips(df: gpd.GeoDataFrame, logger):
 def partition_trips(trip_list: list[Trip], logger):
     logger.info(f"Before partiton: {len(trip_list)}")
 
-    DATA.append(len(trip_list))
-
     total_trips_cleansed = []
     trips_removed = 0
     trips_added = 0
-
     stats_points_in_trip = []
 
     # Compare distances between each point in each trip
@@ -172,7 +165,7 @@ def partition_trips(trip_list: list[Trip], logger):
         for point in points_in_trip:
             # Add points in which they have a speed below the maximum allowed speed in danish harbors
             # We want MAX_SPEED_IN_HARBOR points in sequence to be below the threshold, before we consider a ship 'stopped'
-            if (point.get_sog() < MAX_SPEED):
+            if (point.get_sog() < MAX_SPEED_IN_HARBOR):
                 if not possibly_new_trip:
                     cut_point_end = point
                 
@@ -182,14 +175,14 @@ def partition_trips(trip_list: list[Trip], logger):
                 skip = True
             else:
                 skip = False
+                possibly_new_trip = True
                 index = 0
             
             # If we achieve the amount of points in our cut off, we calculate the distance between the first and last point
             # And the time difference between them. If more than MIN_TIME minutes has passed, and it has sailed less MAX_DIST
             # We define it as a new trip
             if(possibly_new_trip and not skip):
-                # dist_p1_p20 = points_below_threshold[0].Point.distance(points_below_threshold[MAX_POINTS_IN_HARBOR - 1].Point)
-                time_diff = abs((points_below_threshold[-1].get_timestamp() - points_below_threshold[0].get_timestamp()).total_seconds()/60)
+                time_diff = abs((points_below_threshold[0].get_timestamp() - points_below_threshold[-1].get_timestamp()).total_seconds()/60)
                 possibly_new_trip = False
 
                 if(time_diff >= MIN_TIME):
@@ -200,14 +193,6 @@ def partition_trips(trip_list: list[Trip], logger):
                     possibly_new_trip = False
                     points_below_threshold.clear()
                     index = 0
-            
-            # if(is_new_trip):
-            #     skip = True
-            #     if(point.get_sog() > MAX_SPEED_IN_HARBOR):
-            #         cut_trip = True
-            #     else:
-            #         cut_trip = False
-                # dist_to_new_trip = curr_point.Point.distance(point.Point)
         
             # If the ship has exceeded our distance cut-off for when a new trip begin
             # we make the trip, and add the points to it by using the cut_point and curr_point.
@@ -244,22 +229,13 @@ def partition_trips(trip_list: list[Trip], logger):
         # As seen in the example, we also need the last part.
         if index_cut_begin == 0 and index_cut_end == 0 and not possibly_new_trip:
             total_trips_cleansed.append(trip)
-        elif index_cut_end != (len(points_in_trip) - 1) and (points_left_over or not skip):
+        elif index_cut_end != (len(points_in_trip) - 1) and (points_left_over and not possibly_new_trip):
             new_trip = Trip(curr_point.get_mmsi())
             new_trip.insert_point_list(points_in_trip[index_cut_begin:-1])
             total_trips_cleansed.append(new_trip)
 
-        # Remove the trip we just went trough (saves memory)
-        # trip_list.pop(trip_key)  <--- can this be done safely?
-
     logger.info(f"Removed {trips_removed} trips as they had less than {MINIMUM_POINTS_IN_TRIP} points, and added {trips_added} new trips from splitting.")
     trip_list = total_trips_cleansed
-
-    
-    DATA.append(np.mean(stats_points_in_trip))
-    DATA.append(np.median(stats_points_in_trip))
-    DATA.append(trips_removed)
-    DATA.append(trips_added)
 
     print(f"After partiton: {len(trip_list)}")
     
@@ -277,10 +253,6 @@ def remove_outliers(trip_list: list[Trip], logger):
         stats_points_len.append(len(points_in_trip))
         if(len(points_in_trip) > MINIMUM_POINTS_IN_TRIP):
             trips_outliers_removed.append(trip)
-    
-    DATA.append(np.mean(stats_points_len))
-    DATA.append(np.median(stats_points_len))
-    DATA.append(len(trip_list) - len(trips_outliers_removed))
 
     trip_list = trips_outliers_removed
 
@@ -302,8 +274,6 @@ def remove_outliers(trip_list: list[Trip], logger):
                 curr_point = point
         outliers_removed.append(temp)
     
-    DATA.append(np.sum(outliers_removed))
-    DATA.append(np.average(outliers_removed))
 
     # This might not work correctly, remember to revisit
     trips_outliers_removed_second = []
@@ -312,7 +282,6 @@ def remove_outliers(trip_list: list[Trip], logger):
         if(len(trip.get_points_in_trip()) > MINIMUM_POINTS_IN_TRIP):
             trips_outliers_removed_second.append(trip)
 
-    DATA.append(len(trip_list) - len(trips_outliers_removed_second))
     trip_list = trips_outliers_removed_second
     logger.info(f"Removed unrealistic points for all trips. Adding trips keys")
     print(f"len of trip_list: {len(trip_list)}")
@@ -366,61 +335,7 @@ def export_trips_csv(trip_list: list[Trip], logger, CSV_PATH = CSV_FILES_PATH):
                 writer.writerow(row)
 
 def get_cleansed_data(df: gpd.GeoDataFrame, logger, file_name: str) -> gpd.GeoDataFrame:
-    DATA.clear()
-    DATA.append(file_name)
     trip_list = get_trips(df, logger)
     trip_list = partition_trips(trip_list, logger)
     trip_list = remove_outliers(trip_list, logger)
-
-    HEADER = [file_name, 'trips_before_partitioning', 'avg_points_in_trip_before', 
-              'median_points_in_trip_before', 'number_of_trips_removed', 'new_trips_added', 
-              'avg_points_in_trip_after', 'median_points_in_trip_after', 'number_of_trips_removed_2',
-              'outliers_total_removed', 'outliers_avg_removed_per_trip','number_of_trips_removed_3',
-              'max_speed', 'minimum_points_in_trip',
-              'max_dist', 'min_time'
-               ]
-
-    DATA.append(MAX_SPEED)
-    DATA.append(MINIMUM_POINTS_IN_TRIP)
-    DATA.append(MAX_DIST)
-    DATA.append(MIN_TIME)
-    
-    with open(CSV_FILES_PATH + file_name + '_stats_2.csv', 'w', encoding="UTF8", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(HEADER)
-        writer.writerow(DATA)
-    
-    DATA.clear()
-
     return trip_list
-
-
-
-'''
-- Number of rows before any cleansing at all
-- Number of rows after removing:
-    - Class B ship types
-    - Rows with NULL in MMSI
-    - Rows with NULL in timestamp
-    - Lat,long outside our area of interest
-    - 0.1 <= SOG <= 102
-- Number of trips before trip partitioning
-- Average number of points in each trip before trip partitioning
-    - and median?
-
-- Number of trips removed before trip partitioning (points < 500)
-- Number of new trips added from trips partitioning
-- Number of trips removed after trips partitioning (points < 500)
-- Total number of points removed from each trip after trips partitioning ((dist(p1,p2) - time_dist(p1,p2)) > 2km)
-    - (and avg)
-- Number of trips removed after point removal (points < 500)
-    - (Total number of trips after partitioning)
-- Total time taken for the csv file
-- Total time taken for inserting into database
-- Total time taken for rounding coordinates, generating line strings, adding hex/square ids, vacuuming and analyzing
-- Points before and after line simplification (Douglas Peucker) (total numbers and in percent)
-- Query time taken to fetch data for front end
-- Total time from clicking 'get trips' on front end until stuff is displayed
-
-
-'''

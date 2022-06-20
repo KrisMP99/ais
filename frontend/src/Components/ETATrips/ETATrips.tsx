@@ -15,11 +15,14 @@ interface ETATripsProps {
 
 interface ETATripsState {
     tripChosen: Trip | null;
-    startIndexTripsShown: number; 
+
+    //Which index in the list does the shown linestring info start from
+    startIndexTripsShown: number;  
 }
 
 export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
 
+    //The 16 displayed trips
     protected tripsDisplayed: any;
 
     constructor(props: ETATripsProps) {
@@ -41,6 +44,9 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
             else {
                 this.setState({tripChosen: null})
             }
+        }
+        if(prevProps.trips !== this.props.trips) {
+            this.setState({startIndexTripsShown: 0});
         }
     }
 
@@ -78,7 +84,6 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 <div className='footer'>
                     <button
                         className='button button-shift'
-                        style={{ display: (this.tripsDisplayed.length > 0 ? '' : 'none') }}
                         disabled={this.state.startIndexTripsShown === 0}
                         onClick={() => {
                             this.setState({
@@ -93,7 +98,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                     </button>
                     <button
                         className='button button-shift'
-                        disabled={this.tripsDisplayed.length !== this.props.tripsShown}
+                        disabled={(this.props.tripsShown + this.state.startIndexTripsShown) >= this.props.trips.length}
                         onClick={() => {
                             this.setState({ startIndexTripsShown: this.state.startIndexTripsShown + this.props.tripsShown });
                         }}
@@ -108,6 +113,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 <div className='text-3' style={{display: "flex", flexWrap: "wrap"}}>
                     <p className='data'><strong>Trip ID:</strong> {this.state.tripChosen.tripId}</p>
                     <p className='data'><strong>ETA:</strong> {this.state.tripChosen.eta}</p>
+                    <p className='data'><strong>Date:</strong> {this.state.tripChosen.date ? this.dateToString(this.state.tripChosen.date) : "undefined"}</p>
                     <p className='data'><strong>MMSI:</strong> {this.state.tripChosen.mmsi || "undefined"}</p>
                     <p className='data'><strong>IMO:</strong> {this.state.tripChosen.imo || "undefined"}</p>
                     <p className='data'><strong>Name:</strong> {this.state.tripChosen.name || "undefined"}</p>
@@ -141,9 +147,6 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                 </p>
             )
         }
-        else {
-            header = (this.state.tripChosen ? ("Trip ID " + this.state.tripChosen.tripId + ":") : "");
-        }
 
 
         return (
@@ -159,8 +162,12 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
             </div>
         );
     }
+    dateToString(date: number): string {
+        let strDate = date.toString();
+        return strDate.slice(0, 4) + '-' + strDate.slice(4, 6) + '-' + strDate.slice(6, 8);
+    }
 
-
+    //Fill tripsDisplayed with the correct items
     protected fillTripList() {
         this.tripsDisplayed = [];
         let temp: Trip[] = [];
@@ -193,7 +200,7 @@ export class ETATrips extends React.Component<ETATripsProps, ETATripsState> {
                             >
                                 <b>{trip.tripId}:</b>
                             </p>
-                            <p className='text-3 filter-text'>Time: {trip.eta}</p>
+                            <p className='text-3 filter-text'>{trip.eta}</p>
                         </div>
                     </label>
                 </button>

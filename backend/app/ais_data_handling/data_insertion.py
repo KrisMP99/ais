@@ -14,10 +14,8 @@ import pandas as pd
 from hex_line_string_queries import create_line_strings, create_hex_ids, vacuum_and_analyze_tables, round_coordinates
 import configparser
 from pathlib import Path
-import csv
 
 load_dotenv()
-CSV_FILES_PATH = os.getenv('CSV_FILES_PATH')
 USER = os.getenv('POSTGRES_USER')
 PASS = os.getenv('POSTGRES_PASSWORD')
 HOST_DB = os.getenv('HOST_DB')
@@ -57,6 +55,10 @@ cleansed_table_sql = "CREATE TABLE IF NOT EXISTS cleansed ( \
                       line_string INTEGER)" 
 
 def calculate_date_tim_dim_and_hex(df: gpd.GeoDataFrame,logger):
+    """
+    Calculates the attributes needed for the time and date dimensions
+    :param df: The dataframe which contains the AIS data
+    """
     logger.info("Calculating attributes for date_dim and time_dim...")
 
     # Calculations for date_dim
@@ -74,8 +76,7 @@ def calculate_date_tim_dim_and_hex(df: gpd.GeoDataFrame,logger):
     df['quarter_hour'] = ((df['timestamp'] - df['timestamp'].dt.normalize()) / pd.Timedelta('15Min')).astype(int)
     df['five_minutes'] = ((df['timestamp'] - df['timestamp'].dt.normalize()) / pd.Timedelta('5Min')).astype(int)
 
-    logger.info("Converting back to 4326...")
-  
+    # We convert to int16 here, otherwise pygrametl complains when inserting into the db
     df[['heading', 'width','length']] = df[['heading', 'width','length']].astype('Int16', errors='ignore')
 
     logger.info("Converting to hex...")
@@ -162,11 +163,12 @@ def get_fact_table_key_refs() -> str:
     
     return result
 
-def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time_taken: str):
+def insert_into_star(df: gpd.GeoDataFrame, logger):
     # Establish db connection
+    
     conn = psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB)
     conn_wrapper = pygrametl.ConnectionWrapper(connection=conn)
-
+    
     logger.info("Converting back to 4326")
     trip_id = df['trip_id'].min()
 
@@ -175,10 +177,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     df = df.astype(object).where(pd.notnull(df),None)
 
     fact_table_key_refs = get_fact_table_key_refs()
-
-    DATA = []
-    DATA.append(file_name)
-    DATA.append(cleansing_time_taken)
 
     ais_source = PandasSource(df)
 
@@ -270,14 +268,12 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     logger.info("Done inserting into star schema")
     logger.info("Time end (star schema): " + time_end.strftime("%d%m%Y, %H:%M:%S"))
     logger.info(f"Took approx (star schema): {time_delta.total_seconds() / 60} minutes")
-    DATA.append(str(time_delta.total_seconds() / 60))
     
-    time_begin_sql = datetime.datetime.now()
     logger.info("Rounding location coordinates to 4 decimals...")
     round_coordinates(trip_id=trip_id)
 
     logger.info("Generating line strings, simplified line strings, and updating data_fact with the corresponding keys...")
-    create_line_strings(trip_id=trip_id, threshold=1000)
+    create_line_strings(trip_id=trip_id, threshold=500)
 
     logger.info("Done with line strings, adding (col,row) on data_fact for the hexagons dimensions...")
     hex_str_dims = get_resolutions_from_config_file(hexagons=True).split(",")
@@ -285,12 +281,6 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
     create_hex_ids(square_resolutions=square_str_dims, hex_resolutions=hex_str_dims, simplified_trip_id=trip_id)
 
     logger.info("Adding hex (col, row) finished!")
-    logger.info("Vacuuming and analyzing the tables...")
-    vacuum_and_analyze_tables()
-    time_end_sql = datetime.datetime.now()
-    time_delta = (time_end_sql - time_begin_sql)
-    DATA.append((time_delta.total_seconds() / 60))
-
 
     df_data = pd.DataFrame()
     db_conn = f'postgresql://{USER}:{PASS}@db/aisdb'    
@@ -305,24 +295,5 @@ def insert_into_star(df: gpd.GeoDataFrame, logger, file_name:str, cleansing_time
                         FROM data_points
 
                         '''
-    df_data = pd.read_sql(sql_query_trips, con=engine)
-    total_before_simplification = df_data['trip_points'].sum()
-    after_simplification = df_data['simplified_points'].sum()
-    line_perc_reduction = ((total_before_simplification - after_simplification) / total_before_simplification) * 100
-    DATA.append(total_before_simplification)
-    DATA.append(after_simplification)
-    DATA.append(line_perc_reduction)
 
-    logger.info("Finished vacuuming and analyzing!")
     logger.info("Finished!")
-
-
-    HEADER = [file_name,'cleansing_time_taken','total_time_insert_db',
-              'total_time_round_line_grids_vacuum','before_line_simplification','after_line_simplification', 'line_perc_reduction'
-             ]
-
-    with open(CSV_FILES_PATH + file_name + '_stats_3.csv', 'w', encoding="utf-8", newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(HEADER)
-        writer.writerow(DATA)
-    DATA.clear()

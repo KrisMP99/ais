@@ -13,8 +13,8 @@ def round_coordinates(trip_id: int):
                     UPDATE data_fact
                     SET location = (
                         SELECT ST_ReducePrecision(location, 0.0001)
-                        WHERE data_fact.trip_id >= {trip_id}
                     )
+                    WHERE data_fact.trip_id >= {trip_id}
                  '''
     with psycopg2.connect(database="aisdb", user=USER, password=PASS, host=HOST_DB) as conn:
         with conn.cursor() as cursor:
@@ -202,49 +202,3 @@ def vacuum_and_analyze_tables():
     cursor = connection.cursor()
     cursor.execute("VACUUM ANALYZE;")
     cursor.close()
-
-'''
-WITH trip_list AS (
-    SELECT trip_id, ST_MakeLine(array_agg(location ORDER BY time_id ASC)) as line
-    FROM data_fact
-    WHERE trip_id >= 0
-    GROUP BY trip_id 
-)
-SELECT trip_id, line
-INTO UNLOGGED TABLE line_temp
-FROM trip_list;
-                                   
-UPDATE trip_dim
-SET line_string = line
-FROM line_temp
-WHERE line_temp.trip_id = trip_dim.trip_id
-
-'''
-
-
-'''
-WITH simplified_trip_list AS (
-    SELECT trip_id, ST_Simplify(ST_Transform(line_string, 3857), 1000) as line
-    FROM trip_dim
-    WHERE trip_id >= 0
-    GROUP BY trip_id 
-)
-
-SELECT trip_id, ST_Transform(line, 4326) as line_simplified
-INTO UNLOGGED TABLE line_simplified_temp
-FROM simplified_trip_list;
-'''
-
-
-# UPDATE simplified_trip_dim
-# SET line_string = (
-#     SELECT line_simplified
-#     FROM line_simplified_temp
-#     WHERE simplified_trip_dim.simplified_trip_id = line_simplified_temp.trip_id
-# );
-
-'''
-INSERT INTO simplified_trip_dim(simplified_trip_id, line_string)
-SELECT trip_id, line_simplified
-FROM line_simplified_temp
-'''
